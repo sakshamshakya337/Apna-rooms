@@ -9,6 +9,7 @@
     "build:frontend": "cd frontend && npm run build",
     "build": "npm run build:frontend",
     "vercel-build": "npm run install-all && npm run build",
+    "render-build": "npm install && cd backend && npm install",
     "start:backend": "cd backend && npm start",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev"
