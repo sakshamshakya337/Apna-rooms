@@ -15,6 +15,11 @@ import PGDetail from './pages/PGDetail';
 import Dashboard from './pages/Dashboard';
 import BookingConfirmation from './pages/BookingConfirmation';
 import ResetPassword from './pages/ResetPassword';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsAndConditions from './pages/TermsAndConditions';
+import RefundCancellation from './pages/RefundCancellation';
+import ShippingDelivery from './pages/ShippingDelivery';
+import Footer from './components/Footer';
 
 const App = () => {
   const { loading, currentUser } = useAuth();
@@ -33,6 +38,10 @@ const App = () => {
           <Route path="/pgs" element={<PGList />} />
           <Route path="/pg/:id" element={<PGDetail />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-conditions" element={<TermsAndConditions />} />
+          <Route path="/refund-cancellation" element={<RefundCancellation />} />
+          <Route path="/shipping-delivery" element={<ShippingDelivery />} />
           <Route path="/booking-confirmation/:id" element={currentUser ? <BookingConfirmation /> : <Navigate to="/login" />} />
           
           {/* Protected Routes */}
@@ -110,37 +119,5 @@ const Contact = () => {
     </div>
   );
 };
-
-const Footer = () => (
-  <footer className="bg-primary text-white py-12 mt-20">
-    <div className="max-w-7xl mx-auto px-4">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-        <div className="col-span-1 md:col-span-2">
-          <h3 className="text-2xl font-bold mb-4">Apna Rooms</h3>
-          <p className="text-gray-400 max-w-sm">Premium PG management platform for modern students and professionals. Find your perfect home with us.</p>
-        </div>
-        <div>
-          <h4 className="font-bold mb-4">Quick Links</h4>
-          <ul className="space-y-2 text-gray-400">
-            <li><Link to="/" className="hover:text-accent">Home</Link></li>
-            <li><Link to="/pgs" className="hover:text-accent">Browse PGs</Link></li>
-            <li><Link to="/contact" className="hover:text-accent">Contact Us</Link></li>
-          </ul>
-        </div>
-        <div>
-          <h4 className="font-bold mb-4">Support</h4>
-          <ul className="space-y-2 text-gray-400">
-            <li><Link to="/dashboard" className="hover:text-accent">Dashboard</Link></li>
-            <li><Link to="/contact" className="hover:text-accent">Help Center</Link></li>
-            <li><Link to="/pgs" className="hover:text-accent">Locations</Link></li>
-          </ul>
-        </div>
-      </div>
-      <div className="pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
-        <p>© 2026 Apna Rooms. All rights reserved.</p>
-      </div>
-    </div>
-  </footer>
-);
 
 export default App;
