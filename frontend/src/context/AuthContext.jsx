@@ -13,7 +13,9 @@ export const useAuth = () => {
   return context;
 };
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const rawUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+// Remove trailing slash to prevent double slashes in requests
+const BACKEND_URL = rawUrl.replace(/\/+$/, '');
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
