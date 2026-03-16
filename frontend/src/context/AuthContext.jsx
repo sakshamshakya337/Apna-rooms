@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { auth, googleProvider, signInWithPopup } from '../config/firebase';
+import { auth, googleProvider, signInWithPopup } from '../config/firebase.js';
 
 const AuthContext = createContext();
 
