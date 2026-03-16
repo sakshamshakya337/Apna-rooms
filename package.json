@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "install:frontend": "cd frontend && npm install --legacy-peer-deps",
+    "install:frontend": "cd frontend && npm install",
     "install:backend": "cd backend && npm install",
     "install-all": "npm run install:frontend && npm run install:backend",
     "build:frontend": "cd frontend && npm run build",
     "build": "npm run build:frontend",
     "vercel-build": "npm run install-all && npm run build",
-    "render-build": "npm install --legacy-peer-deps && cd backend && npm install",
+    "render-build": "cd backend && npm install",
     "start:backend": "cd backend && npm start",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev"
