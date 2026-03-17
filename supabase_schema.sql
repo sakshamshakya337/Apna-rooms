@@ -288,3 +288,32 @@ VALUES (
     'Apna Rooms Admin', 
     'super_admin'
 ) ON CONFLICT (email) DO NOTHING;
+
+
+-- Create the contact_queries table
+CREATE TABLE contact_queries (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    message TEXT NOT NULL
+);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE contact_queries ENABLE ROW LEVEL SECURITY;
+
+-- Allow anyone to insert (submit) a contact query
+CREATE POLICY "Anyone can insert a contact query" 
+ON contact_queries FOR INSERT 
+TO public 
+WITH CHECK (true);
+
+-- Allow only admins and staff to read contact queries
+CREATE POLICY "Admins can view contact queries" 
+ON contact_queries FOR SELECT 
+USING (
+    auth.uid() IN (
+        SELECT id FROM users 
+        WHERE role IN ('admin', 'super_admin', 'sub_admin')
+    )
+);

@@ -38,9 +38,8 @@ const AdminPanel = ({ section = 'admin' }) => {
   const [users, setUsers] = useState([]);
   const [pgs, setPgs] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [contactQueries, setContactQueries] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Modals
   const [showSubAdminModal, setShowSubAdminModal] = useState(false);
   const [showAddPGModal, setShowAddPGModal] = useState(false);
   const [showEditPGModal, setShowEditPGModal] = useState(false);
@@ -166,6 +165,14 @@ const AdminPanel = ({ section = 'admin' }) => {
           .order('created_at', { ascending: false });
         if (billsError) throw billsError;
         if (billsData) setBillHistory(billsData);
+      }
+
+      if (section === 'queries_admin') {
+        const { data: queriesData } = await supabase
+          .from('contact_queries')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (queriesData) setContactQueries(queriesData);
       }
     } catch (error) {
       console.error('Admin Data Fetch Error:', error);
@@ -414,12 +421,14 @@ const AdminPanel = ({ section = 'admin' }) => {
             {section === 'revenue' && <IndianRupee className="w-8 h-8 mr-3 text-accent" />}
             {section === 'bills_admin' && <Zap className="w-8 h-8 mr-3 text-accent" />}
             {section === 'complaints_admin' && <MessageSquare className="w-8 h-8 mr-3 text-accent" />}
+            {section === 'queries_admin' && <MessageSquare className="w-8 h-8 mr-3 text-accent" />}
             {section === 'team' && <ShieldCheck className="w-8 h-8 mr-3 text-accent" />}
             {section === 'admin' ? 'System Overview' : 
              section === 'pgs' ? 'Property Management' : 
              section === 'revenue' ? 'Revenue & Payments' :
              section === 'bills_admin' ? 'Electricity Management' :
-             section === 'complaints_admin' ? 'Complaint Management' : 'Team Management'}
+             section === 'complaints_admin' ? 'Complaint Management' :
+             section === 'queries_admin' ? 'Contact Queries' : 'Team Management'}
           </h2>
           <p className="text-gray-500">
             {section === 'admin' ? 'Real-time performance metrics and recent activities' : 
@@ -427,6 +436,7 @@ const AdminPanel = ({ section = 'admin' }) => {
              section === 'revenue' ? 'Track all rent payments and transaction history' :
              section === 'bills_admin' ? 'Generate and track electricity bills for rooms' :
              section === 'complaints_admin' ? 'Review and resolve tenant complaints' :
+             section === 'queries_admin' ? 'View and respond to contact messages from users' :
              'Control access levels and manage administrative staff'}
           </p>
         </div>
@@ -790,6 +800,44 @@ const AdminPanel = ({ section = 'admin' }) => {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {section === 'queries_admin' && (
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-100 mb-6">
+            <h3 className="text-xl font-bold">Contact Messages</h3>
+            <p className="text-sm text-gray-500 mt-1">Queries submitted via the Contact Us page</p>
+          </div>
+          <div className="px-6 pb-6">
+            {contactQueries.length === 0 ? (
+              <div className="text-center text-gray-400 py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100">
+                No contact queries received yet.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {contactQueries.map((query) => (
+                  <div key={query.id} className="bg-white border border-gray-100 border-l-4 border-l-accent p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="font-bold text-lg text-primary">{query.name || 'Anonymous User'}</h4>
+                        <a href={`mailto:${query.email}`} className="text-sm text-accent hover:underline flex items-center mt-1">
+                          <MessageSquare className="w-3 h-3 mr-1" /> {query.email}
+                        </a>
+                      </div>
+                      <div className="text-xs text-gray-400 font-medium bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                        {new Date(query.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-xl text-gray-600 text-sm italic border border-gray-100 relative">
+                      <span className="absolute -top-3 left-4 text-3xl text-gray-300 font-serif">"</span>
+                      {query.message}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -85,9 +85,14 @@ const Signup = () => {
 
         {/* Form Side */}
         <div className="w-full md:w-1/2 p-8 md:p-12">
-          <div className="mb-10">
-            <h2 className="text-3xl font-extrabold text-primary">Create Account</h2>
-            <p className="mt-2 text-gray-500">Experience premium living with Apna Rooms</p>
+          <div className="mb-10 text-center md:text-left">
+            <img 
+              src="/logo.png" 
+              alt="Apna Rooms Logo" 
+              className="h-16 w-auto mb-6 mx-auto md:mx-0 object-contain rounded-xl shadow-sm"
+            />
+            <h2 className="text-3xl font-extrabold text-primary tracking-tight">Create Account</h2>
+            <p className="mt-3 text-gray-500 text-lg">Experience premium living with Apna Rooms</p>
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>

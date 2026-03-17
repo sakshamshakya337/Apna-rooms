@@ -21,9 +21,13 @@ const Header = () => {
     <nav className="sticky top-0 z-40 w-full glass-morphism border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="flex items-center space-x-2">
-            <Building2 className="w-8 h-8 text-accent" />
-            <span className="text-2xl font-bold text-primary tracking-tight">Apna Rooms</span>
+          <Link to="/" className="flex items-center space-x-3 group">
+            <img 
+              src="/logo.png" 
+              alt="Apna Rooms Logo" 
+              className="h-10 w-auto object-contain rounded-lg group-hover:scale-105 transition-transform duration-300 shadow-sm"
+            />
+            <span className="text-2xl font-extrabold text-primary tracking-tight group-hover:text-accent transition-colors">Apna Rooms</span>
           </Link>
 
           {/* Desktop Navigation */}

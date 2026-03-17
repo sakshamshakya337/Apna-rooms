@@ -82,6 +82,7 @@ const Dashboard = () => {
     { id: 'revenue', icon: IndianRupee, label: 'Manage Revenue' },
     { id: 'bills_admin', icon: Zap, label: 'Manage Bills' },
     { id: 'complaints_admin', icon: MessageSquare, label: 'Manage Complaints' },
+    { id: 'queries_admin', icon: MessageSquare, label: 'Contact Queries' },
     { id: 'team', icon: ShieldCheck, label: 'Manage Team' },
   ];
 
@@ -184,7 +185,7 @@ const Dashboard = () => {
             {activeTab === 'complaints' && <Complaints booking={booking} userData={userData} />}
             {activeTab === 'payments' && <Payments booking={booking} userData={userData} />}
             {activeTab === 'profile' && <Profile />}
-            {isAdmin && (activeTab === 'admin' || activeTab === 'team' || activeTab === 'pgs' || activeTab === 'bills_admin' || activeTab === 'complaints_admin' || activeTab === 'revenue') && (
+            {isAdmin && (activeTab === 'admin' || activeTab === 'team' || activeTab === 'pgs' || activeTab === 'bills_admin' || activeTab === 'complaints_admin' || activeTab === 'queries_admin' || activeTab === 'revenue') && (
               <AdminPanel section={activeTab} />
             )}
           </motion.div>

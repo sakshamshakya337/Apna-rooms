@@ -74,18 +74,33 @@ const Footer = () => {
         </div>
 
         {/* Payment & Security Trust Badges */}
-        <div className="border-t border-white/5 py-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 text-gray-500 text-xs">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <ShieldCheck className="w-4 h-4 text-green-500" />
-              <span>SSL Secured Connection</span>
+        <div className="border-t border-white/5 py-8 text-gray-500 text-xs">
+          <div className="flex flex-col md:flex-row justify-between items-center text-center md:text-left space-y-4 md:space-y-0">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <ShieldCheck className="w-4 h-4 text-green-500" />
+                <span>SSL Secured Connection</span>
+              </div>
+              {/* <div className="flex items-center space-x-2">
+                <CreditCard className="w-4 h-4 text-blue-500" />
+                <span>Razorpay Verified Merchant</span>
+              </div> */}
             </div>
-            {/* <div className="flex items-center space-x-2">
-              <CreditCard className="w-4 h-4 text-blue-500" />
-              <span>Razorpay Verified Merchant</span>
-            </div> */}
+            <p>© {new Date().getFullYear()} Apna Rooms. All Rights Reserved.</p>
           </div>
-          <p>© {new Date().getFullYear()} Apna Rooms. All Rights Reserved.</p>
+          <div className="text-center mt-6 pt-6 border-t border-white/5">
+            <p>
+              Maintained & Developed by{' '}
+              <a 
+                href="https://sakshamshakya.tech" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="font-bold text-accent hover:underline"
+              >
+                Saksham Shakya
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
