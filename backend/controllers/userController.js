@@ -11,11 +11,16 @@ const signup = async (req, res) => {
 
   try {
     // 1. Check if user already exists in Supabase
-    const { data: existingUser } = await supabase
+    const { data: existingUser, error: existingError } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
-      .single();
+      .maybeSingle();
+
+    if (existingError) {
+      console.error('[Signup] Supabase Check Existing User Error:', existingError);
+      return res.status(500).json({ error: 'Database error checking existing user' });
+    }
 
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists with this email' });
@@ -64,19 +69,26 @@ const login = async (req, res) => {
 
   try {
     // 1. Find user in Supabase
-    const { data: user, error } = await supabase
+    const { data: user, error: userError } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
-      .single();
+      .maybeSingle();
+
+    if (userError) {
+      console.error('[Login] Supabase Fetch User Error:', userError);
+      return res.status(500).json({ error: 'Database error fetching user' });
+    }
 
     if (!user) {
+      console.warn(`[Login] User not found for email: ${email}`);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     // 2. Compare passwords using bcrypt
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.warn(`[Login] Incorrect password for email: ${email}`);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
