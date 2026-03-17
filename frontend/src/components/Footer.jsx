@@ -9,10 +9,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand Column */}
           <div className="space-y-6">
-            <div className="flex items-center space-x-2 group cursor-pointer">
-              <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
-                <Building2 className="text-white w-6 h-6" />
-              </div>
+            <div className="flex items-center space-x-3 group cursor-pointer">
+              <img 
+                src="/logo.png" 
+                alt="Apna Rooms Logo" 
+                className="h-10 w-auto object-contain rounded-lg group-hover:scale-105 transition-transform duration-300 shadow-sm"
+              />
               <span className="text-2xl font-bold tracking-tighter">Apna Rooms</span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed">
