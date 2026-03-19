@@ -7,7 +7,8 @@ const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const signup = async (req, res) => {
-  const { email, password, fullName, role = 'user' } = req.body;
+  const { password, fullName, role = 'user' } = req.body;
+  const email = (req.body.email || '').trim().toLowerCase();
 
   try {
     // 1. Check if user already exists in Supabase
@@ -65,7 +66,8 @@ const signup = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { password } = req.body;
+  const email = (req.body.email || '').trim().toLowerCase();
 
   try {
     // 1. Find user in Supabase
@@ -111,7 +113,8 @@ const login = async (req, res) => {
 };
 
 const googleLogin = async (req, res) => {
-  const { email, fullName, firebase_uid } = req.body;
+  const { fullName, firebase_uid } = req.body;
+  const email = (req.body.email || '').trim().toLowerCase();
 
   try {
     // 1. Check if user already exists
@@ -245,7 +248,7 @@ const changePassword = async (req, res) => {
 };
 
 const forgotPassword = async (req, res) => {
-  const { email } = req.body;
+  const email = (req.body.email || '').trim().toLowerCase();
 
   try {
     console.log(`[Forgot Password] Initiating for email: ${email}`);

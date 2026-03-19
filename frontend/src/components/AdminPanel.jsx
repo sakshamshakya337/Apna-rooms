@@ -57,6 +57,7 @@ const AdminPanel = ({ section = 'admin' }) => {
   const [loadingTenants, setLoadingTenants] = useState(false);
   const [showKYCModal, setShowKYCModal] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
+  const [kycUrls, setKycUrls] = useState({});
   
   // Form States
   const [newPG, setNewPG] = useState({
@@ -406,6 +407,37 @@ const AdminPanel = ({ section = 'admin' }) => {
       toast.success(`Complaint marked as ${status.replace('_', ' ')}`);
       fetchAdminData();
     }
+  };
+
+  const handleViewKYC = async (tenant) => {
+    setSelectedTenant(tenant);
+    setShowKYCModal(true);
+    setKycUrls({}); // Reset previous URLs while loading
+
+    const fetchSignedUrl = async (path) => {
+      if (!path) return null;
+      if (path.startsWith('http')) return path; // Handle legacy full URLs if any
+      try {
+        const { data, error } = await supabase.storage.from('kyc-documents').createSignedUrl(path, 3600);
+        if (error) {
+          console.error('Error fetching signed URL for', path, error);
+          return null;
+        }
+        return data.signedUrl;
+      } catch (err) {
+        console.error('Exception fetching signed URL', err);
+        return null;
+      }
+    };
+
+    const urls = {
+      userPhoto: await fetchSignedUrl(tenant.user_photo_url),
+      universityId: await fetchSignedUrl(tenant.university_id_url),
+      aadharFront: await fetchSignedUrl(tenant.aadhar_front_url),
+      aadharBack: await fetchSignedUrl(tenant.aadhar_back_url),
+    };
+    
+    setKycUrls(urls);
   };
 
   if (loading && !showAddPGModal && !showAddRoomModal) return <div className="flex items-center justify-center h-64"><Clock className="animate-spin w-8 h-8 text-accent" /></div>;
@@ -1317,10 +1349,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                             </td>
                             <td className="px-6 py-4">
                               <button 
-                                onClick={() => {
-                                  setSelectedTenant(tenant);
-                                  setShowKYCModal(true);
-                                }}
+                                onClick={() => handleViewKYC(tenant)}
                                 className="px-4 py-2 bg-accent text-white rounded-xl text-xs font-bold hover:bg-blue-600 transition-all flex items-center space-x-2"
                               >
                                 <FileText className="w-3 h-3" />
@@ -1370,7 +1399,14 @@ const AdminPanel = ({ section = 'admin' }) => {
                   </label>
                   <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
                     {selectedTenant.user_photo_url ? (
-                      <img src={selectedTenant.user_photo_url} alt="Tenant" className="w-full h-full object-cover" />
+                      kycUrls.userPhoto ? (
+                        <img src={kycUrls.userPhoto} alt="Tenant" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                          <Clock className="w-8 h-8 mb-2 animate-spin" />
+                          <span className="text-xs">Loading...</span>
+                        </div>
+                      )
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                         <ImageIcon className="w-8 h-8 mb-2" />
@@ -1387,7 +1423,14 @@ const AdminPanel = ({ section = 'admin' }) => {
                   </label>
                   <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
                     {selectedTenant.university_id_url ? (
-                      <img src={selectedTenant.university_id_url} alt="ID Card" className="w-full h-full object-cover" />
+                      kycUrls.universityId ? (
+                        <img src={kycUrls.universityId} alt="ID Card" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                          <Clock className="w-8 h-8 mb-2 animate-spin" />
+                          <span className="text-xs">Loading...</span>
+                        </div>
+                      )
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                         <FileText className="w-8 h-8 mb-2" />
@@ -1404,7 +1447,14 @@ const AdminPanel = ({ section = 'admin' }) => {
                   </label>
                   <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
                     {selectedTenant.aadhar_front_url ? (
-                      <img src={selectedTenant.aadhar_front_url} alt="Aadhar Front" className="w-full h-full object-cover" />
+                      kycUrls.aadharFront ? (
+                        <img src={kycUrls.aadharFront} alt="Aadhar Front" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                          <Clock className="w-8 h-8 mb-2 animate-spin" />
+                          <span className="text-xs">Loading...</span>
+                        </div>
+                      )
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                         <Shield className="w-8 h-8 mb-2" />
@@ -1421,7 +1471,14 @@ const AdminPanel = ({ section = 'admin' }) => {
                   </label>
                   <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
                     {selectedTenant.aadhar_back_url ? (
-                      <img src={selectedTenant.aadhar_back_url} alt="Aadhar Back" className="w-full h-full object-cover" />
+                      kycUrls.aadharBack ? (
+                        <img src={kycUrls.aadharBack} alt="Aadhar Back" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                          <Clock className="w-8 h-8 mb-2 animate-spin" />
+                          <span className="text-xs">Loading...</span>
+                        </div>
+                      )
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                         <Shield className="w-8 h-8 mb-2" />
