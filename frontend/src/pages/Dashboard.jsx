@@ -14,13 +14,15 @@ import {
   ShieldCheck,
   Building2,
   IndianRupee,
-  Download
+  Download,
+  Wrench
 } from 'lucide-react';
 import ElectricityBill from '../components/ElectricityBill';
 import Complaints from '../components/Complaints';
 import Payments from '../components/Payments';
 import AdminPanel from '../components/AdminPanel';
 import Profile from '../components/Profile';
+import ServiceWorkerDashboard from './ServiceWorkerDashboard';
 import { motion } from 'framer-motion';
 import { generateRentReceiptPDF } from '../utils/pdfUtils';
 import { toast } from 'react-hot-toast';
@@ -57,7 +59,7 @@ const Dashboard = () => {
           rooms:room_id (room_number, total_seats, available_seats)
         `)
         .eq('user_id', currentUser.uid)
-        .eq('status', 'confirmed')
+        .in('status', ['confirmed', 'pending'])
         .maybeSingle();
       
       if (data) setBooking(data);
@@ -78,15 +80,23 @@ const Dashboard = () => {
 
   const adminMenuItems = [
     { id: 'admin', icon: Settings, label: 'Admin Dashboard' },
+    { id: 'users_admin', icon: User, label: 'Users & Tenants' },
     { id: 'pgs', icon: Building2, label: 'Manage PGs' },
     { id: 'revenue', icon: IndianRupee, label: 'Manage Revenue' },
     { id: 'bills_admin', icon: Zap, label: 'Manage Bills' },
     { id: 'complaints_admin', icon: MessageSquare, label: 'Manage Complaints' },
     { id: 'queries_admin', icon: MessageSquare, label: 'Contact Queries' },
+    { id: 'workers_admin', icon: Wrench, label: 'Service Workers' },
     { id: 'team', icon: ShieldCheck, label: 'Manage Team' },
   ];
 
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
+
+  const isWorker = ['plumber', 'electrician', 'wifi', 'service_worker'].includes(userData?.role?.toLowerCase());
+
+  if (isWorker) {
+    return <ServiceWorkerDashboard />;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -142,26 +152,36 @@ const Dashboard = () => {
                         <p><span className="font-medium text-primary">Room Number:</span> {booking.rooms?.room_number}</p>
                         <p><span className="font-medium text-primary">Location:</span> {booking.pgs?.city}</p>
                         <p><span className="font-medium text-primary">Rent:</span> ₹{booking.amount}</p>
-                        <p><span className="font-medium text-primary">Next Payment:</span> April 1, 2026</p>
+                        <p><span className="font-medium text-primary">Status:</span> 
+                          <span className={`ml-2 text-xs px-2 py-1 rounded-full font-bold uppercase tracking-wider ${booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                            {booking.status === 'pending' ? 'Waiting Admin Approval' : 'Confirmed'}
+                          </span>
+                        </p>
                       </div>
                     </div>
-                    <div className="bg-green-50 p-6 rounded-2xl border border-green-100 flex flex-col justify-between">
+                    <div className={`${booking.status === 'pending' ? 'bg-yellow-50 border-yellow-100' : 'bg-green-50 border-green-100'} p-6 rounded-2xl border flex flex-col justify-between`}>
                       <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-bold flex items-center text-green-800">
-                          <Zap className="w-5 h-5 mr-2 text-green-600" />
-                          Payment Status
+                        <h3 className={`text-lg font-bold flex items-center ${booking.status === 'pending' ? 'text-yellow-800' : 'text-green-800'}`}>
+                          <Zap className={`w-5 h-5 mr-2 ${booking.status === 'pending' ? 'text-yellow-600' : 'text-green-600'}`} />
+                          Booking Status
                         </h3>
-                        <button 
-                          onClick={() => generateRentReceiptPDF(booking, userData, booking.pgs)}
-                          className="p-2 bg-white text-green-600 rounded-lg shadow-sm hover:bg-green-100 transition-all border border-green-200"
-                          title="Download Receipt"
-                        >
-                          <Download className="w-5 h-5" />
-                        </button>
+                        {booking.status === 'confirmed' && (
+                          <button 
+                            onClick={() => generateRentReceiptPDF(booking, userData, booking.pgs)}
+                            className="p-2 bg-white text-green-600 rounded-lg shadow-sm hover:bg-green-100 transition-all border border-green-200"
+                            title="Download Receipt"
+                          >
+                            <Download className="w-5 h-5" />
+                          </button>
+                        )}
                       </div>
-                      <div className="space-y-2 text-green-800">
-                        <p>All clear! Your booking is confirmed.</p>
-                        <p className="text-sm opacity-80">Booking Date: {new Date(booking.created_at).toLocaleDateString()}</p>
+                      <div className={`space-y-2 ${booking.status === 'pending' ? 'text-yellow-800' : 'text-green-800'}`}>
+                        <p>
+                          {booking.status === 'pending' 
+                            ? 'Your offline payment is pending verification by the admin.'
+                            : 'All clear! Your booking is confirmed.'}
+                        </p>
+                        <p className="text-sm opacity-80">Date: {new Date(booking.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
                   </div>
@@ -185,7 +205,7 @@ const Dashboard = () => {
             {activeTab === 'complaints' && <Complaints booking={booking} userData={userData} />}
             {activeTab === 'payments' && <Payments booking={booking} userData={userData} />}
             {activeTab === 'profile' && <Profile />}
-            {isAdmin && (activeTab === 'admin' || activeTab === 'team' || activeTab === 'pgs' || activeTab === 'bills_admin' || activeTab === 'complaints_admin' || activeTab === 'queries_admin' || activeTab === 'revenue') && (
+            {isAdmin && (activeTab === 'admin' || activeTab === 'team' || activeTab === 'pgs' || activeTab === 'bills_admin' || activeTab === 'complaints_admin' || activeTab === 'queries_admin' || activeTab === 'revenue' || activeTab === 'users_admin' || activeTab === 'workers_admin') && (
               <AdminPanel section={activeTab} />
             )}
           </motion.div>

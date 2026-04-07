@@ -13,7 +13,7 @@ const PGDetail = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState(null);
-  const [bookingType, setBookingType] = useState('single'); // 'single' or 'complete'
+  const [bookingType, setBookingType] = useState('complete'); // 'complete'
   const [paymentPlan, setPaymentPlan] = useState('full'); // 'full' or 'half'
   const [contractDuration, setContractDuration] = useState(1); // 1, 6, 12 months
 
@@ -56,7 +56,7 @@ const PGDetail = () => {
     if (!selectedRoom) return { rent: 0, deposit: 0, total: 0, payableNow: 0 };
     
     const basePrice = Number(selectedRoom.price_per_seat);
-    const rent = bookingType === 'single' ? basePrice : (basePrice * Number(selectedRoom.total_seats));
+    const rent = basePrice * Number(selectedRoom.total_seats);
     const deposit = Number(pg?.security_deposit ?? 2000);
     const bookingAmount = paymentPlan === 'half' ? (rent / 2) : rent;
     
@@ -81,7 +81,7 @@ const PGDetail = () => {
     }
 
     // Razorpay Integration Logic will go here
-    navigate(`/booking-confirmation/${id}?room=${selectedRoom.id}&type=${bookingType}&plan=${paymentPlan}&duration=${contractDuration}`);
+    navigate(`/booking-confirmation/${id}?room=${selectedRoom.id}&type=complete&plan=${paymentPlan}&duration=${contractDuration}`);
   };
 
   if (loading) return <div className="p-12 text-center text-xl">Loading details...</div>;
@@ -168,11 +168,11 @@ const PGDetail = () => {
                         <span>Room {room.room_number}</span>
                         <span className="text-accent flex items-center">
                           <IndianRupee className="w-4 h-4" />
-                          {room.price_per_seat}/seat
+                          {room.price_per_seat * room.total_seats}/room
                         </span>
                       </div>
                       <div className="text-sm text-gray-500 mt-1">
-                        {room.available_seats} seats available of {room.total_seats}
+                        {room.available_seats === 0 ? 'Fully Booked' : 'Available for Booking'}
                       </div>
                       {room.amenities && room.amenities.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -189,30 +189,6 @@ const PGDetail = () => {
 
             {selectedRoom && (
               <div className="space-y-4 pt-4 border-t">
-                <label className="block font-medium text-gray-700">Booking Type</label>
-                <div className="flex space-x-4">
-                  <button 
-                    onClick={() => setBookingType('single')}
-                    disabled={selectedRoom.available_seats <= 0}
-                    className={`flex-1 py-3 rounded-xl border-2 font-medium transition-all ${
-                      bookingType === 'single' ? 'bg-primary text-white border-primary' : 'border-gray-100 hover:border-primary/30'
-                    } disabled:opacity-30`}
-                  >
-                    Single Seat
-                  </button>
-                  <button 
-                    onClick={() => setBookingType('complete')}
-                    disabled={selectedRoom.available_seats < selectedRoom.total_seats}
-                    className={`flex-1 py-3 rounded-xl border-2 font-medium transition-all ${
-                      bookingType === 'complete' ? 'bg-primary text-white border-primary' : 'border-gray-100 hover:border-primary/30'
-                    } disabled:opacity-30`}
-                  >
-                    Complete Room
-                  </button>
-                </div>
-                {selectedRoom.available_seats < selectedRoom.total_seats && selectedRoom.available_seats > 0 && (
-                  <p className="text-xs text-yellow-600 font-medium">Complete room booking is only available for empty rooms.</p>
-                )}
 
                 <label className="block font-medium text-gray-700 pt-4">Payment Plan</label>
                 <div className="flex space-x-4">

@@ -23,6 +23,7 @@ const BookingConfirmation = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [offlinePending, setOfflinePending] = useState(false);
   const [bookingId, setBookingId] = useState(null);
   const [files, setFiles] = useState({
     userPhoto: null,
@@ -52,7 +53,7 @@ const BookingConfirmation = () => {
     if (!room || !pg) return { rent: 0, deposit: 0, total: 0, payableNow: 0 };
     
     const basePrice = Number(room.price_per_seat);
-    const rent = bookingType === 'single' ? basePrice : (basePrice * Number(room.total_seats));
+    const rent = basePrice * Number(room.total_seats);
     const deposit = Number(pg?.security_deposit ?? 2000);
     const bookingAmount = paymentPlan === 'half' ? (rent / 2) : rent;
     
@@ -136,6 +137,37 @@ const BookingConfirmation = () => {
     }
   };
 
+  const handleOfflinePayment = async () => {
+    setProcessing(true);
+    try {
+      const { data: newBooking, error: bookingError } = await supabase
+        .from('bookings')
+        .insert([{
+          user_id: currentUser.uid,
+          pg_id: pg.id,
+          room_id: room.id,
+          amount: pricing.total, // Total actual booking value
+          paid_amount: 0, // No online payment collected
+          type: bookingType,
+          payment_plan: paymentPlan,
+          contract_months: contractDuration,
+          status: 'pending' // Explicit offline pending status
+        }])
+        .select()
+        .single();
+      
+      if (bookingError) throw bookingError;
+      setBookingId(newBooking.id);
+      setPaymentSuccess(true);
+      setOfflinePending(true);
+      toast.success('Offline booking registered. Pending Admin Approval.');
+    } catch (error) {
+      toast.error('Failed to initiate offline booking');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleFileUpload = (e, type) => {
     setFiles({ ...files, [type]: e.target.files[0] });
   };
@@ -181,12 +213,12 @@ const BookingConfirmation = () => {
       const results = await Promise.all(uploadTasks);
       const updateData = Object.assign({}, ...results);
       
-      // Update booking with document paths
+      // Update booking with document paths - maintain pending if offline
       const { error: updateError } = await supabase
         .from('bookings')
         .update({
           ...updateData,
-          status: 'confirmed'
+          status: offlinePending ? 'pending' : 'confirmed'
         })
         .eq('id', bookingId);
 
@@ -240,8 +272,8 @@ const BookingConfirmation = () => {
               <div className="flex justify-between text-gray-600">
                 <span>Rent ({paymentPlan === 'half' ? '50% Booking' : 'Full'})</span>
                 <span>₹{paymentPlan === 'half' 
-                  ? (bookingType === 'single' ? room.price_per_seat / 2 : (room.price_per_seat * room.total_seats) / 2)
-                  : (bookingType === 'single' ? room.price_per_seat : room.price_per_seat * room.total_seats)}</span>
+                  ? (room.price_per_seat * room.total_seats) / 2
+                  : room.price_per_seat * room.total_seats}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Security Deposit</span>
@@ -250,8 +282,8 @@ const BookingConfirmation = () => {
               <div className="flex justify-between font-bold text-xl pt-4 border-t text-accent">
                 <span>Payable Now</span>
                 <span>₹{(paymentPlan === 'half' 
-                  ? (bookingType === 'single' ? room.price_per_seat / 2 : (room.price_per_seat * room.total_seats) / 2)
-                  : (bookingType === 'single' ? room.price_per_seat : room.price_per_seat * room.total_seats)) + (pg.security_deposit || 2000)}</span>
+                  ? (room.price_per_seat * room.total_seats) / 2
+                  : room.price_per_seat * room.total_seats) + (pg.security_deposit || 2000)}</span>
               </div>
               {paymentPlan === 'half' && (
                 <p className="text-[10px] text-gray-400 mt-2 italic">Remaining 50% rent will be collected at check-in.</p>
@@ -260,23 +292,45 @@ const BookingConfirmation = () => {
           </div>
 
           {!paymentSuccess ? (
-            <button
-              onClick={handlePayment}
-              disabled={processing}
-              className="w-full bg-accent text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-600 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
-            >
-              {processing ? <Loader2 className="animate-spin" /> : <Shield className="w-5 h-5" />}
-              <span>{processing ? 'Processing...' : 'Pay with Razorpay'}</span>
-            </button>
+            <div className="space-y-4">
+              <button
+                onClick={handlePayment}
+                disabled={processing}
+                className="w-full bg-accent text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-600 transition-all flex items-center justify-center space-x-2 shadow-lg disabled:opacity-50"
+              >
+                {processing ? <Loader2 className="animate-spin" /> : <Shield className="w-5 h-5" />}
+                <span>{processing ? 'Processing...' : 'Pay with Razorpay'}</span>
+              </button>
+              
+              <div className="relative flex py-3 items-center">
+                  <div className="flex-grow border-t border-gray-200"></div>
+                  <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">OR</span>
+                  <div className="flex-grow border-t border-gray-200"></div>
+              </div>
+
+              <button
+                onClick={handleOfflinePayment}
+                disabled={processing}
+                className="w-full bg-white text-gray-700 border-2 border-gray-200 py-4 rounded-2xl font-bold text-lg hover:border-gray-800 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+              >
+                {processing ? <Loader2 className="animate-spin" /> : null}
+                <span>{processing ? 'Processing...' : 'Pay Offline at PG'}</span>
+              </button>
+              <p className="text-center text-xs text-gray-400 font-medium">Select offline payment to block the room subject to admin approval.</p>
+            </div>
           ) : (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-              <div className="bg-green-50 border border-green-200 p-6 rounded-2xl flex items-center space-x-4">
-                <div className="bg-green-500 p-2 rounded-full text-white">
+              <div className={`p-6 rounded-2xl flex items-center space-x-4 border ${offlinePending ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'}`}>
+                <div className={`p-2 rounded-full text-white ${offlinePending ? 'bg-yellow-500' : 'bg-green-500'}`}>
                   <CheckCircle className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-green-800">Payment Successful!</h4>
-                  <p className="text-green-600 text-sm">Please upload your documents to finalize the booking for police verification.</p>
+                  <h4 className={`font-bold ${offlinePending ? 'text-yellow-800' : 'text-green-800'}`}>
+                    {offlinePending ? 'Offline Booking Registered!' : 'Payment Successful!'}
+                  </h4>
+                  <p className={`text-sm ${offlinePending ? 'text-yellow-600' : 'text-green-600'}`}>
+                    Please upload your documents to finalize the booking for verification.
+                  </p>
                 </div>
               </div>
 

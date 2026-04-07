@@ -20,7 +20,10 @@ import {
   Filter,
   FileText,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Wrench,
+  Droplets,
+  Wifi
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,11 +39,13 @@ const AdminPanel = ({ section = 'admin' }) => {
   });
   const [complaints, setComplaints] = useState([]);
   const [users, setUsers] = useState([]);
+  const [workers, setWorkers] = useState([]);
   const [pgs, setPgs] = useState([]);
   const [payments, setPayments] = useState([]);
   const [contactQueries, setContactQueries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showSubAdminModal, setShowSubAdminModal] = useState(false);
+  const [showAddWorkerModal, setShowAddWorkerModal] = useState(false);
   const [showAddPGModal, setShowAddPGModal] = useState(false);
   const [showEditPGModal, setShowEditPGModal] = useState(false);
   const [editingPG, setEditingPG] = useState(null);
@@ -128,7 +133,7 @@ const AdminPanel = ({ section = 'admin' }) => {
 
         const { data: complaintsData } = await supabase
           .from('complaints')
-          .select(`*, pgs:pg_id (name), users:user_id (full_name)`)
+          .select(`*, pgs:pg_id (name), users:user_id (full_name), rooms:room_id (room_number)`)
           .order('created_at', { ascending: false })
           .limit(5);
         if (complaintsData) setComplaints(complaintsData);
@@ -146,17 +151,40 @@ const AdminPanel = ({ section = 'admin' }) => {
         const { data: usersData } = await supabase
           .from('users')
           .select('*')
-          .in('role', ['admin', 'sub_admin', 'super_admin'])
+          .in('role', ['admin', 'super_admin'])
           .order('role', { ascending: false });
         if (usersData) setUsers(usersData);
+      }
+
+      if (section === 'workers_admin') {
+        const { data: workersData } = await supabase
+          .from('users')
+          .select('*')
+          .in('role', ['plumber', 'electrician', 'wifi', 'service_worker'])
+          .order('role', { ascending: false });
+        if (workersData) setWorkers(workersData);
       }
 
       if (section === 'complaints_admin') {
         const { data: complaintsData } = await supabase
           .from('complaints')
-          .select(`*, pgs:pg_id (name), users:user_id (full_name)`)
+          .select(`*, pgs:pg_id (name), users:user_id (full_name), rooms:room_id (room_number)`)
           .order('created_at', { ascending: false });
         if (complaintsData) setComplaints(complaintsData);
+      }
+
+      if (section === 'users_admin') {
+        const { data: usersData, error } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            users (id, full_name, email, phone_number, address, city, state),
+            rooms (room_number),
+            pgs (name)
+          `)
+          .in('status', ['confirmed', 'pending'])
+          .order('created_at', { ascending: false });
+        if (!error && usersData) setTenants(usersData);
       }
 
       if (section === 'bills_admin') {
@@ -180,6 +208,22 @@ const AdminPanel = ({ section = 'admin' }) => {
       toast.error('Failed to fetch data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApprovePayment = async (bookingId) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'confirmed' })
+        .eq('id', bookingId);
+      
+      if (error) throw error;
+      toast.success('Payment approved and booking confirmed!');
+      fetchAdminData(section);
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to approve payment');
     }
   };
 
@@ -449,6 +493,7 @@ const AdminPanel = ({ section = 'admin' }) => {
         <div>
           <h2 className="text-3xl font-bold mb-2 flex items-center">
             {section === 'admin' && <LayoutDashboard className="w-8 h-8 mr-3 text-accent" />}
+            {section === 'users_admin' && <Users className="w-8 h-8 mr-3 text-accent" />}
             {section === 'pgs' && <Building2 className="w-8 h-8 mr-3 text-accent" />}
             {section === 'revenue' && <IndianRupee className="w-8 h-8 mr-3 text-accent" />}
             {section === 'bills_admin' && <Zap className="w-8 h-8 mr-3 text-accent" />}
@@ -456,6 +501,7 @@ const AdminPanel = ({ section = 'admin' }) => {
             {section === 'queries_admin' && <MessageSquare className="w-8 h-8 mr-3 text-accent" />}
             {section === 'team' && <ShieldCheck className="w-8 h-8 mr-3 text-accent" />}
             {section === 'admin' ? 'System Overview' : 
+             section === 'users_admin' ? 'Tenant Management' :
              section === 'pgs' ? 'Property Management' : 
              section === 'revenue' ? 'Revenue & Payments' :
              section === 'bills_admin' ? 'Electricity Management' :
@@ -465,6 +511,7 @@ const AdminPanel = ({ section = 'admin' }) => {
           <p className="text-gray-500">
             {section === 'admin' ? 'Real-time performance metrics and recent activities' : 
              section === 'pgs' ? 'Manage your PG inventory and room configurations' : 
+             section === 'users_admin' ? 'Manage tenants and verify KYC documents' :
              section === 'revenue' ? 'Track all rent payments and transaction history' :
              section === 'bills_admin' ? 'Generate and track electricity bills for rooms' :
              section === 'complaints_admin' ? 'Review and resolve tenant complaints' :
@@ -540,7 +587,9 @@ const AdminPanel = ({ section = 'admin' }) => {
                   {complaints.map((item) => (
                     <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="font-bold text-primary">{item.users?.full_name}</div>
+                        <div className="font-bold text-primary">
+                          {item.rooms?.room_number ? `Room ${item.rooms.room_number}` : 'No Room'} - {item.users?.full_name}
+                        </div>
                         <div className="text-xs text-gray-400">{item.pgs?.name}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{item.category}</td>
@@ -639,6 +688,84 @@ const AdminPanel = ({ section = 'admin' }) => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {section === 'users_admin' && (
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 className="text-xl font-bold">All Registered Tenants</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 text-gray-400 text-xs uppercase tracking-wider font-bold">
+                <tr>
+                  <th className="px-6 py-4">Room & Property</th>
+                  <th className="px-6 py-4">Tenant Name</th>
+                  <th className="px-6 py-4">Contact</th>
+                  <th className="px-6 py-4">KYC Status</th>
+                  <th className="px-6 py-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {tenants.map(tenant => (
+                  <tr key={tenant.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-primary flex items-center">
+                        Room {tenant.rooms?.room_number || 'N/A'}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">{tenant.pgs?.name || 'N/A'}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-bold">{tenant.users?.full_name}</div>
+                      <div className="text-xs text-gray-400">{tenant.users?.email}</div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {tenant.users?.phone_number || 'N/A'} <br />
+                      <span className="text-xs text-gray-400">{tenant.users?.city}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {tenant.status === 'pending' && (
+                        <div className="mb-2">
+                          <span className="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-red-100 text-red-800 border border-red-200">
+                            Offline Payment Unverified
+                          </span>
+                        </div>
+                      )}
+                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full ${
+                        tenant.is_kyc_verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {tenant.is_kyc_verified ? 'Verified' : 'Pending KYC'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 flex flex-col space-y-2">
+                      {tenant.status === 'pending' && (
+                        <button 
+                          onClick={() => handleApprovePayment(tenant.id)}
+                          className="text-white font-bold text-xs bg-green-500 px-4 py-2 rounded-lg hover:bg-green-600 transition-colors shadow-sm"
+                        >
+                          Approve Payment
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleViewKYC(tenant)}
+                        className="text-accent hover:underline font-bold text-xs bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors"
+                      >
+                        Review Docs
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {tenants.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="text-center py-12 text-gray-500 font-medium border-2 border-dashed border-gray-100">
+                      No active tenants found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -932,6 +1059,12 @@ const AdminPanel = ({ section = 'admin' }) => {
 
       {section === 'team' && (
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 className="text-xl font-bold">Team Management</h3>
+            <button onClick={() => setShowSubAdminModal(true)} className="flex items-center text-sm font-bold bg-[#f1ebff] text-[#4a4bd7] px-4 py-2 rounded-xl hover:bg-[#e6deff] transition-colors">
+              <UserPlus className="w-4 h-4 mr-2" /> Add Member
+            </button>
+          </div>
           <table className="w-full text-left">
             <thead className="bg-gray-50 text-gray-400 text-xs uppercase tracking-wider font-bold">
               <tr>
@@ -957,13 +1090,53 @@ const AdminPanel = ({ section = 'admin' }) => {
                   <td className="px-6 py-4 text-sm text-gray-500">{new Date(user.created_at).toLocaleDateString()}</td>
                   <td className="px-6 py-4">
                     {isSuperAdmin && user.role !== 'super_admin' && (
-                      <button className="text-red-500 hover:underline text-sm font-bold">Remove</button>
+                      <button onClick={() => handlePromoteUser(user.id, 'user')} className="text-red-500 hover:underline text-sm font-bold">Remove</button>
                     )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {section === 'workers_admin' && (
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 className="text-xl font-bold flex items-center">
+              <Wrench className="w-6 h-6 mr-3 text-accent" />
+              Service Workers
+            </h3>
+            <button onClick={() => setShowAddWorkerModal(true)} className="flex items-center text-sm font-bold bg-[#f1ebff] text-[#4a4bd7] px-4 py-2 rounded-xl hover:bg-[#e6deff] transition-colors">
+              <UserPlus className="w-4 h-4 mr-2" /> Add Worker
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 bg-gray-50/50">
+            {workers.length === 0 ? (
+               <div className="col-span-full py-10 text-center text-gray-400">No service workers assigned yet. Click "Add Worker" to assign roles to users.</div>
+            ) : workers.map((worker) => (
+              <div key={worker.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center text-accent mb-4 relative">
+                   {worker.role === 'plumber' && <Droplets className="w-8 h-8" />}
+                   {worker.role === 'electrician' && <Zap className="w-8 h-8" />}
+                   {worker.role === 'wifi' && <Wifi className="w-8 h-8" />}
+                   {worker.role === 'service_worker' && <Wrench className="w-8 h-8" />}
+                </div>
+                <h4 className="font-bold text-lg text-primary text-center">{worker.full_name}</h4>
+                <p className="text-xs text-gray-400 mb-3 text-center">{worker.email}</p>
+                <div className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-4 ${
+                  worker.role === 'plumber' ? 'bg-blue-100 text-blue-700' :
+                  worker.role === 'electrician' ? 'bg-yellow-100 text-yellow-700' :
+                  worker.role === 'wifi' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {worker.role}
+                </div>
+                <button onClick={() => handlePromoteUser(worker.id, 'user')} className="mt-auto text-xs text-red-500 font-bold hover:underline transition-all">
+                  Revoke Role
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -1245,8 +1418,40 @@ const AdminPanel = ({ section = 'admin' }) => {
                     <div key={u.id} className="p-3 bg-gray-50 rounded-xl flex justify-between items-center">
                       <div className="text-sm font-bold">{u.email}</div>
                       <div className="flex space-x-1">
-                        <button onClick={() => handlePromoteUser(u.id, 'admin')} className="p-2 bg-purple-100 text-purple-600 rounded-lg"><Shield className="w-4 h-4" /></button>
-                        <button onClick={() => handlePromoteUser(u.id, 'sub_admin')} className="p-2 bg-blue-100 text-blue-600 rounded-lg"><ShieldCheck className="w-4 h-4" /></button>
+                        <button onClick={() => handlePromoteUser(u.id, 'admin')} className="p-2 bg-purple-100 text-purple-600 rounded-lg" title="Admin"><Shield className="w-4 h-4" /></button>
+                        <button onClick={() => handlePromoteUser(u.id, 'sub_admin')} className="p-2 bg-blue-100 text-blue-600 rounded-lg" title="Sub Admin"><ShieldCheck className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {showAddWorkerModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold">Assign Worker Category</h3>
+                <button onClick={() => {setShowAddWorkerModal(false); setSearchResults([]); setSearchEmail('');}} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
+              </div>
+              <div className="space-y-4">
+                <div className="flex space-x-2">
+                  <input placeholder="Search Email..." className="flex-grow px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={searchEmail} onChange={e => setSearchEmail(e.target.value)} />
+                  <button onClick={handleSearchUser} className="bg-accent text-white px-6 rounded-xl font-bold">Find</button>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {searchResults.map(u => (
+                    <div key={u.id} className="p-4 bg-gray-50 rounded-xl flex flex-col space-y-3">
+                      <div className="text-sm font-bold flex flex-col">
+                        <span className="text-[#342d55]">{u.full_name}</span>
+                        <span className="text-gray-400 text-[10px]">{u.email}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => handlePromoteUser(u.id, 'plumber')} className="flex items-center text-xs px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-bold"><Droplets className="w-3 h-3 mr-1" /> Plumber</button>
+                        <button onClick={() => handlePromoteUser(u.id, 'electrician')} className="flex items-center text-xs px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors font-bold"><Zap className="w-3 h-3 mr-1" /> Electrician</button>
+                        <button onClick={() => handlePromoteUser(u.id, 'wifi')} className="flex items-center text-xs px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors font-bold"><Wifi className="w-3 h-3 mr-1" /> Wifi</button>
                       </div>
                     </div>
                   ))}

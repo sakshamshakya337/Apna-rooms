@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { UserPlus, Mail, Lock, User, Chrome } from 'lucide-react';
+import { UserPlus, Chrome } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Signup = () => {
@@ -46,150 +46,165 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4 py-12">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row"
-      >
-        {/* Illustration Side */}
-        <div className="hidden md:flex md:w-1/2 bg-primary p-12 flex-col justify-center text-white relative">
-          <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-            <img 
-              src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80" 
-              alt="Background" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="relative z-10">
-            <h2 className="text-4xl font-bold mb-6 text-accent">Join Our Community</h2>
-            <p className="text-lg text-gray-300 mb-8">
-              "Start your journey with Apna Rooms. Access the best PG options and manage your stay professionally."
-            </p>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3 text-sm text-gray-400">
-                <div className="w-2 h-2 bg-accent rounded-full"></div>
-                <span>Easy Maintenance Tracking</span>
-              </div>
-              <div className="flex items-center space-x-3 text-sm text-gray-400">
-                <div className="w-2 h-2 bg-accent rounded-full"></div>
-                <span>Secure Digital Payments</span>
-              </div>
-              <div className="flex items-center space-x-3 text-sm text-gray-400">
-                <div className="w-2 h-2 bg-accent rounded-full"></div>
-                <span>Electricity Bill History</span>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#fdf8ff] font-['Manrope'] text-[#342d55] flex flex-col-reverse md:flex-row relative overflow-hidden">
+      
+      {/* Abstract Background for general page context */}
+      <div className="absolute top-[-10%] left-[-5%] w-[800px] h-[800px] bg-[#ece4ff] rounded-full blur-[120px] opacity-30 pointer-events-none"></div>
 
-        {/* Form Side */}
-        <div className="w-full md:w-1/2 p-8 md:p-12">
-          <div className="mb-10 text-center md:text-left">
-            <img 
-              src="/logo.png" 
-              alt="Apna Rooms Logo" 
-              className="h-16 w-auto mb-6 mx-auto md:mx-0 object-contain rounded-xl shadow-sm"
-            />
-            <h2 className="text-3xl font-extrabold text-primary tracking-tight">Create Account</h2>
-            <p className="mt-3 text-gray-500 text-lg">Experience premium living with Apna Rooms</p>
+      {/* Form Section (Left on Desktop, Bottom on Mobile due to reverse) */}
+      <div className="flex-1 p-6 md:p-12 lg:p-20 flex items-center justify-center relative z-10 w-full">
+        <div className="w-full max-w-lg">
+          <div className="mb-10 lg:mb-12 text-center md:text-left">
+            <h2 className="text-4xl lg:text-5xl font-extrabold font-['Plus_Jakarta_Sans'] text-[#0f0b20] mb-3">Create Account</h2>
+            <p className="text-[#615985] text-lg font-medium">Experience premium living with Apna Rooms</p>
           </div>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  name="fullName"
-                  type="text"
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:bg-white transition-all"
-                  placeholder="Full Name"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:bg-white transition-all"
-                  placeholder="Email Address"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  name="password"
-                  type="password"
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:bg-white transition-all"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:bg-white transition-all"
-                  placeholder="Confirm Password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                />
+              <div className="bg-[#ffffff]/80 backdrop-blur-2xl p-6 rounded-[2.5rem] border border-[#ffffff] shadow-[0_20px_40px_rgba(52,45,85,0.03)] space-y-4">
+                
+                <div>
+                   <label className="text-xs font-bold uppercase tracking-widest text-[#a099b4] ml-4 mb-2 block">Full Legal Name</label>
+                  <input
+                    name="fullName"
+                    type="text"
+                    required
+                    placeholder="Priya Sharma"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    className="w-full bg-[#f7f1ff] border-none rounded-full py-4 px-6 text-[#342d55] placeholder:text-[#b5acdc] focus:ring-0 focus:bg-[#ffffff] shadow-inner transition-colors text-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-[#a099b4] ml-4 mb-2 block">Email Identity</label>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="student@university.edu"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full bg-[#f7f1ff] border-none rounded-full py-4 px-6 text-[#342d55] placeholder:text-[#b5acdc] focus:ring-0 focus:bg-[#ffffff] shadow-inner transition-colors text-lg"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div>
+                      <label className="text-xs font-bold uppercase tracking-widest text-[#a099b4] ml-4 mb-2 block">Secure Password</label>
+                      <input
+                        name="password"
+                        type="password"
+                        required
+                        placeholder="••••••••"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="w-full bg-[#f7f1ff] border-none rounded-full py-4 px-6 text-[#342d55] placeholder:text-[#b5acdc] focus:ring-0 focus:bg-[#ffffff] shadow-inner transition-colors text-lg"
+                      />
+                   </div>
+                   <div>
+                      <label className="text-xs font-bold uppercase tracking-widest text-[#a099b4] ml-4 mb-2 block">Confirm Phrase</label>
+                      <input
+                        name="confirmPassword"
+                        type="password"
+                        required
+                        placeholder="••••••••"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className="w-full bg-[#f7f1ff] border-none rounded-full py-4 px-6 text-[#342d55] placeholder:text-[#b5acdc] focus:ring-0 focus:bg-[#ffffff] shadow-inner transition-colors text-lg"
+                      />
+                   </div>
+                </div>
+
               </div>
             </div>
 
-            <p className="text-xs text-gray-500 mt-4">
-              By signing up, you agree to our <a href="#" className="text-accent hover:underline">Terms of Service</a> and <a href="#" className="text-accent hover:underline">Privacy Policy</a>.
+            <p className="text-sm text-[#a099b4] font-medium px-4 text-center md:text-left">
+              By initiating creation, you agree to our <a href="#" className="text-[#4a4bd7] font-bold hover:text-[#842cd3]">Terms of Service</a> & <a href="#" className="text-[#4a4bd7] font-bold hover:text-[#842cd3]">Privacy Policy</a>.
             </p>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-primary text-white rounded-xl font-bold text-lg hover:bg-gray-800 transition-all shadow-lg shadow-gray-200 flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full py-5 mt-4 bg-gradient-to-r from-[#4a4bd7] to-[#842cd3] text-white rounded-full font-bold text-xl shadow-[0_15px_30px_rgba(74,75,215,0.25)] hover:shadow-[0_20px_40px_rgba(74,75,215,0.4)] hover:-translate-y-1 transition-all flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating Account...' : (
+              {loading ? 'Initializing...' : (
                 <>
-                  <UserPlus className="w-5 h-5" />
                   <span>Create Account</span>
+                  <UserPlus className="w-5 h-5" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="relative my-8">
+          <div className="mt-10 mb-8 relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
+              <div className="w-full border-t border-[#e6deff]"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500 uppercase tracking-widest font-medium">Or join with</span>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-4 bg-[#fdf8ff] text-[#a099b4] font-bold tracking-widest uppercase">Or connect via</span>
             </div>
           </div>
 
           <button
             onClick={handleGoogleLogin}
-            className="w-full py-4 border-2 border-gray-100 rounded-xl font-bold flex items-center justify-center space-x-3 hover:bg-gray-50 transition-all group"
+            className="w-full py-5 bg-[#ffffff] border border-[#ece4ff] rounded-full font-bold text-[#342d55] flex items-center justify-center space-x-3 hover:bg-[#f7f1ff] shadow-[0_10px_20px_rgba(52,45,85,0.03)] hover:-translate-y-0.5 transition-all text-lg"
           >
-            <Chrome className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
-            <span>Google Account</span>
+            <Chrome className="w-6 h-6 text-[#4a4bd7]" />
+            <span>Google SSO</span>
           </button>
 
-          <p className="mt-10 text-center text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="text-accent font-bold hover:underline">
-              Sign In
+          <div className="mt-10 text-center text-[#615985] font-medium text-lg">
+            Already verified?{' '}
+            <Link to="/login" className="text-[#4a4bd7] font-bold hover:text-[#842cd3] transition-colors">
+              Access Portal
             </Link>
-          </p>
+          </div>
         </div>
-      </motion.div>
+      </div>
+
+       {/* Visual Header / Welcome Section (Top on mobile, Right on Desktop) */}
+       <div className="md:w-[45%] lg:w-[50%] p-6 md:p-12 lg:p-20 flex flex-col justify-center relative">
+        {/* The Signature Gradient Background for this half */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#4a4bd7] to-[#842cd3] overflow-hidden">
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80')] opacity-10 mix-blend-overlay object-cover w-full h-full scale-110"></div>
+          <div className="absolute bottom-[10%] left-[10%] w-[400px] h-[400px] bg-[#61c2ff] rounded-full blur-[100px] opacity-30 mix-blend-screen"></div>
+        </div>
+        
+        <div className="relative z-10 w-full max-w-lg mx-auto">
+          {/* Glassmorphic Brand Card */}
+          <div className="bg-[#ffffff]/10 backdrop-blur-3xl p-10 lg:p-14 rounded-[3rem] border border-[#ffffff]/20 shadow-[0_40px_80px_rgba(34,30,181,0.2)]">
+            <h1 className="text-4xl lg:text-5xl font-['Plus_Jakarta_Sans'] font-extrabold text-[#ffffff] mb-4 tracking-tight leading-tight">
+              Join the Network
+            </h1>
+            <p className="text-[#e6deff] text-xl font-medium leading-relaxed mb-10">
+              Start your journey with Apna Rooms. Elevate your living standards.
+            </p>
+            
+            <div className="space-y-6">
+              <div className="flex items-center space-x-4 bg-[#ffffff]/10 rounded-2xl p-4 border border-[#ffffff]/10">
+                 <div className="w-10 h-10 bg-[#ffffff]/20 rounded-full flex items-center justify-center shrink-0">
+                   <div className="w-2.5 h-2.5 bg-[#f0dbff] rounded-full"></div>
+                 </div>
+                 <span className="text-[#fbf7ff] font-medium text-lg tracking-wide">Premium Accommodations</span>
+              </div>
+              <div className="flex items-center space-x-4 bg-[#ffffff]/10 rounded-2xl p-4 border border-[#ffffff]/10">
+                 <div className="w-10 h-10 bg-[#ffffff]/20 rounded-full flex items-center justify-center shrink-0">
+                   <div className="w-2.5 h-2.5 bg-[#f0dbff] rounded-full"></div>
+                 </div>
+                 <span className="text-[#fbf7ff] font-medium text-lg tracking-wide">Automated Issue Tracking</span>
+              </div>
+               <div className="flex items-center space-x-4 bg-[#ffffff]/10 rounded-2xl p-4 border border-[#ffffff]/10">
+                 <div className="w-10 h-10 bg-[#ffffff]/20 rounded-full flex items-center justify-center shrink-0">
+                   <div className="w-2.5 h-2.5 bg-[#f0dbff] rounded-full"></div>
+                 </div>
+                 <span className="text-[#fbf7ff] font-medium text-lg tracking-wide">Secure Global Payments</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 };
