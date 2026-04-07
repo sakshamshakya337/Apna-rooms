@@ -176,18 +176,27 @@ const ElectricityBill = ({ booking, userData }) => {
               <p className="text-gray-500 text-sm">Please pay your bill for {displayBill.billing_month}</p>
             </div>
           </div>
-          <div className="flex space-x-3 w-full md:w-auto">
+          <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 space-x-0 md:space-x-3 w-full md:w-auto">
             <button 
               onClick={() => generateElectricityBillPDF(displayBill, userData, pg)}
-              className="flex-1 md:flex-none px-6 py-4 bg-gray-50 text-accent font-bold rounded-xl flex items-center justify-center space-x-2 hover:bg-gray-100 transition-all"
+              className="flex-1 md:flex-none px-6 py-4 bg-gray-50 text-accent font-bold rounded-xl flex items-center justify-center space-x-2 hover:bg-gray-100 transition-all text-sm"
             >
-              <Download className="w-5 h-5" />
+              <Download className="w-4 h-4" />
               <span>Download Bill</span>
+            </button>
+            <button 
+              onClick={async () => {
+                if (displayBill.is_paid) return toast.success('Bill is already paid!');
+                toast.success('Please pay the admin offline. Admin will mark it as paid.');
+              }}
+              className="flex-1 md:flex-none px-6 py-4 bg-white text-gray-700 border-2 border-gray-200 font-bold rounded-xl flex items-center justify-center space-x-2 hover:border-gray-800 transition-all text-sm"
+            >
+              <span>Pay Offline</span>
             </button>
             <button 
               onClick={() => handlePayment(displayBill)}
               disabled={paying}
-              className="flex-1 md:flex-none px-8 py-4 bg-accent text-white font-bold rounded-xl flex items-center justify-center space-x-2 hover:bg-blue-600 transition-all shadow-lg shadow-blue-100 disabled:opacity-50"
+              className="flex-1 md:flex-none px-8 py-4 bg-accent text-white font-bold rounded-xl flex items-center justify-center space-x-2 hover:bg-blue-600 transition-all shadow-lg shadow-blue-100 disabled:opacity-50 text-sm"
             >
               {paying ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
               <span>Pay Now</span>

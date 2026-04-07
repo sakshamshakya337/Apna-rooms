@@ -82,10 +82,11 @@ const BookingConfirmation = () => {
           pg_id: pg.id,
           room_id: room.id,
           amount: pricing.total, // Total actual booking value
-          paid_amount: pricing.payableNow, // Amount paid now
+          // Temporarily commented out schema columns that might be missing in DB
+          // paid_amount: pricing.payableNow, 
           type: bookingType,
-          payment_plan: paymentPlan,
-          contract_months: contractDuration,
+          // payment_plan: paymentPlan,
+          // contract_months: contractDuration,
           status: 'pending'
         }])
         .select()
@@ -147,10 +148,11 @@ const BookingConfirmation = () => {
           pg_id: pg.id,
           room_id: room.id,
           amount: pricing.total, // Total actual booking value
-          paid_amount: 0, // No online payment collected
+          // Temporarily commented out schema columns that might be missing in DB
+          // paid_amount: 0, 
           type: bookingType,
-          payment_plan: paymentPlan,
-          contract_months: contractDuration,
+          // payment_plan: paymentPlan,
+          // contract_months: contractDuration,
           status: 'pending' // Explicit offline pending status
         }])
         .select()
@@ -162,7 +164,8 @@ const BookingConfirmation = () => {
       setOfflinePending(true);
       toast.success('Offline booking registered. Pending Admin Approval.');
     } catch (error) {
-      toast.error('Failed to initiate offline booking');
+      console.error('Offline booking error:', error);
+      toast.error('Failed to initiate offline booking: ' + (error.message || ''));
     } finally {
       setProcessing(false);
     }

@@ -20,6 +20,7 @@ import {
   Filter,
   FileText,
   Upload,
+  Download,
   Image as ImageIcon,
   Wrench,
   Droplets,
@@ -224,6 +225,31 @@ const AdminPanel = ({ section = 'admin' }) => {
     } catch (error) {
       console.error(error);
       toast.error('Failed to approve payment');
+    }
+  };
+
+  const handleApproveRentPayment = async (paymentId) => {
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .update({ status: 'success' })
+        .eq('id', paymentId);
+      if (error) throw error;
+      toast.success('Rent offline payment approved!');
+      fetchAdminData(section);
+    } catch (error) {
+      toast.error('Failed to approve rent payment');
+    }
+  };
+
+  const handleMarkBillPaid = async (billId) => {
+    try {
+      const { error } = await supabase.from('electricity_bills').update({ is_paid: true }).eq('id', billId);
+      if (error) throw error;
+      toast.success('Bill marked as paid');
+      fetchAdminData(section);
+    } catch (error) {
+      toast.error('Failed to update electricity bill');
     }
   };
 
@@ -854,6 +880,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                   <th className="px-6 py-4">Date</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">Payment ID</th>
+                  <th className="px-6 py-4">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -875,6 +902,16 @@ const AdminPanel = ({ section = 'admin' }) => {
                       }`}>{payment.status}</span>
                     </td>
                     <td className="px-6 py-4 text-xs font-mono text-gray-400">{payment.payment_id || 'N/A'}</td>
+                    <td className="px-6 py-4">
+                      {payment.status === 'pending' && payment.payment_id === 'OFFLINE_PENDING' && (
+                        <button 
+                          onClick={() => handleApproveRentPayment(payment.id)}
+                          className="text-white font-bold text-xs bg-green-500 px-4 py-2 rounded-lg hover:bg-green-600 transition-colors shadow-sm"
+                        >
+                          Approve Payment
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -931,6 +968,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                     <th className="px-6 py-4">Rate</th>
                     <th className="px-6 py-4">Total Amount</th>
                     <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -948,6 +986,16 @@ const AdminPanel = ({ section = 'admin' }) => {
                         <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
                           bill.is_paid ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                         }`}>{bill.is_paid ? 'Paid' : 'Unpaid'}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {!bill.is_paid && (
+                          <button 
+                            onClick={() => handleMarkBillPaid(bill.id)}
+                            className="bg-green-50 text-green-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-all border border-green-200"
+                          >
+                            Mark Paid
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -1605,7 +1653,15 @@ const AdminPanel = ({ section = 'admin' }) => {
                   <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
                     {selectedTenant.user_photo_url ? (
                       kycUrls.userPhoto ? (
-                        <img src={kycUrls.userPhoto} alt="Tenant" className="w-full h-full object-cover" />
+                        <>
+                          <img src={kycUrls.userPhoto} alt="Tenant" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <a href={kycUrls.userPhoto} download target="_blank" rel="noopener noreferrer" className="bg-white text-gray-900 px-4 py-2 rounded-xl font-bold flex items-center space-x-2 shadow-xl hover:scale-105 transition-transform">
+                              <Download className="w-4 h-4" />
+                              <span>Download</span>
+                            </a>
+                          </div>
+                        </>
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                           <Clock className="w-8 h-8 mb-2 animate-spin" />
@@ -1629,7 +1685,15 @@ const AdminPanel = ({ section = 'admin' }) => {
                   <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
                     {selectedTenant.university_id_url ? (
                       kycUrls.universityId ? (
-                        <img src={kycUrls.universityId} alt="ID Card" className="w-full h-full object-cover" />
+                        <>
+                          <img src={kycUrls.universityId} alt="ID Card" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <a href={kycUrls.universityId} download target="_blank" rel="noopener noreferrer" className="bg-white text-gray-900 px-4 py-2 rounded-xl font-bold flex items-center space-x-2 shadow-xl hover:scale-105 transition-transform">
+                              <Download className="w-4 h-4" />
+                              <span>Download</span>
+                            </a>
+                          </div>
+                        </>
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                           <Clock className="w-8 h-8 mb-2 animate-spin" />
@@ -1653,7 +1717,15 @@ const AdminPanel = ({ section = 'admin' }) => {
                   <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
                     {selectedTenant.aadhar_front_url ? (
                       kycUrls.aadharFront ? (
-                        <img src={kycUrls.aadharFront} alt="Aadhar Front" className="w-full h-full object-cover" />
+                        <>
+                          <img src={kycUrls.aadharFront} alt="Aadhar Front" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <a href={kycUrls.aadharFront} download target="_blank" rel="noopener noreferrer" className="bg-white text-gray-900 px-4 py-2 rounded-xl font-bold flex items-center space-x-2 shadow-xl hover:scale-105 transition-transform">
+                              <Download className="w-4 h-4" />
+                              <span>Download</span>
+                            </a>
+                          </div>
+                        </>
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                           <Clock className="w-8 h-8 mb-2 animate-spin" />
@@ -1677,7 +1749,15 @@ const AdminPanel = ({ section = 'admin' }) => {
                   <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
                     {selectedTenant.aadhar_back_url ? (
                       kycUrls.aadharBack ? (
-                        <img src={kycUrls.aadharBack} alt="Aadhar Back" className="w-full h-full object-cover" />
+                        <>
+                          <img src={kycUrls.aadharBack} alt="Aadhar Back" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <a href={kycUrls.aadharBack} download target="_blank" rel="noopener noreferrer" className="bg-white text-gray-900 px-4 py-2 rounded-xl font-bold flex items-center space-x-2 shadow-xl hover:scale-105 transition-transform">
+                              <Download className="w-4 h-4" />
+                              <span>Download</span>
+                            </a>
+                          </div>
+                        </>
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                           <Clock className="w-8 h-8 mb-2 animate-spin" />

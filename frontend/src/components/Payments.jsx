@@ -112,6 +112,31 @@ const Payments = ({ booking }) => {
     }
   };
 
+  const handleOfflinePayment = async (type = 'user_rent') => {
+    if (!booking) {
+      toast.error('No active booking found to pay rent for.');
+      return;
+    }
+    const rentAmount = type === 'user_rent' ? booking.amount : (booking.amount * (booking.rooms?.total_seats || 1));
+    if (!rentAmount || isNaN(rentAmount) || rentAmount <= 0) {
+      return toast.error('Invalid rent amount.');
+    }
+    try {
+      const { error } = await supabase.from('payments').insert([{
+        booking_id: booking.id,
+        amount: rentAmount,
+        status: 'pending',
+        payment_id: 'OFFLINE_PENDING',
+        type: type
+      }]);
+      if (error) throw error;
+      toast.success('Offline payment request submitted for Admin approval!');
+      fetchPayments();
+    } catch (error) {
+      toast.error('Failed to submit offline payment');
+    }
+  };
+
   const handleDownload = (payment) => {
     try {
       const loadingToast = toast.loading('Generating your receipt...');
@@ -140,19 +165,35 @@ const Payments = ({ booking }) => {
           <h2 className="text-3xl font-bold mb-2">Rent Payments</h2>
           <p className="text-gray-500">Manage your monthly rent and view payment history</p>
         </div>
-        <div className="flex space-x-3">
-          <button 
-            onClick={() => handlePayRent('user_rent')}
-            className="bg-accent text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-600 transition-all shadow-lg"
-          >
-            Pay My Rent
-          </button>
-          <button 
-            onClick={() => handlePayRent('room_rent')}
-            className="bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition-all shadow-lg"
-          >
-            Pay Room Rent
-          </button>
+        <div className="flex flex-col items-end space-y-3 mt-4 md:mt-0">
+          <div className="flex space-x-3">
+            <button 
+              onClick={() => handlePayRent('user_rent')}
+              className="bg-accent text-white px-5 py-2.5 rounded-xl font-bold hover:bg-blue-600 transition-all shadow-lg text-sm"
+            >
+              Pay My Rent
+            </button>
+            <button 
+              onClick={() => handlePayRent('room_rent')}
+              className="bg-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-800 transition-all shadow-lg text-sm"
+            >
+              Pay Room Rent
+            </button>
+          </div>
+          <div className="flex space-x-3">
+            <button 
+              onClick={() => handleOfflinePayment('user_rent')}
+              className="px-4 py-2 border-2 border-gray-200 text-gray-600 bg-white rounded-xl font-bold hover:border-gray-800 transition-all text-xs"
+            >
+              Offline (My Rent)
+            </button>
+            <button 
+              onClick={() => handleOfflinePayment('room_rent')}
+              className="px-4 py-2 border-2 border-gray-200 text-gray-600 bg-white rounded-xl font-bold hover:border-gray-800 transition-all text-xs"
+            >
+              Offline (Room)
+            </button>
+          </div>
         </div>
       </div>
 
@@ -168,7 +209,7 @@ const Payments = ({ booking }) => {
                 <p className="text-sm text-gray-500">{new Date(payment.created_at).toLocaleDateString()}</p>
                 <div className="flex items-center space-x-2 mt-1">
                   <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
-                    payment.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    payment.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                   }`}>
                     {payment.status}
                   </span>
