@@ -254,7 +254,7 @@ const ElectricityBill = ({ booking, userData }) => {
           <div>
             {/* Bar Chart */}
             <div className="mb-8">
-              <div className="flex items-end justify-between h-80 space-x-2 md:space-x-3 gap-2 p-4 bg-gradient-to-b from-accent/5 to-transparent rounded-2xl">
+              <div className="flex justify-between h-80 space-x-2 md:space-x-3 gap-2 p-4 bg-gradient-to-b from-accent/5 to-transparent rounded-2xl">
                 {lastSixMonths.map((item, idx) => {
                   const heightPercent = (Number(item.units) / maxUnits) * 100;
                   const amount = Number(item.amount);
@@ -262,28 +262,31 @@ const ElectricityBill = ({ booking, userData }) => {
                   return (
                     <motion.div 
                       key={idx} 
-                      className="flex-1 flex flex-col items-center group"
+                      className="flex-1 h-full flex flex-col items-center group"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: idx * 0.1 }}
                     >
-                      {/* Bar */}
-                      <motion.div 
-                        initial={{ height: 0 }}
-                        animate={{ height: `${heightPercent}%` }}
-                        transition={{ delay: idx * 0.1 + 0.3, duration: 0.6 }}
-                        className="w-full bg-gradient-to-t from-accent to-blue-400 rounded-t-lg group-hover:from-blue-600 group-hover:to-blue-500 transition-all relative shadow-lg hover:shadow-xl"
-                      >
-                        {/* Tooltip on hover */}
-                        <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap shadow-xl z-10">
-                          <div>{item.units} kWh</div>
-                          <div className="text-green-300">₹{amount}</div>
-                          <div className="text-gray-300 text-[10px]">{item.billing_month}</div>
-                        </div>
-                      </motion.div>
+                      {/* Bar Container (takes remaining space) */}
+                      <div className="flex-1 w-full flex items-end justify-center relative">
+                        {/* Bar */}
+                        <motion.div 
+                          initial={{ height: 0 }}
+                          animate={{ height: `${heightPercent}%` }}
+                          transition={{ delay: idx * 0.1 + 0.3, duration: 0.6 }}
+                          className="w-full bg-gradient-to-t from-accent to-blue-400 rounded-t-lg group-hover:from-blue-600 group-hover:to-blue-500 transition-all relative shadow-lg hover:shadow-xl"
+                        >
+                          {/* Tooltip on hover */}
+                          <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap shadow-xl z-20">
+                            <div>{item.units} kWh</div>
+                            <div className="text-green-300">₹{amount}</div>
+                            <div className="text-gray-300 text-[10px]">{item.billing_month}</div>
+                          </div>
+                        </motion.div>
+                      </div>
 
                       {/* Month Label */}
-                      <div className="mt-6 text-center">
+                      <div className="mt-4 text-center">
                         <span className="text-xs font-bold text-gray-600 uppercase tracking-wide block">
                           {item.billing_month.split(' ')[0].substring(0, 3)}
                         </span>
@@ -293,7 +296,7 @@ const ElectricityBill = ({ booking, userData }) => {
                       </div>
 
                       {/* Units Display */}
-                      <div className="mt-2 text-sm font-bold text-accent text-center">
+                      <div className="mt-1 text-[11px] font-bold text-accent text-center">
                         {item.units} kWh
                       </div>
                     </motion.div>

@@ -354,16 +354,16 @@ const Dashboard = () => {
     ? [
         { id: 'user_photo_url', label: 'Student Photo', icon: ImageIcon, req: true },
         { id: 'passport_url', label: 'Passport Photo / Bio Page', icon: Globe, req: true },
-        { id: 'vidu_doc_url', label: 'Vidu Form', icon: FileSearch, req: true },
+        { id: 'vidu_doc_url', label: 'Vidu Form', icon: FileSearch, req: true, templateKey: 'owner_doc_url' },
         { id: 'university_id_url', label: 'Student College ID Card', icon: FileCheck, req: true },
-        { id: 'police_verification_url', label: 'Police Verification Form', icon: Shield, req: true }
+        { id: 'police_verification_url', label: 'Police Verification Form', icon: Shield, req: true, templateKey: 'police_verification_template_url' }
       ]
     : [
         { id: 'user_photo_url', label: 'Student Photo', icon: ImageIcon, req: true },
         { id: 'aadhar_pancard_url', label: 'Student Aadhaar Card', icon: FileText, req: true },
         { id: 'parent_aadhar_url', label: 'Parent / Guardian Aadhaar Card', icon: ShieldCheck, req: true },
         { id: 'university_id_url', label: 'Student College ID Card', icon: FileCheck, req: true },
-        { id: 'police_verification_url', label: 'Police Verification Form', icon: Shield, req: true }
+        { id: 'police_verification_url', label: 'Police Verification Form', icon: Shield, req: true, templateKey: 'police_verification_template_url' }
       ];
 
   const userMenuItems = [
@@ -743,7 +743,7 @@ const Dashboard = () => {
                     </ul>
 
                     {/* Template Section */}
-                    {(isInternationalStudent || docRequirements.some((req) => req.template_url)) && (
+                    {(isInternationalStudent || booking.pgs?.police_verification_template_url || docRequirements.some((req) => req.template_url)) && (
                     <div className="pt-6 border-t border-gray-100 space-y-4">
                       <h4 className="font-black text-sm uppercase tracking-widest text-gray-400">Required Templates</h4>
                       
@@ -839,8 +839,20 @@ const Dashboard = () => {
                                 </div>
                               </div>
                             ) : (
-                              <div className={`text-[10px] font-black uppercase tracking-widest ${doc.req ? 'text-red-400' : 'text-gray-300'} italic`}>
-                                {doc.req ? 'Required' : 'Optional'}
+                              <div className="flex flex-col items-end space-y-2">
+                                <div className={`text-[10px] font-black uppercase tracking-widest ${doc.req ? 'text-red-400' : 'text-gray-300'} italic`}>
+                                  {doc.req ? 'Required' : 'Optional'}
+                                </div>
+                                {doc.templateKey && booking.pgs?.[doc.templateKey] && (
+                                  <a 
+                                    href={booking.pgs[doc.templateKey]} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex items-center text-[9px] font-black text-accent uppercase tracking-widest bg-accent/5 px-2 py-1 rounded-lg hover:bg-accent/10 transition-colors animate-pulse hover:animate-none"
+                                  >
+                                    <Download className="w-3 h-3 mr-1" /> Get Template
+                                  </a>
+                                )}
                               </div>
                             )}
                           </div>
@@ -894,8 +906,20 @@ const Dashboard = () => {
                                   </div>
                                 </div>
                               ) : (
-                                <div className="text-[10px] font-black uppercase tracking-widest text-red-400 italic">
-                                  Required
+                                <div className="flex flex-col items-end space-y-2">
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-red-400 italic">
+                                    Required
+                                  </div>
+                                  {req.template_url && (
+                                    <a 
+                                      href={req.template_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="flex items-center text-[9px] font-black text-accent uppercase tracking-widest bg-accent/5 px-2 py-1 rounded-lg hover:bg-accent/10 transition-colors animate-pulse hover:animate-none"
+                                    >
+                                      <Download className="w-3 h-3 mr-1" /> Get Template
+                                    </a>
+                                  )}
                                 </div>
                               )}
                             </div>

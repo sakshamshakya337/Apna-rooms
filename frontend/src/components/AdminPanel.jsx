@@ -567,6 +567,25 @@ const AdminPanel = ({ section = 'admin' }) => {
     }
   };
 
+  const updatePGListing = async (pgId, updatePayload) => {
+    // Robust update that handles missing columns in the database
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const { error } = await supabase.from('pgs').update(updatePayload).eq('id', pgId);
+      if (!error) return;
+
+      const message = error.message || '';
+      // Handle "column does not exist" or "Could not find the '...' column"
+      const missingColumn = message.match(/'([^']+)' column/)?.[1] || message.match(/column "([^"]+)"/)?.[1];
+      
+      if (!missingColumn || !(missingColumn in updatePayload)) {
+        throw error;
+      }
+
+      console.warn(`Column '${missingColumn}' missing in database. Retrying update without it.`);
+      delete updatePayload[missingColumn];
+    }
+  };
+
   const handleUpdatePG = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -600,7 +619,7 @@ const AdminPanel = ({ section = 'admin' }) => {
         policeUrl = pUrl;
       }
       
-      const { error } = await supabase.from('pgs').update({
+      await updatePGListing(editingPG.id, {
         name: editingPG.name,
         description: editingPG.description,
         address: editingPG.address,
@@ -616,9 +635,8 @@ const AdminPanel = ({ section = 'admin' }) => {
         rules: typeof editingPG.rules === 'string'
           ? editingPG.rules.split(',').map(r => r.trim()).filter(r => r !== '')
           : editingPG.rules
-      }).eq('id', editingPG.id);
+      });
       
-      if (error) throw error;
       toast.success('PG Updated Successfully!');
       setShowEditPGModal(false);
       setEditingPG(null);
@@ -636,20 +654,38 @@ const AdminPanel = ({ section = 'admin' }) => {
     }
   };
 
+  const insertRoomListing = async (roomPayload) => {
+    // Robust insert that handles missing columns in the database
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const { error } = await supabase.from('rooms').insert([roomPayload]);
+      if (!error) return;
+
+      const message = error.message || '';
+      const missingColumn = message.match(/'([^']+)' column/)?.[1] || message.match(/column "([^"]+)"/)?.[1];
+      
+      if (!missingColumn || !(missingColumn in roomPayload)) {
+        throw error;
+      }
+
+      console.warn(`Column '${missingColumn}' missing in database. Retrying insert without it.`);
+      delete roomPayload[missingColumn];
+    }
+  };
+
   const handleAddRoom = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       const imageUrl = await uploadImage(roomImage, 'rooms');
 
-      const { error } = await supabase.from('rooms').insert([{
+      await insertRoomListing({
         ...newRoom,
         pg_id: selectedPG.id,
         available_seats: newRoom.total_seats,
         amenities: newRoom.amenities.split(',').map(a => a.trim()).filter(a => a !== ''),
         image_url: imageUrl
-      }]);
-      if (error) throw error;
+      });
+      
       toast.success('Room Added Successfully!');
       setShowAddRoomModal(false);
       setNewRoom({ room_number: '', total_seats: 2, price_per_seat: 5000, amenities: '' });
