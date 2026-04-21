@@ -508,6 +508,8 @@ const AdminPanel = ({ section = 'admin' }) => {
         throw error;
       }
 
+      console.warn(`Column '${missingColumn}' missing in database. Retrying insert without it.`);
+      toast.error(`Warning: Database missing column '${missingColumn}'. This field was not saved. Please update your database schema.`);
       delete insertPayload[missingColumn];
     }
   };
@@ -582,6 +584,7 @@ const AdminPanel = ({ section = 'admin' }) => {
       }
 
       console.warn(`Column '${missingColumn}' missing in database. Retrying update without it.`);
+      toast.error(`Warning: Database missing column '${missingColumn}'. This field was not saved. Please update your database schema.`);
       delete updatePayload[missingColumn];
     }
   };
@@ -668,6 +671,7 @@ const AdminPanel = ({ section = 'admin' }) => {
       }
 
       console.warn(`Column '${missingColumn}' missing in database. Retrying insert without it.`);
+      toast.error(`Warning: Database missing column '${missingColumn}'. This field was not saved. Please update your database schema.`);
       delete roomPayload[missingColumn];
     }
   };

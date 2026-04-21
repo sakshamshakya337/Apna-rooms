@@ -181,6 +181,26 @@ const Dashboard = () => {
     }
   };
 
+  const updateBookingRecord = async (bookingId, updatePayload) => {
+    // Robust update that handles missing columns in the database
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const { error } = await supabase.from('bookings').update(updatePayload).eq('id', bookingId);
+      if (!error) return;
+
+      const message = error.message || '';
+      // Handle "column does not exist" or "Could not find the '...' column"
+      const missingColumn = message.match(/'([^']+)' column/)?.[1] || message.match(/column "([^"]+)"/)?.[1];
+      
+      if (!missingColumn || !(missingColumn in updatePayload)) {
+        throw error;
+      }
+
+      console.warn(`Column '${missingColumn}' missing in database. Retrying update without it.`);
+      toast.error(`Warning: Database missing column '${missingColumn}'. Your document link was not saved to the record. Please contact the admin to update the database schema.`);
+      delete updatePayload[missingColumn];
+    }
+  };
+
   const handleDocUpload = async (file, column) => {
     if (!file) return;
     if (booking?.occupant_role === 'approved_roommate') {
@@ -214,12 +234,7 @@ const Dashboard = () => {
 
       if (uploadError) throw uploadError;
 
-      const { error: updateError } = await supabase
-        .from('bookings')
-        .update({ [column]: fileName })
-        .eq('id', booking.id);
-
-      if (updateError) throw updateError;
+      await updateBookingRecord(booking.id, { [column]: fileName });
 
       toast.success("Document uploaded successfully!", { id: toastId });
       fetchUserBooking(); // Refresh to show new doc
