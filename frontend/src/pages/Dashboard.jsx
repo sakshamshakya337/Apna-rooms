@@ -331,11 +331,14 @@ const Dashboard = () => {
 
     setRoommateSubmitting(true);
     try {
-      // Robustly find existing user - trying both 'uid' and 'id' columns
+      // Robustly find existing user - trying common columns to find their ID
       let existingUserId = null;
       try {
-        const { data: userByUid } = await supabase.from('users').select('*').eq('email', roommateForm.email.trim().toLowerCase()).maybeSingle();
-        existingUserId = userByUid?.uid || userByUid?.id;
+        // Just fetch everything and look for common ID fields in the result
+        const { data: userByEmail } = await supabase.from('users').select().eq('email', roommateForm.email.trim().toLowerCase()).maybeSingle();
+        if (userByEmail) {
+          existingUserId = userByEmail.id || userByEmail.uid;
+        }
       } catch (e) {
         console.warn('Could not query users by email safely', e);
       }
@@ -348,12 +351,16 @@ const Dashboard = () => {
         roommate_full_name: roommateForm.full_name.trim(),
         roommate_email: roommateForm.email.trim().toLowerCase(),
         roommate_phone: roommateForm.phone_number.trim(),
-        roommate_user_id: existingUserId,
         status: 'pending'
       };
 
-      // Robust insert loop to handle missing columns (like roommate_user_id)
-      for (let attempt = 0; attempt < 3; attempt++) {
+      // Add the user ID only if we found one
+      if (existingUserId) {
+        payload.roommate_user_id = existingUserId;
+      }
+
+      // Robust insert loop to handle missing columns
+      for (let attempt = 0; attempt < 2; attempt++) {
         const { error, status } = await supabase.from('roommate_requests').insert([payload]);
         
         if (!error) break;
@@ -367,8 +374,9 @@ const Dashboard = () => {
           continue;
         }
 
+        // If we get here, it's a real error (like 401 or RLS)
         if (status === 401 || message.includes('JWT')) {
-          throw new Error('Your session expired. Please log out and back in.');
+          throw new Error('Database permission denied. Please run the SQL script I provided in your Supabase editor to allow adding roommates.');
         }
         
         throw error;
