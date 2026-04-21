@@ -1483,8 +1483,9 @@ const AdminPanel = ({ section = 'admin' }) => {
         )}
 
         {showAddPGModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white rounded-3xl p-5 sm:p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/50 backdrop-blur-sm">
+            <div className="min-h-full flex items-start justify-center px-4 py-6 sm:py-8">
+            <motion.div initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 12 }} className="bg-white rounded-3xl p-5 sm:p-8 max-w-2xl w-full shadow-2xl max-h-[calc(100dvh-3rem)] overflow-y-auto">
               <div className="flex justify-between items-start gap-4 mb-6">
                 <h3 className="text-2xl font-bold">Add New PG Property</h3>
                 <button onClick={() => setShowAddPGModal(false)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
@@ -1628,6 +1629,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                 </button>
               </form>
             </motion.div>
+            </div>
           </div>
         )}
 
