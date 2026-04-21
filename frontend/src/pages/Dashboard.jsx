@@ -206,10 +206,7 @@ const Dashboard = () => {
 
   const handleDocUpload = async (file, column) => {
     if (!file) return;
-    if (booking?.occupant_role === 'approved_roommate') {
-      return toast.error('Only the primary resident can manage KYC documents.');
-    }
-
+    
     const toastId = toast.loading(`Uploading ${column.replace(/_/g, ' ')}...`);
     
     try {
@@ -249,9 +246,6 @@ const Dashboard = () => {
 
   const handleDynamicDocUpload = async (file, reqId, reqName) => {
     if (!file) return;
-    if (booking?.occupant_role === 'approved_roommate') {
-      return toast.error('Only the primary resident can manage KYC documents.');
-    }
 
     const toastId = toast.loading(`Uploading ${reqName}...`);
     try {
@@ -764,14 +758,6 @@ const Dashboard = () => {
                     <h3 className="text-2xl font-black text-primary">Admin confirmation pending</h3>
                     <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
                       Your room is reserved. Document upload will open here only after the admin confirms the booking.
-                    </p>
-                  </div>
-                ) : booking.occupant_role === 'approved_roommate' ? (
-                  <div className="bg-blue-50 border border-blue-100 p-10 rounded-[3rem] text-center">
-                    <Users className="w-14 h-14 text-blue-500 mx-auto mb-4" />
-                    <h3 className="text-2xl font-black text-primary">KYC handled by the primary resident</h3>
-                    <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
-                      Your access is active for this room. You can use complaints and bills, but only the primary resident can update the shared room documents.
                     </p>
                   </div>
                 ) : (
