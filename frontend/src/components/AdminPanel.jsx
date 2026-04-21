@@ -831,7 +831,8 @@ const AdminPanel = ({ section = 'admin' }) => {
         { key: 'aadharPancard', url: tenant.aadhar_pancard_url || tenant.aadhar_front_url },
         { key: 'parentAadhar', url: tenant.parent_aadhar_url },
         { key: 'passport', url: tenant.passport_url },
-        { key: 'viduDoc', url: tenant.vidu_doc_url }
+        { key: 'viduDoc', url: tenant.vidu_doc_url },
+        { key: 'policeVerification', url: tenant.police_verification_url }
       ];
       
       const signedDocs = await Promise.all(docs.filter(doc => doc.url).map(async (doc) => {
@@ -2479,8 +2480,8 @@ const AdminPanel = ({ section = 'admin' }) => {
                   </div>
                 </div>
 
-                {/* Aadhaar (National Only) */}
-                {selectedTenant.users?.student_category !== 'International' && (
+                {/* Student Aadhaar Card */}
+                {selectedTenant.users?.student_category?.toLowerCase() !== 'international' && (
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
                     <Shield className="w-3 h-3 mr-2" /> Student Aadhaar Card
@@ -2582,7 +2583,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                 )}
 
                 {/* Passport (International Only) */}
-                {selectedTenant.users?.student_category === 'International' && (
+                {selectedTenant.users?.student_category?.toLowerCase() === 'international' && (
                   <div className="space-y-3">
                     <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
                       <Globe className="w-3 h-3 mr-2" /> Global Passport
@@ -2650,7 +2651,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                 )}
 
                 {/* Vidu Doc */}
-                {selectedTenant.users?.student_category === 'International' && (
+                {selectedTenant.users?.student_category?.toLowerCase() === 'international' && (
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
                     <FileText className="w-3 h-3 mr-2" /> Vidu Authorization Form
@@ -2660,9 +2661,14 @@ const AdminPanel = ({ section = 'admin' }) => {
                       kycUrls.viduDoc ? (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-accent/5">
                           <FileText className="w-12 h-12 text-accent mb-4" />
-                          <a href={kycUrls.viduDoc} target="_blank" rel="noopener noreferrer" className="bg-accent text-white px-6 py-2 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg shadow-accent/20">
-                            View Vidu Document
-                          </a>
+                          <div className="flex flex-col space-y-2">
+                            <a href={kycUrls.viduDoc} target="_blank" rel="noopener noreferrer" className="bg-accent text-white px-6 py-2 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg shadow-accent/20 text-center text-xs">
+                              View Vidu Document
+                            </a>
+                            <a href={kycUrls.viduDoc} download className="bg-white text-accent border border-accent/20 px-6 py-2 rounded-xl font-bold hover:scale-105 transition-transform shadow-sm text-center text-xs">
+                              Download
+                            </a>
+                          </div>
                         </div>
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
@@ -2681,7 +2687,6 @@ const AdminPanel = ({ section = 'admin' }) => {
                 )}
 
                 {/* Police Verification */}
-                {false && (
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
                     <ShieldCheck className="w-3 h-3 mr-2" /> Police Verification Doc
@@ -2691,9 +2696,14 @@ const AdminPanel = ({ section = 'admin' }) => {
                       kycUrls.policeVerification ? (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-green-50">
                           <ShieldCheck className="w-12 h-12 text-green-600 mb-4" />
-                          <a href={kycUrls.policeVerification} target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white px-6 py-2 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg shadow-green-600/20">
-                            View Verification
-                          </a>
+                          <div className="flex flex-col space-y-2">
+                            <a href={kycUrls.policeVerification} target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white px-6 py-2 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg shadow-green-600/20 text-center text-xs">
+                              View Verification
+                            </a>
+                            <a href={kycUrls.policeVerification} download className="bg-white text-green-600 border border-green-200 px-6 py-2 rounded-xl font-bold hover:scale-105 transition-transform shadow-sm text-center text-xs">
+                              Download
+                            </a>
+                          </div>
                         </div>
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
@@ -2709,7 +2719,6 @@ const AdminPanel = ({ section = 'admin' }) => {
                     )}
                   </div>
                 </div>
-                )}
                 </div>
 
               <div className="bg-gray-50 rounded-2xl p-6 mb-8">
@@ -2731,7 +2740,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                     <div className="text-[10px] text-gray-400 uppercase font-bold">Student Type</div>
                     <div className="text-sm font-medium">{selectedTenant.users?.student_category || 'National'}</div>
                   </div>
-                  {selectedTenant.users?.student_category !== 'International' && (
+                  {selectedTenant.users?.student_category?.toLowerCase() !== 'international' && (
                     <div>
                       <div className="text-[10px] text-gray-400 uppercase font-bold">Parent / Guardian Phone</div>
                       <div className="text-sm font-medium">{selectedTenant.users?.parent_phone_number || 'N/A'}</div>

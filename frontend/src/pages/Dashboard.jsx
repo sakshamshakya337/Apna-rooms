@@ -355,8 +355,8 @@ const Dashboard = () => {
     }
   };
 
-  const studentCategory = userData?.studentCategory || 'National';
-  const isInternationalStudent = studentCategory === 'International';
+  const studentCategory = userData?.student_category || userData?.studentCategory || 'National';
+  const isInternationalStudent = studentCategory.toLowerCase() === 'international';
   const approvedRoommates = roommateRequests.filter((request) => request.status === 'approved');
   const pendingRoommateRequest = roommateRequests.find((request) => request.status === 'pending');
   const currentOccupancy = booking ? 1 + approvedRoommates.length : 0;
