@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
-import { Zap, TrendingUp, Calendar, ArrowUpRight, Download, CreditCard, Loader2, CheckCircle2 } from 'lucide-react';
+import { Zap, TrendingUp, Calendar, ArrowUpRight, Download, CreditCard, Loader2, CheckCircle2, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { generateElectricityBillPDF } from '../utils/pdfUtils';
 import { loadRazorpay, createRazorpayOrder, verifyPaymentOnBackend } from '../utils/razorpay';
@@ -107,6 +107,10 @@ const ElectricityBill = ({ booking, userData }) => {
 
   const sortedBills = [...bills].sort((a, b) => parseBillingMonth(a.billing_month) - parseBillingMonth(b.billing_month));
   const currentBill = sortedBills[sortedBills.length - 1];
+  const lastSixMonths = sortedBills.slice(-6);
+  const maxUnits = Math.max(...lastSixMonths.map(bill => Number(bill.units) || 0), 100);
+  const avgUnits = lastSixMonths.length > 0 ? Math.round(lastSixMonths.reduce((sum, bill) => sum + Number(bill.units), 0) / lastSixMonths.length) : 0;
+  const totalCost = lastSixMonths.reduce((sum, bill) => sum + Number(bill.amount), 0);
 
   if (loading) return <div className="p-8 text-center text-gray-500">Loading bill data...</div>;
 
@@ -232,26 +236,129 @@ const ElectricityBill = ({ booking, userData }) => {
 
       {/* Consumption Bar Chart - Using Real History */}
       <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-        <h3 className="text-xl font-bold mb-6">Consumption History (Last {bills.length} Months)</h3>
-        <div className="flex items-end justify-between h-64 space-x-2 md:space-x-4">
-          {sortedBills.slice(-6).map((item, idx) => (
-            <div key={idx} className="flex-1 flex flex-col items-center group">
-              <motion.div 
-                initial={{ height: 0 }}
-                animate={{ height: `${(Number(item.units) / (Math.max(...sortedBills.map((bill) => Number(bill.units))) || 200)) * 100}%` }}
-                className="w-full bg-blue-100 rounded-t-lg group-hover:bg-accent transition-colors relative"
-              >
-                <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {item.units}
-                </span>
-              </motion.div>
-              <span className="mt-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                {item.billing_month.split(' ').slice(0, 2).join(' ')}
-              </span>
-            </div>
-          ))}
-          {bills.length === 0 && <div className="w-full text-center text-gray-300 italic">No consumption data recorded yet</div>}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-2xl font-bold flex items-center">
+              <BarChart3 className="w-6 h-6 text-accent mr-3" />
+              Consumption History
+            </h3>
+            <p className="text-gray-500 text-sm mt-2">{lastSixMonths.length >= 6 ? 'Last 6 months' : `Last ${lastSixMonths.length} months`} - {avgUnits} kWh average</p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-gray-500">Total Cost</div>
+            <div className="text-3xl font-black text-accent">₹{totalCost}</div>
+          </div>
         </div>
+
+        {lastSixMonths.length > 0 ? (
+          <div>
+            {/* Bar Chart */}
+            <div className="mb-8">
+              <div className="flex items-end justify-between h-80 space-x-2 md:space-x-3 gap-2 p-4 bg-gradient-to-b from-accent/5 to-transparent rounded-2xl">
+                {lastSixMonths.map((item, idx) => {
+                  const heightPercent = (Number(item.units) / maxUnits) * 100;
+                  const amount = Number(item.amount);
+                  
+                  return (
+                    <motion.div 
+                      key={idx} 
+                      className="flex-1 flex flex-col items-center group"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: idx * 0.1 }}
+                    >
+                      {/* Bar */}
+                      <motion.div 
+                        initial={{ height: 0 }}
+                        animate={{ height: `${heightPercent}%` }}
+                        transition={{ delay: idx * 0.1 + 0.3, duration: 0.6 }}
+                        className="w-full bg-gradient-to-t from-accent to-blue-400 rounded-t-lg group-hover:from-blue-600 group-hover:to-blue-500 transition-all relative shadow-lg hover:shadow-xl"
+                      >
+                        {/* Tooltip on hover */}
+                        <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap shadow-xl z-10">
+                          <div>{item.units} kWh</div>
+                          <div className="text-green-300">₹{amount}</div>
+                          <div className="text-gray-300 text-[10px]">{item.billing_month}</div>
+                        </div>
+                      </motion.div>
+
+                      {/* Month Label */}
+                      <div className="mt-6 text-center">
+                        <span className="text-xs font-bold text-gray-600 uppercase tracking-wide block">
+                          {item.billing_month.split(' ')[0].substring(0, 3)}
+                        </span>
+                        <span className="text-[10px] font-medium text-gray-400">
+                          {item.billing_month.split(' ')[1]}
+                        </span>
+                      </div>
+
+                      {/* Units Display */}
+                      <div className="mt-2 text-sm font-bold text-accent text-center">
+                        {item.units} kWh
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-gray-100">
+              <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Max Consumption</div>
+                <div className="text-2xl font-black text-accent mt-2">{Math.max(...lastSixMonths.map(b => Number(b.units)), 0)} kWh</div>
+              </div>
+              <div className="bg-green-50 p-4 rounded-2xl border border-green-100">
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Average</div>
+                <div className="text-2xl font-black text-green-600 mt-2">{avgUnits} kWh</div>
+              </div>
+              <div className="bg-yellow-50 p-4 rounded-2xl border border-yellow-100">
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Units</div>
+                <div className="text-2xl font-black text-yellow-600 mt-2">{lastSixMonths.reduce((sum, bill) => sum + Number(bill.units), 0)} kWh</div>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Avg Rate</div>
+                <div className="text-2xl font-black text-purple-600 mt-2">₹{lastSixMonths.length > 0 ? Math.round(totalCost / lastSixMonths.reduce((sum, bill) => sum + Number(bill.units), 1)) : 0}/kWh</div>
+              </div>
+            </div>
+
+            {/* Detailed Table */}
+            <div className="mt-8 rounded-2xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left font-bold text-gray-700">Month</th>
+                    <th className="px-6 py-4 text-right font-bold text-gray-700">Units (kWh)</th>
+                    <th className="px-6 py-4 text-right font-bold text-gray-700">Rate/Unit</th>
+                    <th className="px-6 py-4 text-right font-bold text-gray-700">Amount</th>
+                    <th className="px-6 py-4 text-center font-bold text-gray-700">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lastSixMonths.map((bill, idx) => (
+                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} >
+                      <td className="px-6 py-4 font-medium text-gray-800">{bill.billing_month}</td>
+                      <td className="px-6 py-4 text-right font-bold text-accent">{bill.units}</td>
+                      <td className="px-6 py-4 text-right text-gray-600">₹{bill.rate}</td>
+                      <td className="px-6 py-4 text-right font-bold text-gray-900">₹{bill.amount}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${bill.is_paid ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                          {bill.is_paid ? 'Paid' : 'Pending'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-16 text-gray-400">
+            <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-20" />
+            <p className="font-medium italic">No consumption data recorded yet for this room</p>
+            <p className="text-sm mt-2">Bills will be generated monthly by the admin</p>
+          </div>
+        )}
       </div>
     </div>
   );

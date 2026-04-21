@@ -389,3 +389,48 @@ USING (
         WHERE role IN ('admin', 'super_admin', 'sub_admin')
     )
 );
+
+-- 9. DYNAMIC DOCUMENT REQUIREMENTS TABLE
+CREATE TABLE IF NOT EXISTS pg_document_requirements (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pg_id UUID REFERENCES pgs(id) ON DELETE CASCADE,
+    document_name TEXT NOT NULL,
+    document_type TEXT NOT NULL, -- 'police', 'medical', 'custom'
+    applicable_to TEXT NOT NULL DEFAULT 'all', -- 'national', 'international', 'all'
+    template_url TEXT,
+    is_mandatory BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- 10. BOOKING DOCUMENTS TABLE
+CREATE TABLE IF NOT EXISTS booking_documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    booking_id UUID REFERENCES bookings(id) ON DELETE CASCADE,
+    requirement_id UUID REFERENCES pg_document_requirements(id) ON DELETE CASCADE,
+    document_name TEXT NOT NULL,
+    uploaded_url TEXT NOT NULL,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'verified', 'rejected')),
+    rejection_reason TEXT,
+    verified_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    verified_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Enable Row Level Security
+ALTER TABLE pg_document_requirements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE booking_documents ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for pg_document_requirements
+DROP POLICY IF EXISTS "Enable all operations for pg_document_requirements" ON pg_document_requirements;
+CREATE POLICY "Enable all operations for pg_document_requirements" ON pg_document_requirements FOR ALL USING (true) WITH CHECK (true);
+
+-- RLS Policies for booking_documents
+DROP POLICY IF EXISTS "Enable all operations for booking_documents" ON booking_documents;
+CREATE POLICY "Enable all operations for booking_documents" ON booking_documents FOR ALL USING (true) WITH CHECK (true);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_pg_document_requirements_pg_id ON pg_document_requirements(pg_id);
+CREATE INDEX IF NOT EXISTS idx_booking_documents_booking_id ON booking_documents(booking_id);
+CREATE INDEX IF NOT EXISTS idx_booking_documents_requirement_id ON booking_documents(requirement_id);

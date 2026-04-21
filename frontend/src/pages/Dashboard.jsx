@@ -38,6 +38,7 @@ import { motion } from 'framer-motion';
 import { generateRentReceiptPDF } from '../utils/pdfUtils';
 import { toast } from 'react-hot-toast';
 import { compressImage } from '../utils/imageUtils';
+import { compressPDF } from '../utils/pdfUtils';
 
 const Dashboard = () => {
   const { userData, currentUser } = useAuth();
@@ -190,8 +191,15 @@ const Dashboard = () => {
     
     try {
       let uploadFile = file;
+      
+      // Compress images
       if (file.type.startsWith('image/')) {
         uploadFile = await compressImage(file, 0.9);
+      }
+      
+      // Compress PDFs
+      if (file.type === 'application/pdf') {
+        uploadFile = await compressPDF(file, 1);
       }
 
       if (uploadFile.size > 1 * 1024 * 1024) {
@@ -230,9 +238,17 @@ const Dashboard = () => {
     const toastId = toast.loading(`Uploading ${reqName}...`);
     try {
         let uploadFile = file;
+        
+        // Compress images
         if (file.type.startsWith('image/')) {
           uploadFile = await compressImage(file, 0.9);
         }
+        
+        // Compress PDFs
+        if (file.type === 'application/pdf') {
+          uploadFile = await compressPDF(file, 1);
+        }
+        
         if (uploadFile.size > 1024 * 1024) {
           toast.error('File is still above 1MB after compression. Please upload a smaller file.', { id: toastId });
           return;
@@ -339,13 +355,15 @@ const Dashboard = () => {
         { id: 'user_photo_url', label: 'Student Photo', icon: ImageIcon, req: true },
         { id: 'passport_url', label: 'Passport Photo / Bio Page', icon: Globe, req: true },
         { id: 'vidu_doc_url', label: 'Vidu Form', icon: FileSearch, req: true },
-        { id: 'university_id_url', label: 'Student College ID Card', icon: FileCheck, req: true }
+        { id: 'university_id_url', label: 'Student College ID Card', icon: FileCheck, req: true },
+        { id: 'police_verification_url', label: 'Police Verification Form', icon: Shield, req: true }
       ]
     : [
         { id: 'user_photo_url', label: 'Student Photo', icon: ImageIcon, req: true },
         { id: 'aadhar_pancard_url', label: 'Student Aadhaar Card', icon: FileText, req: true },
         { id: 'parent_aadhar_url', label: 'Parent / Guardian Aadhaar Card', icon: ShieldCheck, req: true },
-        { id: 'university_id_url', label: 'Student College ID Card', icon: FileCheck, req: true }
+        { id: 'university_id_url', label: 'Student College ID Card', icon: FileCheck, req: true },
+        { id: 'police_verification_url', label: 'Police Verification Form', icon: Shield, req: true }
       ];
 
   const userMenuItems = [
@@ -750,6 +768,25 @@ const Dashboard = () => {
                           )}
                         </div>
                         )}
+
+                        {/* Police Verification Form - Available for All Student Types */}
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Police Verification Form</p>
+                          {booking.pgs?.police_verification_template_url ? (
+                            <a 
+                              href={booking.pgs.police_verification_template_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="w-full flex items-center justify-center p-4 bg-purple-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-transform shadow-xl group"
+                            >
+                              <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get Police Form
+                            </a>
+                          ) : (
+                            <div className="p-4 bg-gray-50 text-gray-500 rounded-2xl text-[10px] font-bold border border-gray-100 italic">
+                              Contact admin for police form
+                            </div>
+                          )}
+                        </div>
 
                         {/* === NEW: Dynamic Custom Templates === */}
                         {docRequirements.map((req) => (
