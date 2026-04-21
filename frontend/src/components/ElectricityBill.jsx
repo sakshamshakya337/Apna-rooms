@@ -67,7 +67,7 @@ const ElectricityBill = ({ booking, userData }) => {
           }
         },
         prefill: {
-          name: userData?.full_name,
+          name: userData?.fullName || userData?.full_name || '',
           email: userData?.email
         },
         theme: { color: "#2196F3" }
@@ -100,7 +100,13 @@ const ElectricityBill = ({ booking, userData }) => {
     }
   };
 
-  const currentBill = bills[0];
+  const parseBillingMonth = (billingMonth) => {
+    const parsedDate = new Date(`1 ${billingMonth}`);
+    return Number.isNaN(parsedDate.getTime()) ? 0 : parsedDate.getTime();
+  };
+
+  const sortedBills = [...bills].sort((a, b) => parseBillingMonth(a.billing_month) - parseBillingMonth(b.billing_month));
+  const currentBill = sortedBills[sortedBills.length - 1];
 
   if (loading) return <div className="p-8 text-center text-gray-500">Loading bill data...</div>;
 
@@ -228,18 +234,20 @@ const ElectricityBill = ({ booking, userData }) => {
       <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
         <h3 className="text-xl font-bold mb-6">Consumption History (Last {bills.length} Months)</h3>
         <div className="flex items-end justify-between h-64 space-x-2 md:space-x-4">
-          {[...bills].reverse().slice(-6).map((item, idx) => (
+          {sortedBills.slice(-6).map((item, idx) => (
             <div key={idx} className="flex-1 flex flex-col items-center group">
               <motion.div 
                 initial={{ height: 0 }}
-                animate={{ height: `${(Number(item.units) / (Math.max(...bills.map(b => Number(b.units))) || 200)) * 100}%` }}
+                animate={{ height: `${(Number(item.units) / (Math.max(...sortedBills.map((bill) => Number(bill.units))) || 200)) * 100}%` }}
                 className="w-full bg-blue-100 rounded-t-lg group-hover:bg-accent transition-colors relative"
               >
                 <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
                   {item.units}
                 </span>
               </motion.div>
-              <span className="mt-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item.billing_month.split(' ')[0]}</span>
+              <span className="mt-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                {item.billing_month.split(' ').slice(0, 2).join(' ')}
+              </span>
             </div>
           ))}
           {bills.length === 0 && <div className="w-full text-center text-gray-300 italic">No consumption data recorded yet</div>}
@@ -250,3 +258,4 @@ const ElectricityBill = ({ booking, userData }) => {
 };
 
 export default ElectricityBill;
+

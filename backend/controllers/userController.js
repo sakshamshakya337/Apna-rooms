@@ -6,6 +6,19 @@ const { Resend } = require('resend');
 // Initialize Resend professionally with API Key from environment
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+const formatUserResponse = (user) => ({
+  id: user.id,
+  email: user.email,
+  fullName: user.full_name,
+  phoneNumber: user.phone_number || '',
+  parentPhoneNumber: user.parent_phone_number || '',
+  address: user.address || '',
+  city: user.city || '',
+  state: user.state || '',
+  role: user.role,
+  studentCategory: user.student_category || 'National'
+});
+
 const signup = async (req, res) => {
   const { password, fullName, role = 'user', studentCategory = 'National' } = req.body;
   const email = (req.body.email || '').trim().toLowerCase();
@@ -58,13 +71,7 @@ const signup = async (req, res) => {
     res.status(201).json({ 
       message: 'User created successfully',
       token,
-      user: { 
-        id: newUser.id, 
-        email: newUser.email, 
-        fullName: newUser.full_name, 
-        role: newUser.role,
-        studentCategory: newUser.student_category 
-      }
+      user: formatUserResponse(newUser)
     });
   } catch (error) {
     console.error('Signup error:', error);
@@ -111,13 +118,7 @@ const login = async (req, res) => {
     res.status(200).json({ 
       message: 'Login successful',
       token,
-      user: { 
-        id: user.id, 
-        email: user.email, 
-        fullName: user.full_name, 
-        role: user.role,
-        studentCategory: user.student_category 
-      }
+      user: formatUserResponse(user)
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -130,12 +131,20 @@ const googleLogin = async (req, res) => {
   const email = (req.body.email || '').trim().toLowerCase();
 
   try {
+    if (!email) {
+      return res.status(400).json({ error: 'Google account email is required' });
+    }
+
     // 1. Check if user already exists
     let { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
-      .single();
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
 
     if (!user) {
       // 2. Create user if doesn't exist (Google users don't need a local password)
@@ -146,6 +155,7 @@ const googleLogin = async (req, res) => {
             email, 
             full_name: fullName, 
             role: 'user',
+            student_category: 'National',
             password: 'google_authenticated' // Placeholder
           }
         ])
@@ -154,6 +164,19 @@ const googleLogin = async (req, res) => {
       
       if (insertError) throw insertError;
       user = newUser;
+    } else if (fullName && user.full_name !== fullName) {
+      const { data: refreshedUser, error: updateError } = await supabase
+        .from('users')
+        .update({
+          full_name: fullName,
+          updated_at: new Date()
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+      user = refreshedUser;
     }
 
     // 3. Generate JWT token
@@ -166,13 +189,7 @@ const googleLogin = async (req, res) => {
     res.status(200).json({ 
       message: 'Google login successful',
       token,
-      user: { 
-        id: user.id, 
-        email: user.email, 
-        fullName: user.full_name, 
-        role: user.role,
-        studentCategory: user.student_category 
-      }
+      user: formatUserResponse(user)
     });
   } catch (error) {
     console.error('Google Login Error:', error);
@@ -181,7 +198,7 @@ const googleLogin = async (req, res) => {
 };
 
 const updateProfile = async (req, res) => {
-  const { fullName, phoneNumber, address, city, state, studentCategory } = req.body;
+  const { fullName, phoneNumber, parentPhoneNumber, address, city, state, studentCategory } = req.body;
   const userId = req.user.id;
 
   try {
@@ -190,6 +207,7 @@ const updateProfile = async (req, res) => {
       .update({ 
         full_name: fullName, 
         phone_number: phoneNumber,
+        parent_phone_number: parentPhoneNumber,
         address: address,
         city: city,
         state: state,
@@ -207,17 +225,7 @@ const updateProfile = async (req, res) => {
 
     res.status(200).json({
       message: 'Profile updated successfully',
-      user: { 
-        id: updatedUser.id, 
-        email: updatedUser.email, 
-        fullName: updatedUser.full_name, 
-        phoneNumber: updatedUser.phone_number,
-        address: updatedUser.address,
-        city: updatedUser.city,
-        state: updatedUser.state,
-        role: updatedUser.role,
-        studentCategory: updatedUser.student_category 
-      }
+      user: formatUserResponse(updatedUser)
     });
   } catch (error) {
     console.error('Update profile internal error:', error);

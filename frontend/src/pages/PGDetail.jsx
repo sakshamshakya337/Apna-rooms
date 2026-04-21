@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 
 const PGDetail = () => {
   const { id } = useParams();
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   const navigate = useNavigate();
   const [pg, setPg] = useState(null);
   const [rooms, setRooms] = useState([]);
@@ -25,7 +25,20 @@ const PGDetail = () => {
   };
 
   const isRoomSoldOut = (room) => {
-    return Number(room.available_seats || 0) <= 0 || hasActiveBooking(room);
+    return hasActiveBooking(room);
+  };
+
+  const getMissingProfileFields = () => {
+    const category = userData?.studentCategory || 'National';
+    const missing = [];
+
+    if (!userData?.studentCategory) missing.push('student type');
+    if (!userData?.phoneNumber) missing.push('student phone number');
+    if (category !== 'International' && !userData?.parentPhoneNumber) {
+      missing.push('parent/guardian phone number');
+    }
+
+    return missing;
   };
 
   useEffect(() => {
@@ -95,6 +108,12 @@ const PGDetail = () => {
 
     if (!selectedRoom) {
       return toast.error('Please select a room first');
+    }
+
+    const missingProfileFields = getMissingProfileFields();
+    if (missingProfileFields.length > 0) {
+      toast.error(`Complete profile first: ${missingProfileFields.join(', ')}`);
+      return navigate('/dashboard?tab=profile');
     }
 
     if (isRoomSoldOut(selectedRoom)) {
@@ -227,9 +246,11 @@ const PGDetail = () => {
                           </span>
                         </div>
                       </div>
-                      <div className={`text-[10px] mt-2 font-black uppercase tracking-wider ${isRoomSoldOut(room) ? 'text-red-600' : 'text-green-600'}`}>
-                        {isRoomSoldOut(room) ? 'Sold Out' : 'Room Available'}
-                      </div>
+                      {isRoomSoldOut(room) && (
+                        <div className="text-[10px] mt-2 font-black uppercase tracking-wider text-red-600">
+                          Reserved
+                        </div>
+                      )}
                     </div>
                   </button>
                 ))}
@@ -286,7 +307,7 @@ const PGDetail = () => {
                   <div>
                     <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Safe Residency</h4>
                     <p className="text-[11px] text-gray-600 mt-1 font-bold leading-relaxed">
-                      KYC documents (Passport/Aadhar) required immediately after initial booking payment.
+                      KYC opens in the dashboard after admin confirms the booking.
                     </p>
                   </div>
                 </div>

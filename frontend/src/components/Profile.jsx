@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import { User, Mail, Shield, Lock, Save, Loader2, CheckCircle2, Phone, MapPin, Building } from 'lucide-react';
+import { User, Mail, Shield, Lock, Save, Loader2, CheckCircle2, Phone, MapPin, Building, Globe } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const Profile = () => {
@@ -12,6 +12,7 @@ const Profile = () => {
   const [profileData, setProfileData] = useState({
     fullName: '',
     phoneNumber: '',
+    parentPhoneNumber: '',
     address: '',
     city: '',
     state: '',
@@ -23,11 +24,17 @@ const Profile = () => {
       setProfileData({
         fullName: userData.fullName || '',
         phoneNumber: userData.phoneNumber || '',
+        parentPhoneNumber: userData.parentPhoneNumber || '',
         address: userData.address || '',
         city: userData.city || '',
         state: userData.state || '',
         studentCategory: userData.studentCategory || 'National'
       });
+
+      const category = userData.studentCategory || 'National';
+      if (!userData.phoneNumber || (category !== 'International' && !userData.parentPhoneNumber)) {
+        setEditing(true);
+      }
     }
   }, [userData]);
 
@@ -39,6 +46,14 @@ const Profile = () => {
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
+    const isInternational = profileData.studentCategory === 'International';
+    if (!profileData.phoneNumber.trim()) {
+      return toast.error('Student phone number is required before booking.');
+    }
+    if (!isInternational && !profileData.parentPhoneNumber.trim()) {
+      return toast.error('Parent or guardian phone number is required for national students.');
+    }
+
     setLoading(true);
     try {
       await updateProfile(profileData);
@@ -50,6 +65,9 @@ const Profile = () => {
       setLoading(false);
     }
   };
+
+  const isInternational = profileData.studentCategory === 'International';
+  const profileNeedsBookingInfo = !profileData.phoneNumber || (!isInternational && !profileData.parentPhoneNumber);
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -78,6 +96,13 @@ const Profile = () => {
         <h2 className="text-3xl font-bold mb-2">My Profile</h2>
         <p className="text-gray-500">Manage your account information and security</p>
       </div>
+
+      {profileNeedsBookingInfo && (
+        <div className="bg-amber-50 border border-amber-100 text-amber-800 p-5 rounded-3xl">
+          <p className="font-bold">Complete these booking details first.</p>
+          <p className="text-sm mt-1">Your student type and phone details decide which documents are required after admin confirmation.</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Profile Info */}
@@ -115,12 +140,13 @@ const Profile = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Phone Number</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Student Phone Number</label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input 
                       type="text" 
                       disabled={!editing}
+                      required
                       placeholder="Enter phone number"
                       value={profileData.phoneNumber}
                       onChange={(e) => setProfileData({...profileData, phoneNumber: e.target.value})}
@@ -129,6 +155,24 @@ const Profile = () => {
                   </div>
                 </div>
               </div>
+
+              {!isInternational && (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Parent / Guardian Phone Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      disabled={!editing}
+                      required
+                      placeholder="Enter parent or guardian phone"
+                      value={profileData.parentPhoneNumber}
+                      onChange={(e) => setProfileData({...profileData, parentPhoneNumber: e.target.value})}
+                      className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent transition-all disabled:opacity-60"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Address</label>
@@ -237,6 +281,7 @@ const Profile = () => {
                       setProfileData({
                         fullName: userData?.fullName || '',
                         phoneNumber: userData?.phoneNumber || '',
+                        parentPhoneNumber: userData?.parentPhoneNumber || '',
                         address: userData?.address || '',
                         city: userData?.city || '',
                         state: userData?.state || '',

@@ -35,8 +35,10 @@ const Signup = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      await loginWithGoogle();
-      navigate('/dashboard');
+      const user = await loginWithGoogle();
+      if (user) {
+        navigate('/dashboard');
+      }
     } catch (error) {
       console.error(error);
     }

@@ -41,9 +41,11 @@ CREATE TABLE IF NOT EXISTS users (
     password TEXT NOT NULL,
     full_name TEXT NOT NULL,
     phone_number TEXT,
+    parent_phone_number TEXT,
     address TEXT,
     city TEXT,
     state TEXT,
+    student_category TEXT DEFAULT 'National',
     role user_role DEFAULT 'user',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
@@ -102,7 +104,12 @@ CREATE TABLE IF NOT EXISTS bookings (
     user_photo_url TEXT,
     university_id_url TEXT,
     aadhar_front_url TEXT,
+    aadhar_pancard_url TEXT,
     aadhar_back_url TEXT,
+    parent_aadhar_url TEXT,
+    passport_url TEXT,
+    vidu_doc_url TEXT,
+    police_verification_url TEXT,
     is_kyc_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
@@ -184,6 +191,12 @@ BEGIN
         ALTER TABLE users ADD COLUMN city TEXT;
         ALTER TABLE users ADD COLUMN state TEXT;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='parent_phone_number') THEN
+        ALTER TABLE users ADD COLUMN parent_phone_number TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='student_category') THEN
+        ALTER TABLE users ADD COLUMN student_category TEXT DEFAULT 'National';
+    END IF;
 
     -- Fix PGs table Updates
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pgs' AND column_name='rules') THEN
@@ -233,9 +246,18 @@ BEGIN
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='parent_aadhar_url') THEN
         ALTER TABLE bookings ADD COLUMN parent_aadhar_url TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='passport_url') THEN
         ALTER TABLE bookings ADD COLUMN passport_url TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='vidu_doc_url') THEN
         ALTER TABLE bookings ADD COLUMN vidu_doc_url TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='aadhar_pancard_url') THEN
         ALTER TABLE bookings ADD COLUMN aadhar_pancard_url TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='police_verification_url') THEN
+        ALTER TABLE bookings ADD COLUMN police_verification_url TEXT;
     END IF;
 END $$;
 

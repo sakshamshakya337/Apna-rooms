@@ -57,6 +57,9 @@ const AdminPanel = ({ section = 'admin' }) => {
   const [editingPG, setEditingPG] = useState(null);
   const [showAddRoomModal, setShowAddRoomModal] = useState(false);
   const [showAddBillModal, setShowAddBillModal] = useState(false);
+  const [editingBill, setEditingBill] = useState(null);
+  const [showAdminOccupantModal, setShowAdminOccupantModal] = useState(false);
+  const [selectedTenantForOccupant, setSelectedTenantForOccupant] = useState(null);
   
   const [selectedPG, setSelectedPG] = useState(null);
   const [viewingPG, setViewingPG] = useState(null);
@@ -102,11 +105,11 @@ const AdminPanel = ({ section = 'admin' }) => {
 
   const [newBill, setNewBill] = useState({
     room_id: '',
-    title: '',
-    amount: '',
-    month: new Date().toISOString().split('-')[1],
-    year: new Date().getFullYear().toString()
+    units: '',
+    rate: 10,
+    billing_month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
   });
+  const [adminOccupantForm, setAdminOccupantForm] = useState({ full_name: '', email: '', phone_number: '' });
 
   // Dynamic Document Template States
   const [showDocManager, setShowDocManager] = useState(false);
@@ -131,6 +134,11 @@ const AdminPanel = ({ section = 'admin' }) => {
   const roomDisplayName = (pgName, roomNumber) => {
     return `${pgName || 'PG'} - Room ${roomNumber || 'N/A'}`;
   };
+
+  const getApprovedRoommateCount = (tenant) => tenant.roommate_requests?.filter((request) => request.status === 'approved').length || 0;
+  const getCurrentOccupancy = (tenant) => (tenant ? 1 + getApprovedRoommateCount(tenant) : 0);
+  const getRoomCapacity = (tenant) => Math.min(3, Number(tenant?.rooms?.total_seats || 3));
+  const canAdminAddThirdOccupant = (tenant) => getCurrentOccupancy(tenant) === 2 && getRoomCapacity(tenant) >= 3;
 
   const getPrimaryRoommateRequest = (tenant) => {
     return tenant.roommate_requests?.find((request) => request.status === 'pending')
@@ -187,9 +195,9 @@ const AdminPanel = ({ section = 'admin' }) => {
           .from('bookings')
           .select(`
             *,
-            users (id, full_name, email, phone_number, address, city, state),
+            users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
             pgs (name),
-            rooms (room_number),
+            rooms (room_number, total_seats),
             roommate_requests (*)
           `)
           .in('status', ACTIVE_BOOKING_STATUSES)
@@ -376,6 +384,37 @@ const AdminPanel = ({ section = 'admin' }) => {
     } catch (error) {
       toast.error('Failed to update electricity bill');
     }
+  };
+
+  const openBillModal = (bill = null) => {
+    setEditingBill(bill);
+    setNewBill(
+      bill
+        ? {
+            room_id: bill.room_id,
+            units: bill.units,
+            rate: bill.rate,
+            billing_month: bill.billing_month
+          }
+        : {
+            room_id: '',
+            units: '',
+            rate: 10,
+            billing_month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
+          }
+    );
+    setShowAddBillModal(true);
+  };
+
+  const closeBillModal = () => {
+    setEditingBill(null);
+    setShowAddBillModal(false);
+    setNewBill({
+      room_id: '',
+      units: '',
+      rate: 10,
+      billing_month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
+    });
   };
 
   const uploadImage = async (file, path) => {
@@ -652,15 +691,23 @@ const AdminPanel = ({ section = 'admin' }) => {
     e.preventDefault();
     try {
       const amount = Number(newBill.units) * Number(newBill.rate);
-      const { error } = await supabase.from('electricity_bills').insert([{
-        ...newBill,
-        amount: amount,
-        is_paid: false
-      }]);
+      const payload = {
+        room_id: newBill.room_id,
+        units: Number(newBill.units),
+        rate: Number(newBill.rate),
+        billing_month: newBill.billing_month,
+        amount,
+        is_paid: editingBill?.is_paid || false
+      };
+
+      const operation = editingBill
+        ? supabase.from('electricity_bills').update(payload).eq('id', editingBill.id)
+        : supabase.from('electricity_bills').insert([payload]);
+
+      const { error } = await operation;
       if (error) throw error;
-      toast.success('Electricity Bill Added!');
-      setShowAddBillModal(false);
-      setNewBill({ room_id: '', units: '', rate: 10, billing_month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }) });
+      toast.success(editingBill ? 'Electricity bill updated!' : 'Electricity bill added!');
+      closeBillModal();
       fetchAdminData();
     } catch (error) {
       toast.error(error.message);
@@ -691,8 +738,8 @@ const AdminPanel = ({ section = 'admin' }) => {
         .from('bookings')
         .select(`
           *,
-          users (id, full_name, email, phone_number, address, city, state),
-          rooms (room_number),
+          users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
+          rooms (room_number, total_seats),
           roommate_requests (*)
         `)
         .eq('pg_id', pgId)
@@ -725,19 +772,22 @@ const AdminPanel = ({ section = 'admin' }) => {
     try {
       // 1. Fetch static KYC documents manually (to ensure clean URLs)
       const docs = [
-        { key: 'aadhar_front', url: tenant.users?.aadhar_front_url || tenant.aadhar_front_url },
-        { key: 'aadhar_back', url: tenant.users?.aadhar_back_url || tenant.aadhar_back_url },
-        { key: 'pan', url: tenant.users?.pan_card_url || tenant.pan_card_url },
-        { key: 'student_id', url: tenant.users?.student_id_url || tenant.student_id_url },
-        { key: 'passport', url: tenant.users?.passport_url || tenant.passport_url },
-        { key: 'visa', url: tenant.users?.visa_url || tenant.visa_url },
-        { key: 'photo', url: tenant.users?.profile_photo_url || tenant.profile_photo_url || tenant.user_photo_url }
+        { key: 'userPhoto', url: tenant.user_photo_url },
+        { key: 'universityId', url: tenant.university_id_url },
+        { key: 'aadharPancard', url: tenant.aadhar_pancard_url || tenant.aadhar_front_url },
+        { key: 'parentAadhar', url: tenant.parent_aadhar_url },
+        { key: 'passport', url: tenant.passport_url },
+        { key: 'viduDoc', url: tenant.vidu_doc_url }
       ];
       
-      const newUrls = {};
-      docs.forEach(doc => {
-        if (doc.url) newUrls[doc.key] = doc.url;
-      });
+      const signedDocs = await Promise.all(docs.filter(doc => doc.url).map(async (doc) => {
+        if (/^https?:\/\//i.test(doc.url)) return [doc.key, doc.url];
+        const { data } = await supabase.storage
+          .from('kyc-documents')
+          .createSignedUrl(doc.url, 300);
+        return [doc.key, data?.signedUrl || doc.url];
+      }));
+      const newUrls = Object.fromEntries(signedDocs);
       setKycUrls(newUrls);
 
       // 2. Fetch dynamic documents from booking_documents
@@ -773,6 +823,11 @@ const AdminPanel = ({ section = 'admin' }) => {
 
   const handleReviewRoommate = async (requestId, status) => {
     try {
+      const tenant = tenants.find((item) => item.roommate_requests?.some((request) => request.id === requestId));
+      if (status === 'approved' && tenant && getCurrentOccupancy(tenant) >= getRoomCapacity(tenant)) {
+        return toast.error('This room has already reached its allowed occupancy.');
+      }
+
       const { error } = await supabase
         .from('roommate_requests')
         .update({
@@ -793,6 +848,46 @@ const AdminPanel = ({ section = 'admin' }) => {
       })));
     } catch (error) {
       toast.error(error.message || 'Failed to update roommate request');
+    }
+  };
+
+  const handleAddAdminOccupant = async (e) => {
+    e.preventDefault();
+    if (!selectedTenantForOccupant) return;
+    if (!adminOccupantForm.full_name.trim() || !adminOccupantForm.email.trim()) {
+      return toast.error('Occupant name and email are required.');
+    }
+
+    try {
+      if (!canAdminAddThirdOccupant(selectedTenantForOccupant)) {
+        return toast.error('Admin can add the third occupant only after two occupants are already active in the room.');
+      }
+
+      const { error } = await supabase
+        .from('roommate_requests')
+        .insert([{
+          booking_id: selectedTenantForOccupant.id,
+          pg_id: selectedTenantForOccupant.pg_id,
+          room_id: selectedTenantForOccupant.room_id,
+          requested_by_user_id: userData?.id,
+          roommate_full_name: adminOccupantForm.full_name.trim(),
+          roommate_email: adminOccupantForm.email.trim().toLowerCase(),
+          roommate_phone: adminOccupantForm.phone_number.trim(),
+          status: 'approved',
+          verified_by: userData?.id,
+          verified_at: new Date().toISOString()
+        }]);
+
+      if (error) throw error;
+
+      toast.success('Third occupant added successfully.');
+      setAdminOccupantForm({ full_name: '', email: '', phone_number: '' });
+      setShowAdminOccupantModal(false);
+      setSelectedTenantForOccupant(null);
+      fetchAdminData(section);
+      if (selectedPGForTenants) fetchTenants(selectedPGForTenants.id);
+    } catch (error) {
+      toast.error(error.message || 'Failed to add the third occupant.');
     }
   };
 
@@ -846,7 +941,7 @@ const AdminPanel = ({ section = 'admin' }) => {
           )}
           {section === 'bills_admin' && (
             <button 
-              onClick={() => setShowAddBillModal(true)}
+              onClick={() => openBillModal()}
               className="bg-accent text-white px-6 py-3 rounded-xl font-bold flex items-center space-x-2 hover:bg-blue-600 transition-all shadow-lg shadow-blue-100"
             >
               <Zap className="w-5 h-5" />
@@ -1045,6 +1140,9 @@ const AdminPanel = ({ section = 'admin' }) => {
                         {roomDisplayName(tenant.pgs?.name, tenant.rooms?.room_number)}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">{tenant.pgs?.name || 'N/A'}</div>
+                      <div className="text-[10px] text-gray-400 mt-1">
+                        Occupancy: {getCurrentOccupancy(tenant)}/{getRoomCapacity(tenant)}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-bold">{tenant.users?.full_name}</div>
@@ -1103,6 +1201,18 @@ const AdminPanel = ({ section = 'admin' }) => {
                             Reject
                           </button>
                         </div>
+                      )}
+                      {canAdminAddThirdOccupant(tenant) && (
+                        <button
+                          onClick={() => {
+                            setSelectedTenantForOccupant(tenant);
+                            setAdminOccupantForm({ full_name: '', email: '', phone_number: '' });
+                            setShowAdminOccupantModal(true);
+                          }}
+                          className="text-white font-bold text-xs bg-purple-600 px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+                        >
+                          Add 3rd Occupant
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -1313,20 +1423,28 @@ const AdminPanel = ({ section = 'admin' }) => {
                         }`}>{bill.is_paid ? 'Paid' : 'Unpaid'}</span>
                       </td>
                       <td className="px-6 py-4">
-                        {!bill.is_paid && (
+                        <div className="flex flex-wrap gap-2">
                           <button 
-                            onClick={() => handleMarkBillPaid(bill.id)}
-                            className="bg-green-50 text-green-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-all border border-green-200"
+                            onClick={() => openBillModal(bill)}
+                            className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-blue-100 transition-all border border-blue-200"
                           >
-                            Mark Paid
+                            Edit
                           </button>
-                        )}
+                          {!bill.is_paid && (
+                            <button 
+                              onClick={() => handleMarkBillPaid(bill.id)}
+                              className="bg-green-50 text-green-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-all border border-green-200"
+                            >
+                              Mark Paid
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
                   {billHistory.length === 0 && (
                     <tr>
-                      <td colSpan="6" className="px-6 py-12 text-center text-gray-400 font-medium">No bills generated yet.</td>
+                      <td colSpan="7" className="px-6 py-12 text-center text-gray-400 font-medium">No bills generated yet.</td>
                     </tr>
                   )}
                 </tbody>
@@ -1396,7 +1514,9 @@ const AdminPanel = ({ section = 'admin' }) => {
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-bold text-primary">{item.users?.full_name}</div>
-                      <div className="text-xs text-gray-400">{item.pgs?.name}</div>
+                      <div className="text-xs text-gray-400">
+                        {item.pgs?.name} - Room {item.rooms?.room_number}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-sm font-medium">{item.category}</td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{item.description}</td>
@@ -1519,8 +1639,8 @@ const AdminPanel = ({ section = 'admin' }) => {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold">Generate Bill</h3>
-                <button onClick={() => setShowAddBillModal(false)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
+                <h3 className="text-2xl font-bold">{editingBill ? 'Update Bill' : 'Generate Bill'}</h3>
+                <button onClick={closeBillModal} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
               </div>
               <form onSubmit={handleAddBill} className="space-y-4">
                 <div>
@@ -1550,7 +1670,59 @@ const AdminPanel = ({ section = 'admin' }) => {
                   <span className="text-sm font-bold text-gray-500">Total Amount</span>
                   <span className="text-xl font-bold text-accent">₹{Number(newBill.units || 0) * Number(newBill.rate || 0)}</span>
                 </div>
-                <button type="submit" className="w-full bg-accent text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-600 transition-all shadow-lg">Generate & Post Bill</button>
+                <button type="submit" className="w-full bg-accent text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-600 transition-all shadow-lg">{editingBill ? 'Update Bill' : 'Generate & Post Bill'}</button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {showAdminOccupantModal && selectedTenantForOccupant && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold">Add Third Occupant</h3>
+                  <p className="text-sm text-gray-500 mt-1">{roomDisplayName(selectedTenantForOccupant.pgs?.name || selectedPGForTenants?.name, selectedTenantForOccupant.rooms?.room_number)}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowAdminOccupantModal(false);
+                    setSelectedTenantForOccupant(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddAdminOccupant} className="space-y-4">
+                <input
+                  required
+                  placeholder="Student full name"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none"
+                  value={adminOccupantForm.full_name}
+                  onChange={(e) => setAdminOccupantForm({ ...adminOccupantForm, full_name: e.target.value })}
+                />
+                <input
+                  required
+                  type="email"
+                  placeholder="Student email"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none"
+                  value={adminOccupantForm.email}
+                  onChange={(e) => setAdminOccupantForm({ ...adminOccupantForm, email: e.target.value })}
+                />
+                <input
+                  placeholder="Student phone number"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none"
+                  value={adminOccupantForm.phone_number}
+                  onChange={(e) => setAdminOccupantForm({ ...adminOccupantForm, phone_number: e.target.value })}
+                />
+                <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 text-sm text-purple-800">
+                  Admin-only flow: this creates the approved third occupant directly for the room. The student should sign up with the same email to access complaints and room details.
+                </div>
+                <button type="submit" className="w-full bg-purple-600 text-white py-4 rounded-xl font-bold hover:bg-purple-700 transition-all shadow-lg">
+                  Save Third Occupant
+                </button>
               </form>
             </motion.div>
           </div>
@@ -2069,6 +2241,9 @@ const AdminPanel = ({ section = 'admin' }) => {
                             <td className="px-6 py-4">
                               <div className="font-bold text-accent">{roomDisplayName(selectedPGForTenants?.name, tenant.rooms?.room_number)}</div>
                               <div className="text-xs text-gray-400 uppercase tracking-tighter">{tenant.type} STAY</div>
+                              <div className="text-[10px] text-gray-400 mt-1">
+                                Occupancy: {getCurrentOccupancy(tenant)}/{getRoomCapacity(tenant)}
+                              </div>
                               {getPrimaryRoommateRequest(tenant) && (
                                 <div className="mt-2 text-[10px] font-bold text-indigo-600">
                                   Roommate: {getPrimaryRoommateRequest(tenant).roommate_full_name} ({getPrimaryRoommateRequest(tenant).status})
@@ -2134,6 +2309,19 @@ const AdminPanel = ({ section = 'admin' }) => {
                                       Reject Roommate
                                     </button>
                                   </>
+                                )}
+                                {canAdminAddThirdOccupant(tenant) && (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedTenantForOccupant(tenant);
+                                      setAdminOccupantForm({ full_name: '', email: '', phone_number: '' });
+                                      setShowAdminOccupantModal(true);
+                                    }}
+                                    className="px-4 py-2 bg-purple-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 transition-all flex items-center justify-center space-x-2"
+                                  >
+                                    <Users className="w-3 h-3" />
+                                    <span>Add 3rd Occupant</span>
+                                  </button>
                                 )}
                               </div>
                             </td>
@@ -2237,18 +2425,19 @@ const AdminPanel = ({ section = 'admin' }) => {
                   </div>
                 </div>
 
-                {/* Aadhar Card Front */}
+                {/* Aadhaar (National Only) */}
+                {selectedTenant.users?.student_category !== 'International' && (
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
-                    <Shield className="w-3 h-3 mr-2" /> Aadhar Card (Front)
+                    <Shield className="w-3 h-3 mr-2" /> Student Aadhaar Card
                   </label>
                   <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
-                    {selectedTenant.aadhar_front_url ? (
-                      kycUrls.aadharFront ? (
+                    {(selectedTenant.aadhar_pancard_url || selectedTenant.aadhar_front_url) ? (
+                      kycUrls.aadharPancard ? (
                         <>
-                          <img src={kycUrls.aadharFront} alt="Aadhar Front" className="w-full h-full object-cover" />
+                          <img src={kycUrls.aadharPancard} alt="Student Aadhaar" className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <a href={kycUrls.aadharFront} download target="_blank" rel="noopener noreferrer" className="bg-white text-gray-900 px-4 py-2 rounded-xl font-bold flex items-center space-x-2 shadow-xl hover:scale-105 transition-transform">
+                            <a href={kycUrls.aadharPancard} download target="_blank" rel="noopener noreferrer" className="bg-white text-gray-900 px-4 py-2 rounded-xl font-bold flex items-center space-x-2 shadow-xl hover:scale-105 transition-transform">
                               <Download className="w-4 h-4" />
                               <span>Download</span>
                             </a>
@@ -2268,8 +2457,10 @@ const AdminPanel = ({ section = 'admin' }) => {
                     )}
                   </div>
                 </div>
+                )}
 
                 {/* Aadhar Card Back */}
+                {false && (
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
                     <Shield className="w-3 h-3 mr-2" /> Aadhar Card (Back)
@@ -2300,8 +2491,10 @@ const AdminPanel = ({ section = 'admin' }) => {
                     )}
                   </div>
                 </div>
+                )}
 
                 {/* Parent Aadhar */}
+                {selectedTenant.users?.student_category !== 'International' && (
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
                     <Shield className="w-3 h-3 mr-2" /> Parent/Guardian Aadhar
@@ -2332,6 +2525,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                     )}
                   </div>
                 </div>
+                )}
 
                 {/* Passport (International Only) */}
                 {selectedTenant.users?.student_category === 'International' && (
@@ -2368,7 +2562,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                 )}
 
                 {/* Visa / Permit (International Only) */}
-                {selectedTenant.users?.student_category === 'International' && (
+                {false && selectedTenant.users?.student_category === 'International' && (
                   <div className="space-y-3">
                     <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
                       <Shield className="w-3 h-3 mr-2" /> Visa / Residence Permit
@@ -2402,6 +2596,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                 )}
 
                 {/* Vidu Doc */}
+                {selectedTenant.users?.student_category === 'International' && (
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
                     <FileText className="w-3 h-3 mr-2" /> Vidu Authorization Form
@@ -2429,8 +2624,10 @@ const AdminPanel = ({ section = 'admin' }) => {
                     )}
                   </div>
                 </div>
+                )}
 
                 {/* Police Verification */}
+                {false && (
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
                     <ShieldCheck className="w-3 h-3 mr-2" /> Police Verification Doc
@@ -2458,6 +2655,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                     )}
                   </div>
                 </div>
+                )}
                 </div>
 
               <div className="bg-gray-50 rounded-2xl p-6 mb-8">
@@ -2475,6 +2673,16 @@ const AdminPanel = ({ section = 'admin' }) => {
                     <div className="text-[10px] text-gray-400 uppercase font-bold">Phone</div>
                     <div className="text-sm font-medium">{selectedTenant.users?.phone_number || 'N/A'}</div>
                   </div>
+                  <div>
+                    <div className="text-[10px] text-gray-400 uppercase font-bold">Student Type</div>
+                    <div className="text-sm font-medium">{selectedTenant.users?.student_category || 'National'}</div>
+                  </div>
+                  {selectedTenant.users?.student_category !== 'International' && (
+                    <div>
+                      <div className="text-[10px] text-gray-400 uppercase font-bold">Parent / Guardian Phone</div>
+                      <div className="text-sm font-medium">{selectedTenant.users?.parent_phone_number || 'N/A'}</div>
+                    </div>
+                  )}
                   <div className="col-span-full">
                     <div className="text-[10px] text-gray-400 uppercase font-bold">Address</div>
                     <div className="text-sm font-medium">
@@ -2517,3 +2725,4 @@ const AdminPanel = ({ section = 'admin' }) => {
 };
 
 export default AdminPanel;
+

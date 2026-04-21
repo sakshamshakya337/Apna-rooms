@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../config/supabase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Zap, 
   MessageSquare, 
@@ -37,12 +37,15 @@ import ServiceWorkerDashboard from './ServiceWorkerDashboard';
 import { motion } from 'framer-motion';
 import { generateRentReceiptPDF } from '../utils/pdfUtils';
 import { toast } from 'react-hot-toast';
+import { compressImage } from '../utils/imageUtils';
 
 const Dashboard = () => {
   const { userData, currentUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isAdmin = userData?.role === 'admin' || userData?.role === 'super_admin' || userData?.role === 'sub_admin';
-  const [activeTab, setActiveTab] = useState(isAdmin ? 'admin' : 'overview');
+  const requestedTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(requestedTab || (isAdmin ? 'admin' : 'overview'));
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [docRequirements, setDocRequirements] = useState([]);
@@ -50,6 +53,8 @@ const Dashboard = () => {
   const [roommateRequests, setRoommateRequests] = useState([]);
   const [roommateForm, setRoommateForm] = useState({ full_name: '', email: '', phone_number: '' });
   const [roommateSubmitting, setRoommateSubmitting] = useState(false);
+  const residentName = userData?.fullName || userData?.full_name || currentUser?.fullName || currentUser?.full_name || currentUser?.email || 'Resident';
+  const residentFirstName = residentName.split(' ')[0];
 
   useEffect(() => {
     if (currentUser) {
@@ -64,10 +69,20 @@ const Dashboard = () => {
     return () => window.removeEventListener('changeTab', handleChangeTab);
   }, [currentUser]);
 
+  useEffect(() => {
+    if (requestedTab) {
+      setActiveTab(requestedTab);
+    } else if (isAdmin && activeTab === 'overview') {
+      setActiveTab('admin');
+    }
+  }, [requestedTab, isAdmin, activeTab]);
+
   const fetchUserBooking = async () => {
     setLoading(true);
     try {
-      const { data } = await supabase
+      let bookingData = null;
+
+      const { data: primaryBooking } = await supabase
         .from('bookings')
         .select(`
           *,
@@ -77,13 +92,43 @@ const Dashboard = () => {
         .eq('user_id', currentUser.uid)
         .in('status', ['confirmed', 'pending'])
         .maybeSingle();
-      
-      if (data) {
-        setBooking(data);
+
+      if (primaryBooking) {
+        bookingData = { ...primaryBooking, occupant_role: 'primary' };
+      } else if (currentUser?.email) {
+        const { data: roommateMatches, error: roommateError } = await supabase
+          .from('roommate_requests')
+          .select(`
+            *,
+            bookings:booking_id (
+              *,
+              pgs:pg_id (id, name, address, city, accommodation_type, owner_doc_url, police_verification_template_url),
+              rooms:room_id (room_number, total_seats, available_seats)
+            )
+          `)
+          .eq('roommate_email', currentUser.email.trim().toLowerCase())
+          .eq('status', 'approved')
+          .order('verified_at', { ascending: false })
+          .limit(1);
+
+        if (roommateError) throw roommateError;
+
+        if (roommateMatches?.[0]?.bookings) {
+          bookingData = {
+            ...roommateMatches[0].bookings,
+            occupant_role: 'approved_roommate',
+            occupant_record_id: roommateMatches[0].id,
+            occupant_display_name: roommateMatches[0].roommate_full_name
+          };
+        }
+      }
+
+      if (bookingData) {
+        setBooking(bookingData);
         // Fetch dynamic requirements and current uploads
         const [reqsRes, docsRes] = await Promise.all([
-          supabase.from('pg_document_requirements').select('*').eq('pg_id', data.pg_id),
-          supabase.from('booking_documents').select('*').eq('booking_id', data.id)
+          supabase.from('pg_document_requirements').select('*').eq('pg_id', bookingData.pg_id),
+          supabase.from('booking_documents').select('*').eq('booking_id', bookingData.id)
         ]);
         setDocRequirements(reqsRes.data || []);
         setDynamicDocs(docsRes.data || []);
@@ -91,9 +136,14 @@ const Dashboard = () => {
         const { data: roommateData } = await supabase
           .from('roommate_requests')
           .select('*')
-          .eq('booking_id', data.id)
+          .eq('booking_id', bookingData.id)
           .order('created_at', { ascending: false });
         setRoommateRequests(roommateData || []);
+      } else {
+        setBooking(null);
+        setDocRequirements([]);
+        setDynamicDocs([]);
+        setRoommateRequests([]);
       }
     } catch (error) {
       console.error('Error fetching booking:', error);
@@ -104,19 +154,27 @@ const Dashboard = () => {
 
   const handleDocUpload = async (file, column) => {
     if (!file) return;
-    
-    // Validate file size (max 1MB strictly)
-    if (file.size > 1 * 1024 * 1024) {
-      return toast.error("File exceeds 1MB limit. Please compress it.");
+    if (booking?.occupant_role === 'approved_roommate') {
+      return toast.error('Only the primary resident can manage KYC documents.');
     }
 
     const toastId = toast.loading(`Uploading ${column.replace(/_/g, ' ')}...`);
     
     try {
+      let uploadFile = file;
+      if (file.type.startsWith('image/')) {
+        uploadFile = await compressImage(file, 0.9);
+      }
+
+      if (uploadFile.size > 1 * 1024 * 1024) {
+        toast.error('File is still above 1MB after compression. Please upload a smaller file.', { id: toastId });
+        return;
+      }
+
       const fileName = `${currentUser.uid}/${Date.now()}_${file.name}`;
       const { data, error: uploadError } = await supabase.storage
         .from('kyc-documents')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, uploadFile, { upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -137,16 +195,27 @@ const Dashboard = () => {
 
   const handleDynamicDocUpload = async (file, reqId, reqName) => {
     if (!file) return;
-    if (file.size > 1024 * 1024) return toast.error('Max 1MB allowed');
+    if (booking?.occupant_role === 'approved_roommate') {
+      return toast.error('Only the primary resident can manage KYC documents.');
+    }
 
     const toastId = toast.loading(`Uploading ${reqName}...`);
     try {
+        let uploadFile = file;
+        if (file.type.startsWith('image/')) {
+          uploadFile = await compressImage(file, 0.9);
+        }
+        if (uploadFile.size > 1024 * 1024) {
+          toast.error('File is still above 1MB after compression. Please upload a smaller file.', { id: toastId });
+          return;
+        }
+
         const fileExt = file.name.split('.').pop();
         const fileName = `${currentUser.uid}/dynamic_${reqId}_${Date.now()}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
           .from('kyc-documents')
-          .upload(fileName, file);
+          .upload(fileName, uploadFile);
         
         if (uploadError) throw uploadError;
 
@@ -181,13 +250,21 @@ const Dashboard = () => {
   const handleRoommateRequest = async (e) => {
     e.preventDefault();
     if (!booking) return toast.error('Book a room before adding a roommate.');
+    if (booking.occupant_role === 'approved_roommate') {
+      return toast.error('Only the primary room holder can request an additional roommate.');
+    }
     if (!roommateForm.full_name.trim() || !roommateForm.email.trim()) {
       return toast.error('Roommate name and email are required.');
     }
 
-    const activeRequest = roommateRequests.find((request) => ['pending', 'approved'].includes(request.status));
+    const activeRequest = roommateRequests.find((request) => request.status === 'pending');
     if (activeRequest) {
-      return toast.error('A roommate request is already active for this room.');
+      return toast.error('A roommate request is already pending for this room.');
+    }
+
+    const approvedOccupants = roommateRequests.filter((request) => request.status === 'approved').length;
+    if (approvedOccupants >= 1) {
+      return toast.error('A second occupant is already approved. Only admin can add a third student.');
     }
 
     setRoommateSubmitting(true);
@@ -200,7 +277,7 @@ const Dashboard = () => {
           room_id: booking.room_id,
           requested_by_user_id: currentUser.uid,
           roommate_full_name: roommateForm.full_name.trim(),
-          roommate_email: roommateForm.email.trim(),
+          roommate_email: roommateForm.email.trim().toLowerCase(),
           roommate_phone: roommateForm.phone_number.trim(),
           status: 'pending'
         }]);
@@ -215,6 +292,33 @@ const Dashboard = () => {
       setRoommateSubmitting(false);
     }
   };
+
+  const studentCategory = userData?.studentCategory || 'National';
+  const isInternationalStudent = studentCategory === 'International';
+  const approvedRoommates = roommateRequests.filter((request) => request.status === 'approved');
+  const pendingRoommateRequest = roommateRequests.find((request) => request.status === 'pending');
+  const currentOccupancy = booking ? 1 + approvedRoommates.length : 0;
+  const roomCapacity = booking ? Math.min(3, Number(booking.rooms?.total_seats || 3)) : 0;
+  const canPrimaryResidentAddRoommate = Boolean(
+    booking &&
+    booking.occupant_role !== 'approved_roommate' &&
+    !pendingRoommateRequest &&
+    approvedRoommates.length === 0 &&
+    currentOccupancy < Math.min(2, roomCapacity || 2)
+  );
+  const kycDocuments = isInternationalStudent
+    ? [
+        { id: 'user_photo_url', label: 'Student Photo', icon: ImageIcon, req: true },
+        { id: 'passport_url', label: 'Passport Photo / Bio Page', icon: Globe, req: true },
+        { id: 'vidu_doc_url', label: 'Vidu Form', icon: FileSearch, req: true },
+        { id: 'university_id_url', label: 'Student College ID Card', icon: FileCheck, req: true }
+      ]
+    : [
+        { id: 'user_photo_url', label: 'Student Photo', icon: ImageIcon, req: true },
+        { id: 'aadhar_pancard_url', label: 'Student Aadhaar Card', icon: FileText, req: true },
+        { id: 'parent_aadhar_url', label: 'Parent / Guardian Aadhaar Card', icon: ShieldCheck, req: true },
+        { id: 'university_id_url', label: 'Student College ID Card', icon: FileCheck, req: true }
+      ];
 
   const userMenuItems = [
     { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
@@ -282,7 +386,7 @@ const Dashboard = () => {
             {activeTab === 'overview' && (
               <div className="space-y-8">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <h2 className="text-4xl font-black tracking-tight">Howdy, {userData?.full_name?.split(' ')[0]}!</h2>
+                  <h2 className="text-4xl font-black tracking-tight">Howdy, {residentFirstName}!</h2>
                   <div className="px-6 py-2 bg-accent/10 text-accent rounded-full text-xs font-black uppercase tracking-widest border border-accent/20">
                     {userData?.role || 'Verified Resident'}
                   </div>
@@ -300,7 +404,7 @@ const Dashboard = () => {
                                 <CheckCircle2 className="w-3 h-3" />
                                 <span>Official Confirmation</span>
                               </div>
-                              <h3 className="text-4xl font-black text-green-900 tracking-tight leading-tight">Welcome Home, {userData?.full_name?.split(' ')[0]}! 🏡</h3>
+                              <h3 className="text-4xl font-black text-green-900 tracking-tight leading-tight">Welcome Home, {residentFirstName}! 🏡</h3>
                               <p className="text-green-700/80 font-medium max-w-md">Your residency at <span className="font-black underline decoration-green-300 decoration-2">{booking.pgs?.name}</span> has been officially approved. We're excited to have you!</p>
                               <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-2">
                                 <div className="bg-white/60 backdrop-blur-sm px-6 py-3 rounded-2xl border border-green-200 shadow-sm">
@@ -374,7 +478,9 @@ const Dashboard = () => {
                         </div>
                         <div>
                           <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Trust Store</div>
-                          <div className="text-sm font-black text-primary">KYC Verified</div>
+                          <div className="text-sm font-black text-primary">
+                            {booking.occupant_role === 'approved_roommate' ? 'Approved Occupant' : 'KYC Verified'}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
@@ -412,46 +518,78 @@ const Dashboard = () => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
                     <h2 className="text-4xl font-black tracking-tight text-primary">Roommate Request</h2>
-                    <p className="text-gray-500 mt-2 font-medium">Add one student to your room after admin verification.</p>
+                    <p className="text-gray-500 mt-2 font-medium">Primary resident can add one roommate. Admin can add the third occupant if the room supports three students.</p>
                   </div>
                   <div className="px-5 py-2 bg-accent/10 text-accent rounded-full border border-accent/20 text-[10px] font-black uppercase tracking-widest">
                     {booking.pgs?.name} - Room {booking.rooms?.room_number}
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Current Occupancy</div>
+                    <div className="mt-2 text-3xl font-black text-primary">{currentOccupancy}</div>
+                  </div>
+                  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Room Capacity</div>
+                    <div className="mt-2 text-3xl font-black text-primary">{roomCapacity || 1}</div>
+                  </div>
+                  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Your Access</div>
+                    <div className="mt-2 text-sm font-black text-primary">
+                      {booking.occupant_role === 'approved_roommate' ? 'Approved roommate' : 'Primary resident'}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
                     <h3 className="text-xl font-black mb-6">Add Student Details</h3>
-                    <form onSubmit={handleRoommateRequest} className="space-y-4">
-                      <input
-                        required
-                        placeholder="Roommate full name"
-                        value={roommateForm.full_name}
-                        onChange={(e) => setRoommateForm({ ...roommateForm, full_name: e.target.value })}
-                        className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent"
-                      />
-                      <input
-                        required
-                        type="email"
-                        placeholder="Roommate email"
-                        value={roommateForm.email}
-                        onChange={(e) => setRoommateForm({ ...roommateForm, email: e.target.value })}
-                        className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent"
-                      />
-                      <input
-                        placeholder="Roommate phone number"
-                        value={roommateForm.phone_number}
-                        onChange={(e) => setRoommateForm({ ...roommateForm, phone_number: e.target.value })}
-                        className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent"
-                      />
-                      <button
-                        type="submit"
-                        disabled={roommateSubmitting}
-                        className="w-full bg-accent text-white py-4 rounded-2xl font-black hover:bg-blue-600 transition-all disabled:opacity-50"
-                      >
-                        {roommateSubmitting ? 'Sending...' : 'Send For Admin Verification'}
-                      </button>
-                    </form>
+                    {canPrimaryResidentAddRoommate ? (
+                      <form onSubmit={handleRoommateRequest} className="space-y-4">
+                        <input
+                          required
+                          placeholder="Roommate full name"
+                          value={roommateForm.full_name}
+                          onChange={(e) => setRoommateForm({ ...roommateForm, full_name: e.target.value })}
+                          className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent"
+                        />
+                        <input
+                          required
+                          type="email"
+                          placeholder="Roommate email"
+                          value={roommateForm.email}
+                          onChange={(e) => setRoommateForm({ ...roommateForm, email: e.target.value })}
+                          className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent"
+                        />
+                        <input
+                          placeholder="Roommate phone number"
+                          value={roommateForm.phone_number}
+                          onChange={(e) => setRoommateForm({ ...roommateForm, phone_number: e.target.value })}
+                          className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent"
+                        />
+                        <button
+                          type="submit"
+                          disabled={roommateSubmitting}
+                          className="w-full bg-accent text-white py-4 rounded-2xl font-black hover:bg-blue-600 transition-all disabled:opacity-50"
+                        >
+                          {roommateSubmitting ? 'Sending...' : 'Send For Admin Verification'}
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="p-6 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200 text-sm text-gray-600 space-y-2">
+                        <p className="font-black text-primary">
+                          {booking.occupant_role === 'approved_roommate'
+                            ? 'Only the primary resident can send a roommate request.'
+                            : pendingRoommateRequest
+                              ? 'An approval request is already pending for this room.'
+                              : approvedRoommates.length > 0
+                                ? 'The second student is already approved. If the room supports 3 occupants, the admin can add the third student.'
+                                : 'This room cannot take another resident from the user side.'}
+                        </p>
+                        <p>The invited student should use the same email when creating their account so access opens automatically after approval.</p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
@@ -501,7 +639,9 @@ const Dashboard = () => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-gray-100 pb-8">
                   <div>
                     <h2 className="text-4xl font-black tracking-tight text-primary">Verification Hub</h2>
-                    <p className="text-gray-500 mt-2 font-medium">Mandatory safety and compliance check</p>
+                    <p className="text-gray-500 mt-2 font-medium">
+                      {studentCategory} student documents unlock after admin confirms your booking
+                    </p>
                   </div>
                   <div className={`flex items-center px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest ${
                     booking.is_kyc_verified 
@@ -516,6 +656,23 @@ const Dashboard = () => {
                   </div>
                 </div>
 
+                {booking.status !== 'confirmed' ? (
+                  <div className="bg-amber-50 border border-amber-100 p-10 rounded-[3rem] text-center">
+                    <Clock className="w-14 h-14 text-amber-500 mx-auto mb-4" />
+                    <h3 className="text-2xl font-black text-primary">Admin confirmation pending</h3>
+                    <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
+                      Your room is reserved. Document upload will open here only after the admin confirms the booking.
+                    </p>
+                  </div>
+                ) : booking.occupant_role === 'approved_roommate' ? (
+                  <div className="bg-blue-50 border border-blue-100 p-10 rounded-[3rem] text-center">
+                    <Users className="w-14 h-14 text-blue-500 mx-auto mb-4" />
+                    <h3 className="text-2xl font-black text-primary">KYC handled by the primary resident</h3>
+                    <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
+                      Your access is active for this room. You can use complaints and bills, but only the primary resident can update the shared room documents.
+                    </p>
+                  </div>
+                ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Instructions Card */}
                   <div className="lg:col-span-1 glass-card p-8 rounded-[2.5rem] border-white/50 space-y-6">
@@ -528,8 +685,8 @@ const Dashboard = () => {
                     <ul className="space-y-4">
                       {[
                         "Clear, high-quality images only",
-                        "Both sides of identity cards required",
-                        "Strict Max file size: 1MB per document",
+                        "Images are compressed automatically during upload",
+                        "Max final file size: 1MB per document",
                         "Self-attested copies preferred"
                       ].map((item, i) => (
                         <li key={i} className="flex items-start space-x-3 text-sm text-gray-500 font-medium">
@@ -540,11 +697,13 @@ const Dashboard = () => {
                     </ul>
 
                     {/* Template Section */}
+                    {(isInternationalStudent || docRequirements.some((req) => req.template_url)) && (
                     <div className="pt-6 border-t border-gray-100 space-y-4">
                       <h4 className="font-black text-sm uppercase tracking-widest text-gray-400">Required Templates</h4>
                       
                       {/* Quick Templates */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 gap-4">
+                        {isInternationalStudent && (
                         <div className="space-y-2">
                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Vidu Authorization</p>
                           {booking.pgs?.owner_doc_url ? (
@@ -562,24 +721,7 @@ const Dashboard = () => {
                             </div>
                           )}
                         </div>
-
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Police Verification</p>
-                          {booking.pgs?.police_verification_template_url ? (
-                            <a 
-                              href={booking.pgs.police_verification_template_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="w-full flex items-center justify-center p-4 bg-purple-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-transform shadow-xl group"
-                            >
-                              <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get Police Template
-                            </a>
-                          ) : (
-                            <div className="p-4 bg-red-50 text-red-500 rounded-2xl text-[10px] font-bold border border-red-100 italic">
-                              Template Not Uploaded
-                            </div>
-                          )}
-                        </div>
+                        )}
 
                         {/* === NEW: Dynamic Custom Templates === */}
                         {docRequirements.map((req) => (
@@ -599,23 +741,14 @@ const Dashboard = () => {
                         ))}
                       </div>
                     </div>
+                    )}
                   </div>
 
                   {/* Upload Center */}
                   <div className="lg:col-span-2 space-y-6">
                     <h3 className="text-xl font-black mb-6">Document Upload Center</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        { id: 'user_photo_url', label: 'Passport Size Photo', icon: ImageIcon, req: true },
-                        { id: 'aadhar_pancard_url', label: 'Aadhar / PAN Card', icon: FileText, req: userData?.studentCategory !== 'International' },
-                        { id: 'university_id_url', label: 'University / College ID', icon: FileCheck, req: true },
-                        { id: 'aadhar_back_url', label: 'Residence Proof (Aadhar Back)', icon: Building2, req: userData?.studentCategory !== 'International' },
-                        { id: 'parent_aadhar_url', label: 'Guardian / Parent Identity', icon: ShieldCheck, req: userData?.studentCategory !== 'International' },
-                        { id: 'passport_url', label: 'Passport (Bio Page)', icon: Globe, req: userData?.studentCategory === 'International' },
-                        { id: 'visa_url', label: 'Visa / Residence Permit', icon: Shield, req: userData?.studentCategory === 'International' },
-                        { id: 'vidu_doc_url', label: 'Vidu Authorization Form', icon: FileSearch, req: true },
-                        { id: 'police_verification_url', label: 'Police Verification Doc', icon: ShieldCheck, req: true }
-                      ].map((doc) => (
+                      {kycDocuments.map((doc) => (
                         <div key={doc.id} className={`group relative p-6 rounded-[2.2rem] border transition-all duration-300 ${
                           booking[doc.id] 
                             ? 'bg-green-50 border-green-200' 
@@ -728,6 +861,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             )}
             {activeTab === 'kyc' && !booking && (
@@ -748,3 +882,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

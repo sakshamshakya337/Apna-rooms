@@ -27,7 +27,7 @@ const PGList = () => {
   };
 
   const isRoomAvailable = (room) => {
-    return Number(room.available_seats || 0) > 0 && !hasActiveBooking(room);
+    return !hasActiveBooking(room);
   };
 
   useEffect(() => {
@@ -38,7 +38,7 @@ const PGList = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('pgs')
-      .select('*, rooms (price_per_seat, available_seats, bookings (id, status))')
+      .select('*, rooms (price_per_seat, bookings (id, status))')
       .eq('is_active', true);
     
     if (data) {
@@ -265,10 +265,6 @@ const PGList = () => {
                       )}
                     </div>
 
-                    <div className="mb-4 text-[10px] font-black uppercase tracking-widest text-[#4a4bd7] bg-[#f7f1ff] border border-[#ece4ff] rounded-full px-4 py-2 w-fit">
-                      {pg.available_room_count} room{pg.available_room_count === 1 ? '' : 's'} available
-                    </div>
-                    
                     <div className="mt-auto pt-4 relative">
                       <Link 
                         to={`/pg/${pg.id}`}

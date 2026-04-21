@@ -47,7 +47,30 @@ const BookingConfirmation = () => {
   };
 
   const isRoomSoldOut = (roomData) => {
-    return Number(roomData?.available_seats || 0) <= 0 || hasActiveBookingForAnotherUser(roomData);
+    return hasActiveBookingForAnotherUser(roomData);
+  };
+
+  const getMissingProfileFields = () => {
+    const category = userData?.studentCategory || 'National';
+    const missing = [];
+
+    if (!userData?.studentCategory) missing.push('student type');
+    if (!userData?.phoneNumber) missing.push('student phone number');
+    if (category !== 'International' && !userData?.parentPhoneNumber) {
+      missing.push('parent/guardian phone number');
+    }
+
+    return missing;
+  };
+
+  const ensureProfileComplete = () => {
+    const missingProfileFields = getMissingProfileFields();
+    if (missingProfileFields.length > 0) {
+      toast.error(`Complete profile first: ${missingProfileFields.join(', ')}`);
+      navigate('/dashboard?tab=profile');
+      return false;
+    }
+    return true;
   };
 
   useEffect(() => {
@@ -146,6 +169,8 @@ const BookingConfirmation = () => {
   };
 
   const handlePayment = async () => {
+    if (!ensureProfileComplete()) return;
+
     const res = await loadRazorpay();
     if (!res) return toast.error('Razorpay failed to load');
 
@@ -177,13 +202,13 @@ const BookingConfirmation = () => {
               }
             });
             setPaymentSuccess(true);
-            toast.success('Booking Confirmed! Now upload documents.');
+            toast.success('Booking confirmed. Documents unlock after admin verification.');
           } catch (err) {
             toast.error('Verification failed. Contact support.');
           }
         },
         prefill: {
-          name: userData?.full_name,
+          name: userData?.fullName,
           email: currentUser?.email
         },
         theme: { color: '#3b82f6' }
@@ -199,6 +224,8 @@ const BookingConfirmation = () => {
   };
 
   const handleOfflinePayment = async () => {
+    if (!ensureProfileComplete()) return;
+
     setProcessing(true);
     try {
       const newBooking = await createPendingBooking();
@@ -232,18 +259,9 @@ const BookingConfirmation = () => {
 
     const isInternational = userData?.studentCategory === 'International';
     
-    const requiredFiles = [
-      'userPhoto', 
-      'universityId', 
-      'viduDoc',
-      'policeVerification'
-    ];
-
-    if (isInternational) {
-      requiredFiles.push('passport');
-    } else {
-      requiredFiles.push('aadharPancard', 'aadharBack', 'parentAadhar');
-    }
+    const requiredFiles = isInternational
+      ? ['userPhoto', 'passport', 'viduDoc', 'universityId']
+      : ['userPhoto', 'aadharPancard', 'parentAadhar', 'universityId'];
 
     const missingFiles = requiredFiles.filter(key => !files[key]);
     if (missingFiles.length > 0) {
@@ -348,6 +366,7 @@ const BookingConfirmation = () => {
   if (loading) return <div className="p-20 text-center font-['Sora'] text-white">Loading booking system...</div>;
 
   const isInternational = userData?.studentCategory === 'International';
+  const showInlineDocumentUpload = false;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-32 font-['Sora']">
@@ -437,11 +456,28 @@ const BookingConfirmation = () => {
                     {offlinePending ? 'Slot Reserved!' : 'Transaction Approved!'}
                   </h4>
                   <p className="text-gray-400 font-medium mt-1">
-                    Please transmit your credentials to activate your keys.
+                    Documents can be uploaded from your dashboard after admin confirmation.
                   </p>
                 </div>
               </div>
 
+              {!showInlineDocumentUpload ? (
+                <div className="bg-white/[0.04] border border-white/10 p-8 rounded-[2.5rem] text-center space-y-5">
+                  <Shield className="w-12 h-12 text-accent mx-auto" />
+                  <div>
+                    <h3 className="text-2xl font-black text-white">KYC will open in your dashboard</h3>
+                    <p className="text-gray-400 mt-2">
+                      Admin must confirm the booking first. After that, you will see the correct document list for your student type.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/dashboard?tab=kyc')}
+                    className="px-8 py-4 bg-accent text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-accent/80 transition-all"
+                  >
+                    Open Dashboard
+                  </button>
+                </div>
+              ) : (
               <div className="space-y-8">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/5 pb-6">
                   <div>
@@ -459,12 +495,11 @@ const BookingConfirmation = () => {
                     { label: 'Passport Size Photo', key: 'userPhoto', inst: 'Professional Background' },
                     { label: 'University / College ID', key: 'universityId', inst: 'Face toward camera' },
                     ...(isInternational ? [
-                      { label: 'Global Passport', key: 'passport', inst: 'Visa/Main page' },
-                      { label: 'Visa / Permit', key: 'visa', inst: 'Residence Authorization' }
+                      { label: 'Passport Photo / Bio Page', key: 'passport', inst: 'Passport details page' },
+                      { label: 'Vidu Form', key: 'viduDoc', inst: 'Completed Vidu form' }
                     ] : [
-                      { label: 'Aadhar / PAN', key: 'aadharPancard', inst: 'Primary ID Front' },
-                      { label: 'Residency Proof', key: 'aadharBack', inst: 'Primary ID Back' },
-                      { label: "Guardian Identity", key: 'parentAadhar', inst: "Sponsor's Aadhar" }
+                      { label: 'Student Aadhaar Card', key: 'aadharPancard', inst: 'Student identity proof' },
+                      { label: "Parent / Guardian Aadhaar", key: 'parentAadhar', inst: "Guardian identity proof" }
                     ]),
                   ].map((doc) => (
                     <div key={doc.key} className={`relative border-2 border-dashed rounded-[2.5rem] p-8 text-center transition-all duration-500 group overflow-hidden ${files[doc.key] ? 'border-accent bg-accent/5' : 'border-white/5 bg-white/2 hover:border-accent/40'}`}>
@@ -623,6 +658,7 @@ const BookingConfirmation = () => {
                   <span>{processing ? 'Transmitting Data...' : 'Confirm Residency'}</span>
                 </button>
               </div>
+              )}
             </div>
           )}
         </div>

@@ -1,7 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { auth, googleProvider, signInWithPopup } from '../config/firebase.js';
+import {
+  auth,
+  googleProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  setPersistence,
+  browserLocalPersistence
+} from '../config/firebase.js';
 
 const AuthContext = createContext();
 
@@ -22,28 +30,6 @@ export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // 1. Professional persistent session handling
-    const savedToken = localStorage.getItem('apna_rooms_token');
-    const savedUser = localStorage.getItem('apna_rooms_user');
-
-    if (savedToken && savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setCurrentUser({ uid: parsedUser.id, ...parsedUser });
-        setUserData(parsedUser);
-        
-        // Set default auth header for all professional requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
-      } catch (e) {
-        console.error('Session restoration failed', e);
-        localStorage.removeItem('apna_rooms_token');
-        localStorage.removeItem('apna_rooms_user');
-      }
-    }
-    setLoading(false);
-  }, []);
-
   const handleAuthResponse = (token, user) => {
     if (!token || !user) {
       console.error('Invalid auth response data');
@@ -55,6 +41,83 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser({ uid: user.id, ...user });
     setUserData(user);
   };
+
+  const ensureGoogleConfigured = () => {
+    const requiredKeys = [
+      'VITE_FIREBASE_API_KEY',
+      'VITE_FIREBASE_AUTH_DOMAIN',
+      'VITE_FIREBASE_PROJECT_ID',
+      'VITE_FIREBASE_APP_ID'
+    ];
+
+    const missing = requiredKeys.filter((key) => !import.meta.env[key]);
+    if (missing.length > 0) {
+      throw new Error('Google login is not configured. Please add the Firebase web env values.');
+    }
+  };
+
+  const syncGoogleUser = async (firebaseUser, options = {}) => {
+    const { showToast = true } = options;
+    const response = await axios.post(`${BACKEND_URL}/api/users/google-login`, {
+      email: firebaseUser.email,
+      fullName: firebaseUser.displayName,
+      firebase_uid: firebaseUser.uid
+    });
+
+    if (response.data && response.data.token) {
+      handleAuthResponse(response.data.token, response.data.user);
+      if (showToast) {
+        toast.success('Google login successful!');
+      }
+      return response.data.user;
+    }
+
+    throw new Error('Backend sync failed after Google login');
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+
+        const savedToken = localStorage.getItem('apna_rooms_token');
+        const savedUser = localStorage.getItem('apna_rooms_user');
+
+        if (savedToken && savedUser) {
+          try {
+            const parsedUser = JSON.parse(savedUser);
+            if (!isMounted) return;
+            setCurrentUser({ uid: parsedUser.id, ...parsedUser });
+            setUserData(parsedUser);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+          } catch (e) {
+            console.error('Session restoration failed', e);
+            localStorage.removeItem('apna_rooms_token');
+            localStorage.removeItem('apna_rooms_user');
+          }
+        }
+
+        const redirectResult = await getRedirectResult(auth);
+        if (redirectResult?.user) {
+          await syncGoogleUser(redirectResult.user, { showToast: true });
+        }
+      } catch (error) {
+        console.error('Auth bootstrap error:', error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const signup = async (email, password, fullName, role = 'user', studentCategory = 'National') => {
     try {
@@ -97,28 +160,33 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = async () => {
     try {
+      ensureGoogleConfigured();
+
       const result = await signInWithPopup(auth, googleProvider);
       if (!result || !result.user) {
         throw new Error('Google sign in failed - no user returned');
       }
-      const user = result.user;
-      
-      // Send google user data to backend to sync with Supabase and get JWT
-      const response = await axios.post(`${BACKEND_URL}/api/users/google-login`, {
-        email: user.email,
-        fullName: user.displayName,
-        firebase_uid: user.uid
-      });
 
-      if (response.data && response.data.token) {
-        handleAuthResponse(response.data.token, response.data.user);
-        toast.success('Google Login Successful!');
-        return response.data.user;
-      }
-      throw new Error('Backend sync failed after Google login');
+      return await syncGoogleUser(result.user);
     } catch (error) {
+      const code = error?.code || '';
+      const shouldFallbackToRedirect = [
+        'auth/popup-blocked',
+        'auth/cancelled-popup-request',
+        'auth/operation-not-supported-in-this-environment'
+      ].includes(code);
+
+      if (shouldFallbackToRedirect) {
+        await signInWithRedirect(auth, googleProvider);
+        return null;
+      }
+
       console.error('Google Login Error:', error);
-      toast.error(error.message || 'Google login failed');
+      if (code === 'auth/popup-closed-by-user') {
+        toast.error('Google login was closed before it finished.');
+      } else {
+        toast.error(error.response?.data?.error || error.message || 'Google login failed');
+      }
       throw error;
     }
   };

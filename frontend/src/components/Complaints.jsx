@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
+import { useAuth } from '../context/AuthContext';
 import { MessageSquare, Clock, AlertCircle, Plus, Droplets, Zap as ZapIcon, Wifi } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -10,6 +11,7 @@ const serviceTypes = [
 ];
 
 const Complaints = ({ booking }) => {
+  const { currentUser } = useAuth();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,7 +32,7 @@ const Complaints = ({ booking }) => {
     try {
       const { data } = await supabase
         .from('complaints')
-        .select('*')
+        .select('*, pgs:pg_id (name), rooms:room_id (room_number)')
         .eq('room_id', booking.room_id)
         .order('created_at', { ascending: false });
       
@@ -54,7 +56,7 @@ const Complaints = ({ booking }) => {
         .from('complaints')
         .insert([{
           ...newComplaint,
-          user_id: booking.user_id,
+          user_id: currentUser?.uid || booking.user_id,
           room_id: booking.room_id,
           pg_id: booking.pg_id,
           status: 'pending'
@@ -104,7 +106,9 @@ const Complaints = ({ booking }) => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-8 bg-gradient-to-br from-[#4a4bd7] to-[#842cd3] rounded-[2rem] text-white shadow-[0_20px_40px_rgba(52,45,85,0.06)] relative overflow-hidden">
             <div className="relative z-10">
               <h2 className="text-3xl md:text-5xl font-['Plus_Jakarta_Sans'] font-bold mb-2 tracking-tight">Service Support</h2>
-              <p className="text-[#f0dbff] opacity-90 font-medium tracking-wide">Request assistance and track progress</p>
+              <p className="text-[#f0dbff] opacity-90 font-medium tracking-wide">
+                {booking?.pgs?.name} - Room {booking?.rooms?.room_number}
+              </p>
             </div>
             <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-[#fdf8ff] opacity-10 rounded-full blur-3xl"></div>
             <div className="absolute top-0 right-20 w-32 h-32 bg-[#34b5fa] opacity-20 rounded-full blur-2xl"></div>
@@ -155,6 +159,9 @@ const Complaints = ({ booking }) => {
                     
                     <h3 className="text-xl font-['Plus_Jakarta_Sans'] font-bold text-[#342d55] mb-2">{item.category}</h3>
                     <p className="text-[#615985] text-sm leading-relaxed mb-4">{item.description}</p>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-[#7d75a2] mb-4">
+                      {item.pgs?.name || booking?.pgs?.name} - Room {item.rooms?.room_number || booking?.rooms?.room_number}
+                    </div>
                     
                     <div className="mt-auto px-4 py-2 bg-[#fdf8ff] rounded-xl self-start flex items-center border border-[#e6deff]">
                       <Clock className="w-4 h-4 mr-2 text-[#7d75a2]" />
