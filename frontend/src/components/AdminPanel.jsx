@@ -147,27 +147,26 @@ const AdminPanel = ({ section = 'admin' }) => {
       || tenant.roommate_requests?.[0];
   };
 
+  const fetchAllTenants = async () => {
+    setLoading(true);
+    try {
+      const { data: pgsData } = await supabase.from('pgs').select('id');
+      if (pgsData && pgsData.length > 0) {
+        const allTenantsPromises = pgsData.map(pg => fetchTenantsForList(pg.id));
+        const allTenantsResults = await Promise.all(allTenantsPromises);
+        setTenants(allTenantsResults.flat());
+      }
+    } catch (error) {
+      console.error('Error fetching all tenants:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchAdminData();
-    // Also fetch tenants if we are in the users section
     if (section === 'users_admin') {
       setTenants([]);
-      const fetchAllTenants = async () => {
-        setLoading(true);
-        try {
-          const { data: pgsData } = await supabase.from('pgs').select('id');
-          if (pgsData && pgsData.length > 0) {
-            // Fetch tenants for all PGs to show a complete list in Users & Tenants
-            const allTenantsPromises = pgsData.map(pg => fetchTenantsForList(pg.id));
-            const allTenantsResults = await Promise.all(allTenantsPromises);
-            setTenants(allTenantsResults.flat());
-          }
-        } catch (error) {
-          console.error('Error fetching all tenants:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
       fetchAllTenants();
     }
   }, [section]);
@@ -867,7 +866,6 @@ const AdminPanel = ({ section = 'admin' }) => {
           roommate_requests (*)
         `)
         .eq('pg_id', pgId)
-        .in('status', ACTIVE_BOOKING_STATUSES)
         .order('created_at', { ascending: false });
 
       if (bookingError) throw bookingError;
@@ -883,7 +881,7 @@ const AdminPanel = ({ section = 'admin' }) => {
         // Find users by these emails
         const { data: roommateUsers } = await supabase
           .from('users')
-          .select('id')
+          .select('id, email')
           .in('email', roommateEmails);
         
         if (roommateUsers?.length > 0) {
@@ -899,6 +897,33 @@ const AdminPanel = ({ section = 'admin' }) => {
             .in('user_id', roommateUsers.map(u => u.id))
             .eq('pg_id', pgId);
           roommateBookings = rbData || [];
+
+          // RETROACTIVE FIX: If an approved roommate exists as a user but has NO booking record, 
+          // they won't be able to upload KYC. We should create one for them now.
+          const missingRoommates = roommateUsers.filter(u => !roommateBookings.some(rb => rb.user_id === u.id));
+          if (missingRoommates.length > 0) {
+            console.log('Creating missing booking records for approved roommates:', missingRoommates);
+            for (const rm of missingRoommates) {
+              const request = (bookingData || []).flatMap(b => b.roommate_requests || []).find(r => r.roommate_email.toLowerCase() === rm.email.toLowerCase());
+              const primaryBooking = (bookingData || []).find(b => b.id === request?.booking_id);
+              if (request && primaryBooking) {
+                const { data: newRB } = await supabase.from('bookings').upsert([{
+                  user_id: rm.id,
+                  pg_id: pgId,
+                  room_id: request.room_id,
+                  status: 'confirmed',
+                  occupant_role: 'approved_roommate',
+                  amount: primaryBooking.amount
+                }], { onConflict: 'user_id, room_id' }).select(`
+                  *,
+                  users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
+                  rooms (room_number, total_seats),
+                  pgs (name)
+                `).single();
+                if (newRB) roommateBookings.push(newRB);
+              }
+            }
+          }
         }
       }
 
@@ -990,11 +1015,14 @@ const AdminPanel = ({ section = 'admin' }) => {
   const handleReviewRoommate = async (requestId, status) => {
     try {
       const tenant = tenants.find((item) => item.roommate_requests?.some((request) => request.id === requestId));
+      const request = tenant?.roommate_requests?.find(r => r.id === requestId);
+      
       if (status === 'approved' && tenant && getCurrentOccupancy(tenant) >= getRoomCapacity(tenant)) {
         return toast.error('This room has already reached its allowed occupancy.');
       }
 
-      const { error } = await supabase
+      // 1. Update the request status
+      const { error: updateError } = await supabase
         .from('roommate_requests')
         .update({
           status,
@@ -1003,15 +1031,42 @@ const AdminPanel = ({ section = 'admin' }) => {
         })
         .eq('id', requestId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // 2. If approved, ensure the roommate has an official booking record for KYC
+      if (status === 'approved' && request && tenant) {
+        // Find the user by email
+        const { data: roommateUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', request.roommate_email.toLowerCase())
+          .maybeSingle();
+        
+        if (roommateUser) {
+          // Create or update a booking record for this roommate
+          const { error: bookingError } = await supabase
+            .from('bookings')
+            .upsert([{
+              user_id: roommateUser.id,
+              pg_id: tenant.pg_id,
+              room_id: tenant.room_id,
+              status: 'confirmed',
+              occupant_role: 'approved_roommate',
+              amount: tenant.amount // Shared rent info
+            }], { onConflict: 'user_id, room_id' });
+          
+          if (bookingError) console.error('Error creating roommate booking:', bookingError);
+        }
+      }
+
       toast.success(status === 'approved' ? 'Roommate verified' : 'Roommate rejected');
 
-      setTenants(prev => prev.map(tenant => ({
-        ...tenant,
-        roommate_requests: tenant.roommate_requests?.map(request => (
-          request.id === requestId ? { ...request, status } : request
-        ))
-      })));
+      // Refresh data
+      if (section === 'users_admin') {
+        fetchAllTenants();
+      } else if (selectedPGForTenants) {
+        fetchTenants(selectedPGForTenants.id);
+      }
     } catch (error) {
       toast.error(error.message || 'Failed to update roommate request');
     }
