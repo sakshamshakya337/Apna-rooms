@@ -41,7 +41,7 @@ const Payments = ({ booking }) => {
     }
   };
 
-  const handlePayRent = async (type = 'user_rent') => {
+  const handlePayRent = async (type = 'room_rent') => {
     if (!booking) {
       toast.error('No active booking found to pay rent for.');
       return;
@@ -53,8 +53,8 @@ const Payments = ({ booking }) => {
       return;
     }
 
-    // Ensure amount is valid
-    const rentAmount = type === 'user_rent' ? booking.amount : (booking.amount * (booking.rooms?.total_seats || 1));
+    // Always use the full room rent amount (base amount * total seats)
+    const rentAmount = booking.amount * (booking.rooms?.total_seats || 1);
     
     if (!rentAmount || isNaN(rentAmount) || rentAmount <= 0) {
       toast.error('Invalid rent amount. Please check your booking details.');
@@ -70,7 +70,7 @@ const Payments = ({ booking }) => {
         amount: order.amount,
         currency: 'INR',
         name: 'Apna Rooms',
-        description: `${type === 'user_rent' ? 'Individual' : 'Room'} Rent Payment`,
+        description: `Full Room Rent Payment - Room ${booking.rooms?.room_number}`,
         order_id: order.id,
         handler: async (response) => {
           // Verify payment on backend
@@ -82,12 +82,12 @@ const Payments = ({ booking }) => {
               booking_details: {
                 booking_id: booking.id,
                 amount: rentAmount,
-                type: type,
+                type: 'room_rent',
                 status: 'success'
               }
             });
             
-            toast.success('Payment successful and verified!');
+            toast.success('Room rent payment successful!');
             fetchPayments();
           } catch (error) {
             console.error('Verification Error:', error);
@@ -112,12 +112,13 @@ const Payments = ({ booking }) => {
     }
   };
 
-  const handleOfflinePayment = async (type = 'user_rent') => {
+  const handleOfflinePayment = async (type = 'room_rent') => {
     if (!booking) {
       toast.error('No active booking found to pay rent for.');
       return;
     }
-    const rentAmount = type === 'user_rent' ? booking.amount : (booking.amount * (booking.rooms?.total_seats || 1));
+    // Always use full room rent
+    const rentAmount = booking.amount * (booking.rooms?.total_seats || 1);
     if (!rentAmount || isNaN(rentAmount) || rentAmount <= 0) {
       return toast.error('Invalid rent amount.');
     }
@@ -127,10 +128,10 @@ const Payments = ({ booking }) => {
         amount: rentAmount,
         status: 'pending',
         payment_id: 'OFFLINE_PENDING',
-        type: type
+        type: 'room_rent'
       }]);
       if (error) throw error;
-      toast.success('Offline payment request submitted for Admin approval!');
+      toast.success('Room rent payment request submitted for Admin approval!');
       fetchPayments();
     } catch (error) {
       toast.error('Failed to submit offline payment');
@@ -168,32 +169,19 @@ const Payments = ({ booking }) => {
         <div className="flex flex-col items-end space-y-3 mt-4 md:mt-0">
           <div className="flex space-x-3">
             <button 
-              onClick={() => handlePayRent('user_rent')}
-              className="bg-accent text-white px-5 py-2.5 rounded-xl font-bold hover:bg-blue-600 transition-all shadow-lg text-sm"
-            >
-              Pay My Rent
-            </button>
-            <button 
               onClick={() => handlePayRent('room_rent')}
-              className="bg-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-800 transition-all shadow-lg text-sm"
+              className="bg-accent text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-600 transition-all shadow-lg text-sm flex items-center"
             >
-              Pay Room Rent
+              <CreditCard className="w-4 h-4 mr-2" />
+              Pay Room Rent (₹{booking.amount * (booking.rooms?.total_seats || 1)})
             </button>
           </div>
-          <div className="flex space-x-3">
-            <button 
-              onClick={() => handleOfflinePayment('user_rent')}
-              className="px-4 py-2 border-2 border-gray-200 text-gray-600 bg-white rounded-xl font-bold hover:border-gray-800 transition-all text-xs"
-            >
-              Offline (My Rent)
-            </button>
-            <button 
-              onClick={() => handleOfflinePayment('room_rent')}
-              className="px-4 py-2 border-2 border-gray-200 text-gray-600 bg-white rounded-xl font-bold hover:border-gray-800 transition-all text-xs"
-            >
-              Offline (Room)
-            </button>
-          </div>
+          <button 
+            onClick={() => handleOfflinePayment('room_rent')}
+            className="px-6 py-2 border-2 border-gray-200 text-gray-600 bg-white rounded-xl font-bold hover:border-gray-800 transition-all text-xs"
+          >
+            Submit Offline Room Payment
+          </button>
         </div>
       </div>
 

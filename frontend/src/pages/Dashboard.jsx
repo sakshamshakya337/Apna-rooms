@@ -331,6 +331,15 @@ const Dashboard = () => {
 
     setRoommateSubmitting(true);
     try {
+      // Check if user already exists
+      const { data: existingUser, error: userError } = await supabase
+        .from('users')
+        .select('uid')
+        .eq('email', roommateForm.email.trim().toLowerCase())
+        .maybeSingle();
+      
+      if (userError) throw userError;
+
       const { error } = await supabase
         .from('roommate_requests')
         .insert([{
@@ -341,6 +350,7 @@ const Dashboard = () => {
           roommate_full_name: roommateForm.full_name.trim(),
           roommate_email: roommateForm.email.trim().toLowerCase(),
           roommate_phone: roommateForm.phone_number.trim(),
+          roommate_user_id: existingUser?.uid || null,
           status: 'pending'
         }]);
 
