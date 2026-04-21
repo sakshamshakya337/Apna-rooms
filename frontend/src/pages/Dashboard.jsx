@@ -47,6 +47,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [docRequirements, setDocRequirements] = useState([]);
   const [dynamicDocs, setDynamicDocs] = useState([]);
+  const [roommateRequests, setRoommateRequests] = useState([]);
+  const [roommateForm, setRoommateForm] = useState({ full_name: '', email: '', phone_number: '' });
+  const [roommateSubmitting, setRoommateSubmitting] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -84,6 +87,13 @@ const Dashboard = () => {
         ]);
         setDocRequirements(reqsRes.data || []);
         setDynamicDocs(docsRes.data || []);
+
+        const { data: roommateData } = await supabase
+          .from('roommate_requests')
+          .select('*')
+          .eq('booking_id', data.id)
+          .order('created_at', { ascending: false });
+        setRoommateRequests(roommateData || []);
       }
     } catch (error) {
       console.error('Error fetching booking:', error);
@@ -168,6 +178,44 @@ const Dashboard = () => {
     }
   };
 
+  const handleRoommateRequest = async (e) => {
+    e.preventDefault();
+    if (!booking) return toast.error('Book a room before adding a roommate.');
+    if (!roommateForm.full_name.trim() || !roommateForm.email.trim()) {
+      return toast.error('Roommate name and email are required.');
+    }
+
+    const activeRequest = roommateRequests.find((request) => ['pending', 'approved'].includes(request.status));
+    if (activeRequest) {
+      return toast.error('A roommate request is already active for this room.');
+    }
+
+    setRoommateSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('roommate_requests')
+        .insert([{
+          booking_id: booking.id,
+          pg_id: booking.pg_id,
+          room_id: booking.room_id,
+          requested_by_user_id: currentUser.uid,
+          roommate_full_name: roommateForm.full_name.trim(),
+          roommate_email: roommateForm.email.trim(),
+          roommate_phone: roommateForm.phone_number.trim(),
+          status: 'pending'
+        }]);
+
+      if (error) throw error;
+      toast.success('Roommate request sent for admin verification.');
+      setRoommateForm({ full_name: '', email: '', phone_number: '' });
+      fetchUserBooking();
+    } catch (error) {
+      toast.error(error.message || 'Failed to send roommate request.');
+    } finally {
+      setRoommateSubmitting(false);
+    }
+  };
+
   const userMenuItems = [
     { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
     { id: 'profile', icon: User, label: 'My Profile' },
@@ -175,6 +223,7 @@ const Dashboard = () => {
     { id: 'bills', icon: Zap, label: 'Electricity Bills' },
     { id: 'complaints', icon: MessageSquare, label: 'Complaints' },
     { id: 'payments', icon: CreditCard, label: 'Rent Payments' },
+    { id: 'roommates', icon: Users, label: 'Roommate' },
   ];
 
   const adminMenuItems = [
@@ -307,7 +356,7 @@ const Dashboard = () => {
                         </div>
                         <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                           <span className="font-semibold text-primary/60 uppercase text-[10px] tracking-widest">Room Number</span>
-                          <span className="font-black text-accent text-lg">#{booking.rooms?.room_number}</span>
+                          <span className="font-black text-accent text-lg text-right">{booking.pgs?.name} - Room {booking.rooms?.room_number}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="font-semibold text-primary/60 uppercase text-[10px] tracking-widest">Booking Status</span>
@@ -358,6 +407,93 @@ const Dashboard = () => {
             {activeTab === 'bills' && <ElectricityBill booking={booking} userData={userData} />}
             {activeTab === 'complaints' && <Complaints booking={booking} userData={userData} />}
             {activeTab === 'payments' && <Payments booking={booking} userData={userData} />}
+            {activeTab === 'roommates' && booking && (
+              <div className="space-y-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h2 className="text-4xl font-black tracking-tight text-primary">Roommate Request</h2>
+                    <p className="text-gray-500 mt-2 font-medium">Add one student to your room after admin verification.</p>
+                  </div>
+                  <div className="px-5 py-2 bg-accent/10 text-accent rounded-full border border-accent/20 text-[10px] font-black uppercase tracking-widest">
+                    {booking.pgs?.name} - Room {booking.rooms?.room_number}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                    <h3 className="text-xl font-black mb-6">Add Student Details</h3>
+                    <form onSubmit={handleRoommateRequest} className="space-y-4">
+                      <input
+                        required
+                        placeholder="Roommate full name"
+                        value={roommateForm.full_name}
+                        onChange={(e) => setRoommateForm({ ...roommateForm, full_name: e.target.value })}
+                        className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent"
+                      />
+                      <input
+                        required
+                        type="email"
+                        placeholder="Roommate email"
+                        value={roommateForm.email}
+                        onChange={(e) => setRoommateForm({ ...roommateForm, email: e.target.value })}
+                        className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent"
+                      />
+                      <input
+                        placeholder="Roommate phone number"
+                        value={roommateForm.phone_number}
+                        onChange={(e) => setRoommateForm({ ...roommateForm, phone_number: e.target.value })}
+                        className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent"
+                      />
+                      <button
+                        type="submit"
+                        disabled={roommateSubmitting}
+                        className="w-full bg-accent text-white py-4 rounded-2xl font-black hover:bg-blue-600 transition-all disabled:opacity-50"
+                      >
+                        {roommateSubmitting ? 'Sending...' : 'Send For Admin Verification'}
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                    <h3 className="text-xl font-black mb-6">Request Status</h3>
+                    {roommateRequests.length > 0 ? (
+                      <div className="space-y-4">
+                        {roommateRequests.map((request) => (
+                          <div key={request.id} className="p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                            <div className="flex justify-between gap-4">
+                              <div>
+                                <div className="font-black text-primary">{request.roommate_full_name}</div>
+                                <div className="text-xs text-gray-500">{request.roommate_email}</div>
+                                <div className="text-xs text-gray-400 mt-1">{request.roommate_phone || 'No phone added'}</div>
+                              </div>
+                              <span className={`h-fit px-3 py-1 rounded-full text-[10px] font-black uppercase ${
+                                request.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                request.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                {request.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="py-12 text-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
+                        <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                        <p className="font-medium">No roommate request yet.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            {activeTab === 'roommates' && !booking && (
+              <div className="text-center py-20">
+                <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-gray-400">No Booking Active</h3>
+                <p className="text-gray-500">You can add a roommate after booking a room.</p>
+              </div>
+            )}
             {activeTab === 'profile' && <Profile />}
             {activeTab === 'kyc' && booking && (
               <div className="space-y-12">

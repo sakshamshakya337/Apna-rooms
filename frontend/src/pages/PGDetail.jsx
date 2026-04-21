@@ -18,6 +18,15 @@ const PGDetail = () => {
   const [contractDuration, setContractDuration] = useState(6); // 6, 12 months
 
   const MOCKUP_IMAGE = "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80";
+  const ACTIVE_BOOKING_STATUSES = ['pending', 'confirmed'];
+
+  const hasActiveBooking = (room) => {
+    return room.bookings?.some((booking) => ACTIVE_BOOKING_STATUSES.includes(booking.status));
+  };
+
+  const isRoomSoldOut = (room) => {
+    return Number(room.available_seats || 0) <= 0 || hasActiveBooking(room);
+  };
 
   useEffect(() => {
     fetchPGDetail();
@@ -38,8 +47,9 @@ const PGDetail = () => {
         setPg(pgData);
         const { data: roomData, error: roomError } = await supabase
           .from('rooms')
-          .select('*')
-          .eq('pg_id', id);
+          .select('*, bookings (id, status)')
+          .eq('pg_id', id)
+          .order('room_number', { ascending: true });
         
         if (roomError) throw roomError;
         setRooms(roomData || []);
@@ -82,6 +92,11 @@ const PGDetail = () => {
 
     if (!selectedRoom) {
       return toast.error('Please select a room first');
+    }
+
+    if (isRoomSoldOut(selectedRoom)) {
+      setSelectedRoom(null);
+      return toast.error('This room is already booked.');
     }
 
     // Razorpay Integration Logic will go here
@@ -148,11 +163,21 @@ const PGDetail = () => {
                 {rooms.map((room) => (
                   <button
                     key={room.id}
-                    onClick={() => setSelectedRoom(room)}
+                    type="button"
+                    disabled={isRoomSoldOut(room)}
+                    onClick={() => {
+                      if (isRoomSoldOut(room)) {
+                        toast.error('This room is sold out.');
+                        return;
+                      }
+                      setSelectedRoom(room);
+                    }}
                     className={`p-5 rounded-[2.5rem] border transition-all duration-500 flex space-x-4 group ${
                       selectedRoom?.id === room.id 
                         ? 'border-accent bg-accent/10 shadow-xl shadow-accent/10' 
-                        : 'border-white/5 bg-white/5 hover:bg-white/10'
+                        : isRoomSoldOut(room)
+                          ? 'border-red-100 bg-red-50/40 opacity-60 cursor-not-allowed'
+                          : 'border-white/5 bg-white/5 hover:bg-white/10'
                     }`}
                   >
                     <div className="w-20 h-20 rounded-3xl overflow-hidden flex-shrink-0 bg-white/5 shadow-lg">
@@ -164,7 +189,7 @@ const PGDetail = () => {
                     </div>
                     <div className="flex-grow text-left">
                       <div className="flex flex-col">
-                        <span className="font-black text-primary">Suite {room.room_number}</span>
+                        <span className="font-black text-primary">{pg.name} - Room {room.room_number}</span>
                         <div className="flex flex-col mt-1">
                           <span className="text-accent font-black text-sm flex items-center">
                             <IndianRupee className="w-3.5 h-3.5 mr-0.5" />
@@ -175,8 +200,8 @@ const PGDetail = () => {
                           </span>
                         </div>
                       </div>
-                      <div className={`text-[10px] mt-2 font-black uppercase tracking-wider ${room.available_seats === 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {room.available_seats === 0 ? 'Full Room Occupied' : 'Room Available'}
+                      <div className={`text-[10px] mt-2 font-black uppercase tracking-wider ${isRoomSoldOut(room) ? 'text-red-600' : 'text-green-600'}`}>
+                        {isRoomSoldOut(room) ? 'Sold Out' : 'Room Available'}
                       </div>
                     </div>
                   </button>

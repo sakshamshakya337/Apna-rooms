@@ -143,6 +143,23 @@ CREATE TABLE IF NOT EXISTS electricity_bills (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
+-- Roommate Requests Table
+CREATE TABLE IF NOT EXISTS roommate_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    booking_id UUID REFERENCES bookings(id) ON DELETE CASCADE,
+    pg_id UUID REFERENCES pgs(id) ON DELETE CASCADE,
+    room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
+    requested_by_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    roommate_full_name TEXT NOT NULL,
+    roommate_email TEXT NOT NULL,
+    roommate_phone TEXT,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    verified_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    verified_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
 -- Contact Queries Table
 CREATE TABLE IF NOT EXISTS contact_queries (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -217,6 +234,7 @@ ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE complaints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE electricity_bills ENABLE ROW LEVEL SECURITY;
+ALTER TABLE roommate_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contact_queries ENABLE ROW LEVEL SECURITY;
 
 -- Drop and recreate all policies for consistency
@@ -256,6 +274,10 @@ CREATE POLICY "Public can view electricity_bills" ON electricity_bills FOR SELEC
 DROP POLICY IF EXISTS "Enable all operations for electricity_bills" ON electricity_bills;
 CREATE POLICY "Enable all operations for electricity_bills" ON electricity_bills FOR ALL USING (true) WITH CHECK (true);
 
+-- Roommate Requests
+DROP POLICY IF EXISTS "Enable all operations for roommate_requests" ON roommate_requests;
+CREATE POLICY "Enable all operations for roommate_requests" ON roommate_requests FOR ALL USING (true) WITH CHECK (true);
+
 -- Contact Queries
 DROP POLICY IF EXISTS "Public can submit contact queries" ON contact_queries;
 CREATE POLICY "Public can submit contact queries" ON contact_queries FOR INSERT WITH CHECK (true);
@@ -288,6 +310,8 @@ CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);
 CREATE INDEX IF NOT EXISTS idx_bookings_room_id ON bookings(room_id);
 CREATE INDEX IF NOT EXISTS idx_complaints_user_id ON complaints(user_id);
 CREATE INDEX IF NOT EXISTS idx_payments_booking_id ON payments(booking_id);
+CREATE INDEX IF NOT EXISTS idx_roommate_requests_booking_id ON roommate_requests(booking_id);
+CREATE INDEX IF NOT EXISTS idx_roommate_requests_room_id ON roommate_requests(room_id);
 
 -- 7. REFRESH SCHEMA CACHE
 NOTIFY pgrst, 'reload schema';

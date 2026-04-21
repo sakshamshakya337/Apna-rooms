@@ -38,6 +38,17 @@ const BookingConfirmation = () => {
 
   const [docRequirements, setDocRequirements] = useState([]);
   const [dynamicFiles, setDynamicFiles] = useState({});
+  const ACTIVE_BOOKING_STATUSES = ['pending', 'confirmed'];
+
+  const hasActiveBookingForAnotherUser = (roomData) => {
+    return roomData?.bookings?.some((booking) => {
+      return ACTIVE_BOOKING_STATUSES.includes(booking.status) && booking.user_id !== currentUser?.uid;
+    });
+  };
+
+  const isRoomSoldOut = (roomData) => {
+    return Number(roomData?.available_seats || 0) <= 0 || hasActiveBookingForAnotherUser(roomData);
+  };
 
   useEffect(() => {
     fetchDetails();
@@ -46,7 +57,18 @@ const BookingConfirmation = () => {
   const fetchDetails = async () => {
     try {
       const { data: pgData } = await supabase.from('pgs').select('*').eq('id', id).single();
-      const { data: roomData } = await supabase.from('rooms').select('*').eq('id', roomId).single();
+      const { data: roomData } = await supabase
+        .from('rooms')
+        .select('*, bookings (id, status, user_id)')
+        .eq('id', roomId)
+        .single();
+
+      if (!roomData || isRoomSoldOut(roomData)) {
+        toast.error('This room is sold out.');
+        navigate(`/pg/${id}`);
+        return;
+      }
+
       setPg(pgData);
       setRoom(roomData);
 
@@ -84,6 +106,45 @@ const BookingConfirmation = () => {
 
   const pricing = getPricing();
 
+  const createPendingBooking = async () => {
+    const { data: latestRoom, error: roomError } = await supabase
+      .from('rooms')
+      .select('*, bookings (id, status, user_id)')
+      .eq('id', room.id)
+      .single();
+
+    if (roomError) throw roomError;
+    if (isRoomSoldOut(latestRoom)) {
+      throw new Error('This room has already been booked.');
+    }
+
+    const { data: newBooking, error: bookingError } = await supabase
+      .from('bookings')
+      .insert([{
+        user_id: currentUser.uid,
+        pg_id: pg.id,
+        room_id: room.id,
+        amount: pricing.total,
+        paid_amount: 0,
+        type: bookingType,
+        status: 'pending',
+        payment_plan: paymentPlan,
+        contract_months: contractDuration
+      }])
+      .select()
+      .single();
+    
+    if (bookingError) throw bookingError;
+
+    const { error: roomUpdateError } = await supabase
+      .from('rooms')
+      .update({ available_seats: 0 })
+      .eq('id', room.id);
+
+    if (roomUpdateError) throw roomUpdateError;
+    return newBooking;
+  };
+
   const handlePayment = async () => {
     const res = await loadRazorpay();
     if (!res) return toast.error('Razorpay failed to load');
@@ -91,21 +152,7 @@ const BookingConfirmation = () => {
     setProcessing(true);
     
     try {
-      // First, create a pending booking in Supabase to get a booking ID
-      const { data: newBooking, error: bookingError } = await supabase
-        .from('bookings')
-        .insert([{
-          user_id: currentUser.uid,
-          pg_id: pg.id,
-          room_id: room.id,
-          amount: pricing.total, // Total actual booking value
-          type: bookingType,
-          status: 'pending'
-        }])
-        .select()
-        .single();
-      
-      if (bookingError) throw bookingError;
+      const newBooking = await createPendingBooking();
       setBookingId(newBooking.id);
 
       const order = await createRazorpayOrder(pricing.payableNow, 'INR', newBooking.id.slice(0, 30));
@@ -154,20 +201,7 @@ const BookingConfirmation = () => {
   const handleOfflinePayment = async () => {
     setProcessing(true);
     try {
-      const { data: newBooking, error: bookingError } = await supabase
-        .from('bookings')
-        .insert([{
-          user_id: currentUser.uid,
-          pg_id: pg.id,
-          room_id: room.id,
-          amount: pricing.total, // Total actual booking value
-          type: bookingType,
-          status: 'pending' // Explicit offline pending status
-        }])
-        .select()
-        .single();
-      
-      if (bookingError) throw bookingError;
+      const newBooking = await createPendingBooking();
       setBookingId(newBooking.id);
       setPaymentSuccess(true);
       setOfflinePending(true);
@@ -192,6 +226,10 @@ const BookingConfirmation = () => {
   };
 
   const finalizeBooking = async () => {
+    if (!bookingId) {
+      return toast.error('Please complete the booking step before uploading documents.');
+    }
+
     const isInternational = userData?.studentCategory === 'International';
     
     const requiredFiles = [
@@ -256,6 +294,10 @@ const BookingConfirmation = () => {
 
       const results = await Promise.all(uploadTasks.filter(t => t !== null));
       const updateData = Object.assign({}, ...results);
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update(updateData)
+        .eq('id', bookingId);
       
       if (updateError) throw updateError;
 
@@ -279,7 +321,7 @@ const BookingConfirmation = () => {
         const { error: insertError } = await supabase
           .from('booking_documents')
           .insert([{
-            booking_id: bookingId || newBooking?.id,
+            booking_id: bookingId,
             requirement_id: reqId,
             document_name: requirement?.document_name || 'Additional Doc',
             uploaded_url: publicUrl,
@@ -326,7 +368,7 @@ const BookingConfirmation = () => {
               <div className="bg-white/5 rounded-[2rem] p-8 border border-white/5 space-y-4">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Room Profile</span>
-                  <span className="font-black text-white">Room #{room.room_number}</span>
+                  <span className="font-black text-white text-right">{pg.name} - Room {room.room_number}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Property Type</span>

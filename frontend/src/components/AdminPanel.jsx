@@ -122,6 +122,17 @@ const AdminPanel = ({ section = 'admin' }) => {
   const isAdmin = userData?.role === 'admin' || isSuperAdmin;
 
   const MOCKUP_IMAGE = "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80";
+  const ACTIVE_BOOKING_STATUSES = ['pending', 'confirmed'];
+
+  const roomDisplayName = (pgName, roomNumber) => {
+    return `${pgName || 'PG'} - Room ${roomNumber || 'N/A'}`;
+  };
+
+  const getPrimaryRoommateRequest = (tenant) => {
+    return tenant.roommate_requests?.find((request) => request.status === 'pending')
+      || tenant.roommate_requests?.find((request) => request.status === 'approved')
+      || tenant.roommate_requests?.[0];
+  };
 
   useEffect(() => {
     fetchAdminData();
@@ -130,6 +141,14 @@ const AdminPanel = ({ section = 'admin' }) => {
   const fetchAdminData = async () => {
     setLoading(true);
     try {
+      if (['pgs', 'bills_admin', 'users_admin', 'workers_admin', 'team'].includes(section)) {
+        const { data: pgData } = await supabase
+          .from('pgs')
+          .select('*, rooms (*)')
+          .order('created_at', { ascending: false });
+        if (pgData) setPgs(pgData);
+      }
+
       if (section === 'admin' || section === 'revenue') {
         const { count: userCount } = await supabase.from('users').select('*', { count: 'exact', head: true });
         const { count: pgCount } = await supabase.from('pgs').select('*', { count: 'exact', head: true });
@@ -157,6 +176,48 @@ const AdminPanel = ({ section = 'admin' }) => {
           .order('created_at', { ascending: false })
           .limit(5);
         if (complaintsData) setComplaints(complaintsData);
+      }
+
+      if (section === 'users_admin') {
+        const { data: tenantData } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            users (id, full_name, email, phone_number, address, city, state),
+            pgs (name),
+            rooms (room_number),
+            roommate_requests (*)
+          `)
+          .in('status', ACTIVE_BOOKING_STATUSES)
+          .order('created_at', { ascending: false });
+        if (tenantData) setTenants(tenantData);
+      }
+
+      if (section === 'team' || section === 'workers_admin') {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (usersData) {
+          setUsers(usersData.filter(user => ['admin', 'sub_admin', 'super_admin'].includes(user.role)));
+          setWorkers(usersData.filter(user => ['plumber', 'electrician', 'wifi', 'service_worker'].includes(user.role)));
+        }
+      }
+
+      if (section === 'queries_admin') {
+        const { data: queryData } = await supabase
+          .from('contact_queries')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (queryData) setContactQueries(queryData);
+      }
+
+      if (section === 'bills_admin') {
+        const { data: billsData } = await supabase
+          .from('electricity_bills')
+          .select('*, rooms (room_number, pgs (name))')
+          .order('created_at', { ascending: false });
+        if (billsData) setBillHistory(billsData);
       }
     } catch (error) {
       console.error('Admin Data Fetch Error:', error);
@@ -255,14 +316,33 @@ const AdminPanel = ({ section = 'admin' }) => {
 
   const handleApprovePayment = async (bookingId) => {
     try {
+      const { data: booking, error: bookingFetchError } = await supabase
+        .from('bookings')
+        .select('room_id')
+        .eq('id', bookingId)
+        .single();
+
+      if (bookingFetchError) throw bookingFetchError;
+
       const { error } = await supabase
         .from('bookings')
         .update({ status: 'confirmed' })
         .eq('id', bookingId);
       
       if (error) throw error;
+
+      if (booking?.room_id) {
+        const { error: roomError } = await supabase
+          .from('rooms')
+          .update({ available_seats: 0 })
+          .eq('id', booking.room_id);
+
+        if (roomError) throw roomError;
+      }
+
       toast.success('Payment approved and booking confirmed!');
       fetchAdminData(section);
+      if (selectedPGForTenants) fetchTenants(selectedPGForTenants.id);
     } catch (error) {
       console.error(error);
       toast.error('Failed to approve payment');
@@ -541,9 +621,11 @@ const AdminPanel = ({ section = 'admin' }) => {
         .select(`
           *,
           users (id, full_name, email, phone_number, address, city, state),
-          rooms (room_number)
+          rooms (room_number),
+          roommate_requests (*)
         `)
         .eq('pg_id', pgId)
+        .in('status', ACTIVE_BOOKING_STATUSES)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -615,6 +697,31 @@ const AdminPanel = ({ section = 'admin' }) => {
       setTenants(prev => prev.map(t => t.id === bookingId ? { ...t, is_kyc_verified: status } : t));
     } catch (error) {
       toast.error('Failed to update KYC status');
+    }
+  };
+
+  const handleReviewRoommate = async (requestId, status) => {
+    try {
+      const { error } = await supabase
+        .from('roommate_requests')
+        .update({
+          status,
+          verified_by: userData?.id,
+          verified_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+      toast.success(status === 'approved' ? 'Roommate verified' : 'Roommate rejected');
+
+      setTenants(prev => prev.map(tenant => ({
+        ...tenant,
+        roommate_requests: tenant.roommate_requests?.map(request => (
+          request.id === requestId ? { ...request, status } : request
+        ))
+      })));
+    } catch (error) {
+      toast.error(error.message || 'Failed to update roommate request');
     }
   };
 
@@ -861,13 +968,18 @@ const AdminPanel = ({ section = 'admin' }) => {
                   <tr key={tenant.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-bold text-primary flex items-center">
-                        Room {tenant.rooms?.room_number || 'N/A'}
+                        {roomDisplayName(tenant.pgs?.name, tenant.rooms?.room_number)}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">{tenant.pgs?.name || 'N/A'}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-bold">{tenant.users?.full_name}</div>
                       <div className="text-xs text-gray-400">{tenant.users?.email}</div>
+                      {getPrimaryRoommateRequest(tenant) && (
+                        <div className="mt-2 text-[10px] font-bold text-indigo-600">
+                          Roommate: {getPrimaryRoommateRequest(tenant).roommate_full_name} ({getPrimaryRoommateRequest(tenant).status})
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {tenant.users?.phone_number || 'N/A'} <br />
@@ -902,6 +1014,22 @@ const AdminPanel = ({ section = 'admin' }) => {
                       >
                         Review Docs
                       </button>
+                      {getPrimaryRoommateRequest(tenant)?.status === 'pending' && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleReviewRoommate(getPrimaryRoommateRequest(tenant).id, 'approved')}
+                            className="text-white font-bold text-xs bg-indigo-500 px-3 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
+                          >
+                            Verify Roommate
+                          </button>
+                          <button
+                            onClick={() => handleReviewRoommate(getPrimaryRoommateRequest(tenant).id, 'rejected')}
+                            className="text-red-600 font-bold text-xs bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100 transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -958,7 +1086,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                   <div className="p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <h4 className="text-lg font-bold">Room {room.room_number}</h4>
+                        <h4 className="text-lg font-bold">{roomDisplayName(viewingPG.name, room.room_number)}</h4>
                         <p className="text-sm text-gray-500">{room.available_seats} / {room.total_seats} Seats Available</p>
                       </div>
                       <div className="text-accent font-bold">₹{room.price_per_seat}</div>
@@ -1356,13 +1484,13 @@ const AdminPanel = ({ section = 'admin' }) => {
 
         {showAddPGModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl">
-              <div className="flex justify-between items-center mb-6">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-white rounded-3xl p-5 sm:p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-start gap-4 mb-6">
                 <h3 className="text-2xl font-bold">Add New PG Property</h3>
                 <button onClick={() => setShowAddPGModal(false)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
               </div>
               <form onSubmit={handleAddPG} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input required placeholder="PG Name" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newPG.name} onChange={e => setNewPG({...newPG, name: e.target.value})} />
                   <input required placeholder="City" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newPG.city} onChange={e => setNewPG({...newPG, city: e.target.value})} />
                 </div>
@@ -1416,7 +1544,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-gray-400 uppercase">Accommodation Type</label>
                     <select 
@@ -1673,12 +1801,15 @@ const AdminPanel = ({ section = 'admin' }) => {
                 <button onClick={() => setShowAddRoomModal(false)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
               </div>
               <form onSubmit={handleAddRoom} className="space-y-4">
-                <input required placeholder="Room Number (e.g. 101)" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newRoom.room_number} onChange={e => setNewRoom({...newRoom, room_number: e.target.value})} />
+                <input required placeholder={`${selectedPG?.name || 'PG'} - Room number (e.g. 101)`} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newRoom.room_number} onChange={e => setNewRoom({...newRoom, room_number: e.target.value})} />
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Monthly Room Rent (₹)</label>
-                    <input required type="number" placeholder="5000" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newRoom.price_per_seat} onChange={e => setNewRoom({...newRoom, price_per_seat: Number(e.target.value), total_seats: 1})} />
+                    <input required type="number" placeholder="5000" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newRoom.price_per_seat} onChange={e => setNewRoom({...newRoom, price_per_seat: Number(e.target.value), total_seats: 2})} />
                   </div>
+                </div>
+                <div className="p-4 bg-indigo-50 text-indigo-700 rounded-2xl border border-indigo-100 text-xs font-bold">
+                  Room listing is sold out after one booking. The booked student can add one roommate, and admin approval allows two students in the same room.
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Amenities (comma separated)</label>
@@ -1853,8 +1984,13 @@ const AdminPanel = ({ section = 'admin' }) => {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <div className="font-bold text-accent">Room {tenant.rooms?.room_number}</div>
+                              <div className="font-bold text-accent">{roomDisplayName(selectedPGForTenants?.name, tenant.rooms?.room_number)}</div>
                               <div className="text-xs text-gray-400 uppercase tracking-tighter">{tenant.type} STAY</div>
+                              {getPrimaryRoommateRequest(tenant) && (
+                                <div className="mt-2 text-[10px] font-bold text-indigo-600">
+                                  Roommate: {getPrimaryRoommateRequest(tenant).roommate_full_name} ({getPrimaryRoommateRequest(tenant).status})
+                                </div>
+                              )}
                             </td>
                             <td className="px-6 py-4">
                               <div className="text-sm font-medium">{tenant.contract_months} Months</div>
@@ -1898,6 +2034,23 @@ const AdminPanel = ({ section = 'admin' }) => {
                                     <CheckCircle2 className="w-3 h-3" />
                                     <span>Confirm Payment</span>
                                   </button>
+                                )}
+                                {getPrimaryRoommateRequest(tenant)?.status === 'pending' && (
+                                  <>
+                                    <button
+                                      onClick={() => handleReviewRoommate(getPrimaryRoommateRequest(tenant).id, 'approved')}
+                                      className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center space-x-2"
+                                    >
+                                      <Users className="w-3 h-3" />
+                                      <span>Verify Roommate</span>
+                                    </button>
+                                    <button
+                                      onClick={() => handleReviewRoommate(getPrimaryRoommateRequest(tenant).id, 'rejected')}
+                                      className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-all"
+                                    >
+                                      Reject Roommate
+                                    </button>
+                                  </>
                                 )}
                               </div>
                             </td>
