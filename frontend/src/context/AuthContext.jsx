@@ -56,13 +56,14 @@ export const AuthProvider = ({ children }) => {
     setUserData(user);
   };
 
-  const signup = async (email, password, fullName, role = 'user') => {
+  const signup = async (email, password, fullName, role = 'user', studentCategory = 'National') => {
     try {
       const response = await axios.post(`${BACKEND_URL}/api/users/signup`, {
         email,
         password,
         fullName,
-        role
+        role,
+        studentCategory
       });
       if (response.data && response.data.token) {
         handleAuthResponse(response.data.token, response.data.user);

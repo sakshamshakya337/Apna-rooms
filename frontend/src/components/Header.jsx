@@ -18,12 +18,12 @@ const Header = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-40 w-full glass-morphism border-b border-gray-200">
+    <nav className="sticky top-0 z-40 w-full glass-morphism border-b border-white/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <Link to="/" className="flex items-center space-x-3 group">
             <img 
-              src="/logo.png" 
+              src="/apna_light.jpg" 
               alt="Apna Rooms Logo" 
               className="h-10 w-auto object-contain rounded-lg group-hover:scale-105 transition-transform duration-300 shadow-sm"
             />
@@ -32,19 +32,21 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-primary hover:text-accent transition-colors">Home</Link>
-            <Link to="/pgs" className="text-primary hover:text-accent transition-colors">PGs</Link>
-            <Link to="/contact" className="text-primary hover:text-accent transition-colors">Contact Us</Link>
+            <Link to="/" className="text-primary font-semibold hover:text-accent transition-all hover:scale-105">Home</Link>
+            <Link to="/pgs" className="text-primary font-semibold hover:text-accent transition-all hover:scale-105">Browse PGs</Link>
+            <Link to="/contact" className="text-primary font-semibold hover:text-accent transition-all hover:scale-105">Contact</Link>
             
             {currentUser ? (
-              <div className="flex items-center space-x-4">
-                <Link to="/dashboard" className="flex items-center space-x-1 text-primary hover:text-accent">
-                  <User className="w-5 h-5" />
+              <div className="flex items-center space-x-6">
+                <Link to="/dashboard" className="flex items-center space-x-2 text-primary font-bold hover:text-accent transition-all">
+                  <div className="p-2 bg-accent/10 rounded-full">
+                    <User className="w-5 h-5 text-accent" />
+                  </div>
                   <span>Dashboard</span>
                 </Link>
                 <button 
                   onClick={handleLogout}
-                  className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center space-x-2"
+                  className="bg-primary text-white px-5 py-2.5 rounded-full font-bold hover:bg-gray-900 transition-all shadow-lg shadow-gray-200 flex items-center space-x-2"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Logout</span>
@@ -52,8 +54,8 @@ const Header = () => {
               </div>
             ) : (
               <div className="flex items-center space-x-4">
-                <Link to="/login" className="text-primary hover:text-accent transition-colors">Login</Link>
-                <Link to="/signup" className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Sign Up</Link>
+                <Link to="/login" className="text-primary font-bold hover:text-accent transition-colors">Login</Link>
+                <Link to="/signup" className="bg-accent text-white px-6 py-2.5 rounded-full font-bold hover:bg-accent-light transition-all shadow-lg shadow-purple-200">Sign Up</Link>
               </div>
             )}
           </div>

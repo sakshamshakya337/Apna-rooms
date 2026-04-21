@@ -174,6 +174,12 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pgs' AND column_name='main_image') THEN
         ALTER TABLE pgs ADD COLUMN main_image TEXT;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pgs' AND column_name='accommodation_type') THEN
+        ALTER TABLE pgs ADD COLUMN accommodation_type TEXT DEFAULT 'Indian';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pgs' AND column_name='owner_doc_url') THEN
+        ALTER TABLE pgs ADD COLUMN owner_doc_url TEXT;
+    END IF;
 
     -- Rooms Table Updates
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='rooms' AND column_name='amenities') THEN
@@ -193,6 +199,13 @@ BEGIN
         ALTER TABLE bookings ADD COLUMN paid_amount DECIMAL(10, 2) DEFAULT 0.00;
         ALTER TABLE bookings ADD COLUMN payment_plan TEXT DEFAULT 'full';
         ALTER TABLE bookings ADD COLUMN contract_months INTEGER DEFAULT 1;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='parent_aadhar_url') THEN
+        ALTER TABLE bookings ADD COLUMN parent_aadhar_url TEXT;
+        ALTER TABLE bookings ADD COLUMN passport_url TEXT;
+        ALTER TABLE bookings ADD COLUMN vidu_doc_url TEXT;
+        ALTER TABLE bookings ADD COLUMN aadhar_pancard_url TEXT;
     END IF;
 END $$;
 

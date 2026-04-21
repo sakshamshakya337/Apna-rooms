@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../config/supabase';
 import { useAuth } from '../context/AuthContext';
-import { IndianRupee, Shield, CheckCircle, ArrowRight, Upload, Loader2 } from 'lucide-react';
+import { IndianRupee, Shield, CheckCircle, ArrowRight, Upload, Loader2, FileText, Download } from 'lucide-react';
 import { loadRazorpay, createRazorpayOrder, verifyPaymentOnBackend } from '../utils/razorpay';
 import { toast } from 'react-hot-toast';
 import { compressImage } from '../utils/imageUtils';
@@ -28,9 +28,16 @@ const BookingConfirmation = () => {
   const [files, setFiles] = useState({
     userPhoto: null,
     universityId: null,
-    aadharFront: null,
-    aadharBack: null
+    aadharPancard: null,
+    aadharBack: null,
+    parentAadhar: null,
+    passport: null,
+    viduDoc: null,
+    policeVerification: null
   });
+
+  const [docRequirements, setDocRequirements] = useState([]);
+  const [dynamicFiles, setDynamicFiles] = useState({});
 
   useEffect(() => {
     fetchDetails();
@@ -42,6 +49,14 @@ const BookingConfirmation = () => {
       const { data: roomData } = await supabase.from('rooms').select('*').eq('id', roomId).single();
       setPg(pgData);
       setRoom(roomData);
+
+      // Fetch dynamic document requirements for this PG
+      const { data: reqs } = await supabase
+        .from('pg_document_requirements')
+        .select('*')
+        .eq('pg_id', id);
+      setDocRequirements(reqs || []);
+      
     } catch (error) {
       toast.error('Failed to load booking details');
     } finally {
@@ -50,18 +65,20 @@ const BookingConfirmation = () => {
   };
 
   const getPricing = () => {
-    if (!room || !pg) return { rent: 0, deposit: 0, total: 0, payableNow: 0 };
+    if (!room || !pg) return { rent: 0, deposit: 0, total: 0, payableNow: 0, monthlyRent: 0 };
     
-    const basePrice = Number(room.price_per_seat);
-    const rent = basePrice * Number(room.total_seats);
+    // contractDuration is either 6 or 12
+    const duration = contractDuration || 6;
+    const monthlyRent = Number(room.price_per_seat); 
+    const totalRentForContract = monthlyRent * duration;
     const deposit = Number(pg?.security_deposit ?? 2000);
-    const bookingAmount = paymentPlan === 'half' ? (rent / 2) : rent;
     
     return {
-      rent,
+      monthlyRent,
+      rent: totalRentForContract,
       deposit,
-      total: rent + deposit,
-      payableNow: bookingAmount + deposit
+      total: totalRentForContract + deposit,
+      payableNow: totalRentForContract + deposit // Always full payment now
     };
   };
 
@@ -82,11 +99,7 @@ const BookingConfirmation = () => {
           pg_id: pg.id,
           room_id: room.id,
           amount: pricing.total, // Total actual booking value
-          // Temporarily commented out schema columns that might be missing in DB
-          // paid_amount: pricing.payableNow, 
           type: bookingType,
-          // payment_plan: paymentPlan,
-          // contract_months: contractDuration,
           status: 'pending'
         }])
         .select()
@@ -117,7 +130,7 @@ const BookingConfirmation = () => {
               }
             });
             setPaymentSuccess(true);
-            toast.success('Booking Confirmed!');
+            toast.success('Booking Confirmed! Now upload documents.');
           } catch (err) {
             toast.error('Verification failed. Contact support.');
           }
@@ -148,11 +161,7 @@ const BookingConfirmation = () => {
           pg_id: pg.id,
           room_id: room.id,
           amount: pricing.total, // Total actual booking value
-          // Temporarily commented out schema columns that might be missing in DB
-          // paid_amount: 0, 
           type: bookingType,
-          // payment_plan: paymentPlan,
-          // contract_months: contractDuration,
           status: 'pending' // Explicit offline pending status
         }])
         .select()
@@ -172,12 +181,35 @@ const BookingConfirmation = () => {
   };
 
   const handleFileUpload = (e, type) => {
-    setFiles({ ...files, [type]: e.target.files[0] });
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 1 * 1024 * 1024) {
+        toast.error('File size strictly limited to 1MB. Please compress and retry.');
+        return;
+      }
+      setFiles({ ...files, [type]: file });
+    }
   };
 
   const finalizeBooking = async () => {
-    if (!files.userPhoto || !files.universityId || !files.aadharFront || !files.aadharBack) {
-      return toast.error('Please upload all required documents');
+    const isInternational = userData?.studentCategory === 'International';
+    
+    const requiredFiles = [
+      'userPhoto', 
+      'universityId', 
+      'viduDoc',
+      'policeVerification'
+    ];
+
+    if (isInternational) {
+      requiredFiles.push('passport');
+    } else {
+      requiredFiles.push('aadharPancard', 'aadharBack', 'parentAadhar');
+    }
+
+    const missingFiles = requiredFiles.filter(key => !files[key]);
+    if (missingFiles.length > 0) {
+      return toast.error(`Please upload all required: ${missingFiles.join(', ')}`);
     }
     
     setProcessing(true);
@@ -186,10 +218,15 @@ const BookingConfirmation = () => {
       const folderPath = `kyc/${currentUser.uid}/${bookingId || id}`;
 
       const uploadTasks = Object.entries(files).map(async ([key, file]) => {
-        // Compress document if it's an image
+        if (!file) return null;
+        
+        // Final size check
+        if (file.size > 1.1 * 1024 * 1024) throw new Error(`${key} exceeds 1MB limit`);
+
+        // Compress image further if possible
         let uploadFile = file;
         if (file.type.startsWith('image/')) {
-          uploadFile = await compressImage(file, 2); // 2MB limit
+          uploadFile = await compressImage(file, 0.9); // Target 0.9MB to be safe
         }
 
         const fileExt = file.name.split('.').pop();
@@ -206,171 +243,342 @@ const BookingConfirmation = () => {
         const columnMapping = {
           userPhoto: 'user_photo_url',
           universityId: 'university_id_url',
-          aadharFront: 'aadhar_front_url',
-          aadharBack: 'aadhar_back_url'
+          aadharPancard: 'aadhar_pancard_url',
+          aadharBack: 'aadhar_back_url',
+          parentAadhar: 'parent_aadhar_url',
+          passport: 'passport_url',
+          viduDoc: 'vidu_doc_url',
+          policeVerification: 'police_verification_url'
         };
         
         return { [columnMapping[key]]: filePath };
       });
 
-      const results = await Promise.all(uploadTasks);
+      const results = await Promise.all(uploadTasks.filter(t => t !== null));
       const updateData = Object.assign({}, ...results);
       
-      // Update booking with document paths - maintain pending if offline
-      const { error: updateError } = await supabase
-        .from('bookings')
-        .update({
-          ...updateData,
-          status: offlinePending ? 'pending' : 'confirmed'
-        })
-        .eq('id', bookingId);
-
       if (updateError) throw updateError;
 
-      toast.success('Documents uploaded and booking confirmed!');
+      // === NEW: Dynamic Document Uploads ===
+      const dynamicUploadTasks = Object.entries(dynamicFiles).map(async ([reqId, file]) => {
+        if (!file) return null;
+        
+        const requirement = docRequirements.find(r => r.id === reqId);
+        const fileExt = file.name.split('.').pop();
+        const fileName = `dynamic_${reqId}_${Date.now()}.${fileExt}`;
+        const filePath = `kyc/${currentUser.uid}/${bookingId || id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('kyc-documents')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(filePath);
+
+        const { error: insertError } = await supabase
+          .from('booking_documents')
+          .insert([{
+            booking_id: bookingId || newBooking?.id,
+            requirement_id: reqId,
+            document_name: requirement?.document_name || 'Additional Doc',
+            uploaded_url: publicUrl,
+            status: 'pending'
+          }]);
+
+        if (insertError) throw insertError;
+        return true;
+      });
+
+      await Promise.all(dynamicUploadTasks.filter(t => t !== null));
+      // ======================================
+
+      toast.success('Documents uploaded successfully!');
       navigate('/dashboard');
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload documents. Please try again.');
+      toast.error('Upload failed: ' + error.message);
     } finally {
       setProcessing(false);
     }
   };
 
-  if (loading) return <div className="p-20 text-center">Loading...</div>;
+  if (loading) return <div className="p-20 text-center font-['Sora'] text-white">Loading booking system...</div>;
+
+  const isInternational = userData?.studentCategory === 'International';
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-        <div className="bg-primary p-8 text-white">
-          <h1 className="text-3xl font-bold">Review & Pay</h1>
-          <p className="opacity-80">Complete your booking for {pg.name}</p>
+    <div className="max-w-5xl mx-auto px-4 py-32 font-['Sora']">
+      <div className="bg-[#1a1435] rounded-[3rem] shadow-2xl overflow-hidden border border-white/10">
+        <div className="bg-accent p-10 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-32 translate-x-32" />
+          <h1 className="text-4xl font-black tracking-tight">Review & Pay</h1>
+          <p className="opacity-70 font-medium mt-2">Finalizing your stay at {pg.name}</p>
         </div>
 
-        <div className="p-8 space-y-8">
-          {/* Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <h3 className="font-bold text-lg border-b pb-2">Booking Details</h3>
-              <div className="flex justify-between text-gray-600">
-                <span>Room Number</span>
-                <span className="font-medium text-primary">{room.room_number}</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Booking Type</span>
-                <span className="font-medium capitalize text-primary">{bookingType}</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Address</span>
-                <span className="font-medium text-primary text-right max-w-[200px]">{pg.address}</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Contract Duration</span>
-                <span className="font-bold text-primary">{contractDuration} {contractDuration === 12 ? 'Year' : (contractDuration === 1 ? 'Month' : 'Months')}</span>
+        <div className="p-10 space-y-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div className="space-y-6">
+              <h3 className="font-black text-xl text-white flex items-center">
+                <div className="p-2 bg-accent/20 rounded-xl mr-3 text-accent"><Shield className="w-5 h-5" /></div>
+                Stay Summary
+              </h3>
+              <div className="bg-white/5 rounded-[2rem] p-8 border border-white/5 space-y-4">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Room Profile</span>
+                  <span className="font-black text-white">Room #{room.room_number}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Property Type</span>
+                  <span className="font-black text-accent uppercase">{pg.accommodation_type}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Location</span>
+                  <span className="font-black text-white text-right max-w-[200px] truncate">{pg.city}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Contract</span>
+                  <span className="font-black text-white">{contractDuration} Months</span>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-4 bg-gray-50 p-6 rounded-2xl">
-              <h3 className="font-bold text-lg border-b pb-2 text-primary">Price Breakdown</h3>
-              <div className="flex justify-between text-gray-600">
-                <span>Rent ({paymentPlan === 'half' ? '50% Booking' : 'Full'})</span>
-                <span>₹{paymentPlan === 'half' 
-                  ? (room.price_per_seat * room.total_seats) / 2
-                  : room.price_per_seat * room.total_seats}</span>
+            <div className="bg-accent/5 p-8 rounded-[2.5rem] border border-accent/20 space-y-6">
+              <h3 className="font-black text-xl text-white">Financial Statement</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm text-gray-400">
+                  <span>Monthly Subscription</span>
+                  <span className="text-white font-bold">₹{pricing.monthlyRent}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-400">
+                  <span>Security Deposit</span>
+                  <span className="text-white font-bold">₹{pricing.deposit}</span>
+                </div>
+                <div className="pt-4 border-t border-white/10 flex justify-between items-center">
+                  <span className="text-white font-black text-xl">Total Payable</span>
+                  <div className="text-right">
+                    <span className="font-black text-3xl text-accent block tracking-tighter">₹{pricing.total}</span>
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Inclusive of all taxes</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Security Deposit</span>
-                <span>₹{pg.security_deposit || 2000}</span>
-              </div>
-              <div className="flex justify-between font-bold text-xl pt-4 border-t text-accent">
-                <span>Payable Now</span>
-                <span>₹{(paymentPlan === 'half' 
-                  ? (room.price_per_seat * room.total_seats) / 2
-                  : room.price_per_seat * room.total_seats) + (pg.security_deposit || 2000)}</span>
-              </div>
-              {paymentPlan === 'half' && (
-                <p className="text-[10px] text-gray-400 mt-2 italic">Remaining 50% rent will be collected at check-in.</p>
-              )}
             </div>
           </div>
 
           {!paymentSuccess ? (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
                 onClick={handlePayment}
                 disabled={processing}
-                className="w-full bg-accent text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-600 transition-all flex items-center justify-center space-x-2 shadow-lg disabled:opacity-50"
+                className="bg-accent text-white py-5 rounded-2xl font-black text-lg hover:bg-accent/80 transition-all flex items-center justify-center space-x-3 shadow-xl shadow-accent/20 disabled:opacity-50"
               >
-                {processing ? <Loader2 className="animate-spin" /> : <Shield className="w-5 h-5" />}
-                <span>{processing ? 'Processing...' : 'Pay with Razorpay'}</span>
+                {processing ? <Loader2 className="animate-spin" /> : <ArrowRight className="w-6 h-6" />}
+                <span>{processing ? 'Processing...' : 'Digital Checkout'}</span>
               </button>
               
-              <div className="relative flex py-3 items-center">
-                  <div className="flex-grow border-t border-gray-200"></div>
-                  <span className="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">OR</span>
-                  <div className="flex-grow border-t border-gray-200"></div>
-              </div>
-
               <button
                 onClick={handleOfflinePayment}
                 disabled={processing}
-                className="w-full bg-white text-gray-700 border-2 border-gray-200 py-4 rounded-2xl font-bold text-lg hover:border-gray-800 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+                className="bg-white/5 text-white border border-white/10 py-5 rounded-2xl font-black text-lg hover:bg-white/10 transition-all flex items-center justify-center space-x-3 disabled:opacity-50"
               >
-                {processing ? <Loader2 className="animate-spin" /> : null}
-                <span>{processing ? 'Processing...' : 'Pay Offline at PG'}</span>
+                <span>{processing ? 'Processing...' : 'Offline Reserve'}</span>
               </button>
-              <p className="text-center text-xs text-gray-400 font-medium">Select offline payment to block the room subject to admin approval.</p>
             </div>
           ) : (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-              <div className={`p-6 rounded-2xl flex items-center space-x-4 border ${offlinePending ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'}`}>
-                <div className={`p-2 rounded-full text-white ${offlinePending ? 'bg-yellow-500' : 'bg-green-500'}`}>
-                  <CheckCircle className="w-6 h-6" />
+            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+              <div className={`p-8 rounded-[2.5rem] flex items-center space-x-6 border-2 ${offlinePending ? 'bg-amber-500/10 border-amber-500/30' : 'bg-green-500/10 border-green-500/30'}`}>
+                <div className={`p-4 rounded-3xl ${offlinePending ? 'bg-amber-500' : 'bg-green-500'} shadow-lg shadow-black/20`}>
+                  <CheckCircle className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h4 className={`font-bold ${offlinePending ? 'text-yellow-800' : 'text-green-800'}`}>
-                    {offlinePending ? 'Offline Booking Registered!' : 'Payment Successful!'}
+                  <h4 className={`text-2xl font-black ${offlinePending ? 'text-amber-400' : 'text-green-400'}`}>
+                    {offlinePending ? 'Slot Reserved!' : 'Transaction Approved!'}
                   </h4>
-                  <p className={`text-sm ${offlinePending ? 'text-yellow-600' : 'text-green-600'}`}>
-                    Please upload your documents to finalize the booking for verification.
+                  <p className="text-gray-400 font-medium mt-1">
+                    Please transmit your credentials to activate your keys.
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="border-b pb-4">
-                  <h3 className="text-xl font-bold">Police Verification Documents</h3>
-                  <p className="text-sm text-gray-500 mt-1 italic text-red-500">Note: Please upload your latest photo and valid documents. All images are compressed automatically.</p>
+              <div className="space-y-8">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/5 pb-6">
+                  <div>
+                    <h3 className="text-3xl font-black text-white">Credential Vault</h3>
+                    <p className="text-gray-500 font-medium text-sm mt-1">Stictly protected & encrypted transmission.</p>
+                  </div>
+                  <div className="px-5 py-2 bg-red-500/10 rounded-full border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest">
+                    MAX 1MB PER FILE
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Categorized Document List */}
                   {[
-                    { label: 'Your Latest Photo', key: 'userPhoto', instruction: 'Clear face photo for records' },
-                    { label: 'University ID Card', key: 'universityId', instruction: 'Front side of your ID' },
-                    { label: 'Aadhar Card (Front)', key: 'aadharFront', instruction: 'Front side of Aadhar' },
-                    { label: 'Aadhar Card (Back)', key: 'aadharBack', instruction: 'Back side of Aadhar' }
+                    { label: 'Passport Size Photo', key: 'userPhoto', inst: 'Professional Background' },
+                    { label: 'University / College ID', key: 'universityId', inst: 'Face toward camera' },
+                    ...(isInternational ? [
+                      { label: 'Global Passport', key: 'passport', inst: 'Visa/Main page' },
+                      { label: 'Visa / Permit', key: 'visa', inst: 'Residence Authorization' }
+                    ] : [
+                      { label: 'Aadhar / PAN', key: 'aadharPancard', inst: 'Primary ID Front' },
+                      { label: 'Residency Proof', key: 'aadharBack', inst: 'Primary ID Back' },
+                      { label: "Guardian Identity", key: 'parentAadhar', inst: "Sponsor's Aadhar" }
+                    ]),
                   ].map((doc) => (
-                    <div key={doc.key} className="relative border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-accent transition-colors group">
+                    <div key={doc.key} className={`relative border-2 border-dashed rounded-[2.5rem] p-8 text-center transition-all duration-500 group overflow-hidden ${files[doc.key] ? 'border-accent bg-accent/5' : 'border-white/5 bg-white/2 hover:border-accent/40'}`}>
                       <input 
                         type="file" 
-                        accept="image/*"
+                        accept="image/*,.pdf"
                         onChange={(e) => handleFileUpload(e, doc.key)}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
                       />
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400 group-hover:text-accent" />
-                      <span className="text-sm font-bold text-primary block">{files[doc.key]?.name || doc.label}</span>
-                      <span className="text-[10px] text-gray-400 mt-1 block uppercase tracking-tighter">{doc.instruction}</span>
-                      {files[doc.key] && <span className="text-[10px] text-green-600 font-bold mt-1 block">READY TO UPLOAD</span>}
+                      <div className={`w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center transition-colors ${files[doc.key] ? 'bg-accent text-white' : 'bg-white/5 text-gray-500 group-hover:text-accent'}`}>
+                        {files[doc.key] ? <CheckCircle className="w-7 h-7" /> : <Upload className="w-7 h-7" />}
+                      </div>
+                      <span className="text-sm font-black text-white block truncate">{files[doc.key]?.name || doc.label}</span>
+                      <span className="text-[10px] text-gray-500 mt-2 block uppercase font-black tracking-widest">{doc.inst}</span>
                     </div>
                   ))}
+
+                  {/* Vidu & Police Doc Section */}
+                  <div className="col-span-full space-y-6">
+                    <div className="bg-white/[0.03] p-8 rounded-[3rem] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 group">
+                       <div className="flex items-center space-x-6">
+                         <div className="p-5 bg-accent/10 rounded-3xl text-accent transition-transform group-hover:scale-110">
+                           <FileText className="w-10 h-10" />
+                         </div>
+                         <div>
+                           <h4 className="text-xl font-black text-white">Vidu Authorization</h4>
+                           <p className="text-sm text-gray-500 font-medium mt-1">Download official template, fill, and sync back.</p>
+                         </div>
+                       </div>
+                       <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                          {pg?.owner_doc_url ? (
+                            <a 
+                              href={pg.owner_doc_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="px-8 py-4 bg-white/10 text-white border border-accent/30 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:border-accent transition-all flex items-center justify-center shadow-lg shadow-accent/10 group"
+                            >
+                              <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get Blank Vidu Form
+                            </a>
+                          ) : (
+                            <div className="px-4 py-2 bg-red-500/10 text-red-400 text-[9px] font-black uppercase tracking-tighter border border-red-500/20 rounded-xl">
+                              Template Not Uploaded
+                            </div>
+                          )}
+                         <div className="relative">
+                            <input 
+                              type="file" 
+                              onChange={(e) => handleFileUpload(e, 'viduDoc')}
+                              className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                            />
+                            <button className={`w-full px-8 py-4 ${files.viduDoc ? 'bg-green-600' : 'bg-accent'} text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center shadow-xl shadow-accent/20`}>
+                              <Upload className="w-4 h-4 mr-2" /> Sync Document
+                            </button>
+                         </div>
+                       </div>
+                    </div>
+
+                    <div className="bg-white/[0.03] p-8 rounded-[3rem] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 group">
+                       <div className="flex items-center space-x-6">
+                         <div className="p-5 bg-purple-500/10 rounded-3xl text-purple-500 transition-transform group-hover:scale-110">
+                           <Shield className="w-10 h-10" />
+                         </div>
+                         <div>
+                           <h4 className="text-xl font-black text-white">Police Verification</h4>
+                           <p className="text-sm text-gray-500 font-medium mt-1">Mandatory verification document required by law.</p>
+                         </div>
+                       </div>
+                       <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                          {pg?.police_verification_template_url ? (
+                            <a 
+                              href={pg.police_verification_template_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="px-8 py-4 bg-white/10 text-white border border-purple-500/30 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-600 hover:border-purple-600 transition-all flex items-center justify-center shadow-lg shadow-purple-500/10 group"
+                            >
+                              <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get Police Template
+                            </a>
+                          ) : (
+                            <div className="px-4 py-2 bg-red-500/10 text-red-400 text-[9px] font-black uppercase tracking-tighter border border-red-500/20 rounded-xl">
+                              Template Not Uploaded
+                            </div>
+                          )}
+                         <div className="relative">
+                            <input 
+                              type="file" 
+                              onChange={(e) => handleFileUpload(e, 'policeVerification')}
+                              className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                            />
+                            <button className={`w-full px-8 py-4 ${files.policeVerification ? 'bg-green-600' : 'bg-purple-600'} text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center shadow-xl shadow-purple-500/20`}>
+                              <Upload className="w-4 h-4 mr-2" /> Sync Document
+                            </button>
+                         </div>
+                       </div>
+                    </div>
+                  </div>
                 </div>
+
+                {/* === NEW: Dynamic Document Requirements === */}
+                {docRequirements.length > 0 && (
+                  <div className="space-y-6 pt-6 border-t border-white/5">
+                    <div className="flex items-center space-x-3 mb-2">
+                       <Shield className="w-5 h-5 text-accent" />
+                       <h4 className="text-sm font-black text-white uppercase tracking-widest">Additional Property Requirements</h4>
+                    </div>
+                    {docRequirements.map((req) => (
+                      <div key={req.id} className="bg-white/[0.03] p-8 rounded-[3rem] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 group">
+                        <div className="flex items-center space-x-6">
+                          <div className="p-5 bg-accent/10 rounded-3xl text-accent transition-transform group-hover:scale-110">
+                            <FileText className="w-10 h-10" />
+                          </div>
+                          <div>
+                            <h4 className="text-xl font-black text-white">{req.document_name}</h4>
+                            <p className="text-sm text-gray-500 font-medium mt-1">Property specific requirement.</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto text-center md:text-left">
+                          {req.template_url && (
+                            <a 
+                              href={req.template_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="px-8 py-4 bg-white/10 text-white border border-accent/30 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:border-accent transition-all flex items-center justify-center shadow-lg shadow-accent/10 group"
+                            >
+                              <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get Template
+                            </a>
+                          )}
+                          <div className="relative">
+                            <input 
+                              type="file" 
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  if (file.size > 1024 * 1024) return toast.error('Max 1MB');
+                                  setDynamicFiles({ ...dynamicFiles, [req.id]: file });
+                                }
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                            />
+                            <button className={`w-full px-8 py-4 ${dynamicFiles[req.id] ? 'bg-green-600' : 'bg-accent'} text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center shadow-xl shadow-accent/20`}>
+                              <Upload className="w-4 h-4 mr-2" /> {dynamicFiles[req.id] ? 'File Ready' : 'Sync Doc'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* ========================================= */}
+
                 <button
                   onClick={finalizeBooking}
                   disabled={processing}
-                  className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg hover:bg-gray-800 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+                  className="w-full bg-white text-[#1a1435] py-6 rounded-full font-black text-2xl shadow-2xl hover:scale-[1.01] transition-all flex items-center justify-center space-x-4 disabled:opacity-50"
                 >
-                  {processing ? <Loader2 className="animate-spin" /> : null}
-                  <span>{processing ? 'Uploading Documents...' : 'Finalize Booking'}</span>
+                  {processing ? <Loader2 className="animate-spin w-8 h-8" /> : null}
+                  <span>{processing ? 'Transmitting Data...' : 'Confirm Residency'}</span>
                 </button>
               </div>
             </div>
@@ -380,5 +588,6 @@ const BookingConfirmation = () => {
     </div>
   );
 };
+
 
 export default BookingConfirmation;

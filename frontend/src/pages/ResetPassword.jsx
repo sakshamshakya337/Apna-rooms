@@ -60,9 +60,11 @@ const ResetPassword = () => {
         className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 md:p-12"
       >
         <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-6 text-accent">
-            <ShieldCheck className="w-8 h-8" />
-          </div>
+          <img 
+            src="/apna_light.jpg" 
+            alt="Apna Rooms Logo" 
+            className="w-16 h-16 object-contain rounded-2xl mx-auto mb-6 shadow-xl border border-gray-100" 
+          />
           <h2 className="text-3xl font-extrabold text-primary">Reset Password</h2>
           <p className="mt-2 text-gray-500">Create a new secure password for your account</p>
         </div>

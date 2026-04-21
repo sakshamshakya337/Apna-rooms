@@ -14,7 +14,8 @@ const Profile = () => {
     phoneNumber: '',
     address: '',
     city: '',
-    state: ''
+    state: '',
+    studentCategory: 'National'
   });
 
   useEffect(() => {
@@ -24,7 +25,8 @@ const Profile = () => {
         phoneNumber: userData.phoneNumber || '',
         address: userData.address || '',
         city: userData.city || '',
-        state: userData.state || ''
+        state: userData.state || '',
+        studentCategory: userData.studentCategory || 'National'
       });
     }
   }, [userData]);
@@ -175,8 +177,25 @@ const Profile = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email Address</label>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Student Classification</label>
+                  <div className="relative">
+                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <select 
+                      disabled={!editing}
+                      value={profileData.studentCategory}
+                      onChange={(e) => setProfileData({...profileData, studentCategory: e.target.value})}
+                      className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent transition-all disabled:opacity-60 appearance-none font-bold"
+                    >
+                      <option value="National">National Student (India)</option>
+                      <option value="International">International Student</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email Address</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input 
@@ -220,7 +239,8 @@ const Profile = () => {
                         phoneNumber: userData?.phoneNumber || '',
                         address: userData?.address || '',
                         city: userData?.city || '',
-                        state: userData?.state || ''
+                        state: userData?.state || '',
+                        studentCategory: userData?.studentCategory || 'National'
                       });
                     }}
                     className="px-8 bg-gray-100 text-gray-600 py-4 rounded-2xl font-bold hover:bg-gray-200 transition-all"
@@ -229,6 +249,7 @@ const Profile = () => {
                   </button>
                 </div>
               )}
+              </div>
             </form>
           </div>
         </div>
@@ -248,7 +269,7 @@ const Profile = () => {
                   type="password" 
                   required
                   value={passwords.current}
-                  onChange={(e) => setFiles({...passwords, current: e.target.value})}
+                  onChange={(e) => setPasswords({...passwords, current: e.target.value})}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-accent transition-all"
                 />
               </div>
@@ -259,7 +280,7 @@ const Profile = () => {
                   type="password" 
                   required
                   value={passwords.new}
-                  onChange={(e) => setFiles({...passwords, new: e.target.value})}
+                  onChange={(e) => setPasswords({...passwords, new: e.target.value})}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-accent transition-all"
                 />
               </div>
@@ -270,7 +291,7 @@ const Profile = () => {
                   type="password" 
                   required
                   value={passwords.confirm}
-                  onChange={(e) => setFiles({...passwords, confirm: e.target.value})}
+                  onChange={(e) => setPasswords({...passwords, confirm: e.target.value})}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-accent transition-all"
                 />
               </div>

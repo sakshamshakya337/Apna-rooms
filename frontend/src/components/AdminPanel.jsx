@@ -20,11 +20,16 @@ import {
   Filter,
   FileText,
   Upload,
-  Download,
-  Image as ImageIcon,
-  Wrench,
-  Droplets,
-  Wifi
+  Download, 
+  Image as ImageIcon, 
+  Wrench, 
+  Droplets, 
+  Wifi,
+  Globe,
+  FileSearch,
+  FileX,
+  FileCheck,
+  FileEdit
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -73,10 +78,15 @@ const AdminPanel = ({ section = 'admin' }) => {
     city: '',
     security_deposit: 2000,
     amenities: '',
-    rules: ''
+    rules: '',
+    accommodation_type: 'Indian'
   });
   const [pgImage, setPgImage] = useState(null);
   const [pgImagePreview, setPgImagePreview] = useState(null);
+  const [ownerDoc, setOwnerDoc] = useState(null);
+  const [ownerDocName, setOwnerDocName] = useState('');
+  const [policeDoc, setPoliceDoc] = useState(null);
+  const [policeDocName, setPoliceDocName] = useState('');
 
   const [newRoom, setNewRoom] = useState({
     room_number: '',
@@ -89,10 +99,19 @@ const AdminPanel = ({ section = 'admin' }) => {
 
   const [newBill, setNewBill] = useState({
     room_id: '',
-    units: '',
-    rate: 10,
-    billing_month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
+    title: '',
+    amount: '',
+    month: new Date().toISOString().split('-')[1],
+    year: new Date().getFullYear().toString()
   });
+
+  // Dynamic Document Template States
+  const [showDocManager, setShowDocManager] = useState(false);
+  const [docRequirements, setDocRequirements] = useState([]);
+  const [newDocRequirement, setNewDocRequirement] = useState({ name: '', is_mandatory: true });
+  const [docTemplate, setDocTemplate] = useState(null);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [dynamicDocs, setDynamicDocs] = useState([]);
 
   const [billHistory, setBillHistory] = useState([]);
 
@@ -139,76 +158,98 @@ const AdminPanel = ({ section = 'admin' }) => {
           .limit(5);
         if (complaintsData) setComplaints(complaintsData);
       }
-
-      const { data: pgsData, error: pgsError } = await supabase
-        .from('pgs')
-        .select(`*, rooms (*)`)
-        .order('created_at', { ascending: false });
-      
-      if (pgsError) throw pgsError;
-      if (pgsData) setPgs(pgsData);
-
-      if (section === 'team') {
-        const { data: usersData } = await supabase
-          .from('users')
-          .select('*')
-          .in('role', ['admin', 'super_admin'])
-          .order('role', { ascending: false });
-        if (usersData) setUsers(usersData);
-      }
-
-      if (section === 'workers_admin') {
-        const { data: workersData } = await supabase
-          .from('users')
-          .select('*')
-          .in('role', ['plumber', 'electrician', 'wifi', 'service_worker'])
-          .order('role', { ascending: false });
-        if (workersData) setWorkers(workersData);
-      }
-
-      if (section === 'complaints_admin') {
-        const { data: complaintsData } = await supabase
-          .from('complaints')
-          .select(`*, pgs:pg_id (name), users:user_id (full_name), rooms:room_id (room_number)`)
-          .order('created_at', { ascending: false });
-        if (complaintsData) setComplaints(complaintsData);
-      }
-
-      if (section === 'users_admin') {
-        const { data: usersData, error } = await supabase
-          .from('bookings')
-          .select(`
-            *,
-            users (id, full_name, email, phone_number, address, city, state),
-            rooms (room_number),
-            pgs (name)
-          `)
-          .in('status', ['confirmed', 'pending'])
-          .order('created_at', { ascending: false });
-        if (!error && usersData) setTenants(usersData);
-      }
-
-      if (section === 'bills_admin') {
-        const { data: billsData, error: billsError } = await supabase
-          .from('electricity_bills')
-          .select(`*, rooms (room_number, pgs (name))`)
-          .order('created_at', { ascending: false });
-        if (billsError) throw billsError;
-        if (billsData) setBillHistory(billsData);
-      }
-
-      if (section === 'queries_admin') {
-        const { data: queriesData } = await supabase
-          .from('contact_queries')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (queriesData) setContactQueries(queriesData);
-      }
     } catch (error) {
       console.error('Admin Data Fetch Error:', error);
       toast.error('Failed to fetch data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPayments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*, bookings(*, pgs(*), users(*))')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setPayments(data || []);
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const fetchDocRequirements = async (pgId) => {
+    try {
+      const { data, error } = await supabase
+        .from('pg_document_requirements')
+        .select('*')
+        .eq('pg_id', pgId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      setDocRequirements(data || []);
+    } catch (err) {
+      console.error('Fetch requirements error:', err);
+    }
+  };
+
+  const handleAddRequirement = async (e) => {
+    e.preventDefault();
+    if (!selectedPGForTenants) return;
+    if (!newDocRequirement.name) return toast.error('Enter document name');
+    
+    setIsUploadingDoc(true);
+    try {
+      let templateUrl = null;
+      if (docTemplate) {
+        if (docTemplate.size > 1024 * 1024) throw new Error('Template must be under 1MB');
+        
+        const fileExt = docTemplate.name.split('.').pop();
+        const fileName = `${Date.now()}_requirement.${fileExt}`;
+        const filePath = `templates/${selectedPGForTenants.id}/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('pg-images')
+          .upload(filePath, docTemplate);
+        
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from('pg-images').getPublicUrl(filePath);
+        templateUrl = publicUrl;
+      }
+
+      const { error } = await supabase
+        .from('pg_document_requirements')
+        .insert([{
+          pg_id: selectedPGForTenants.id,
+          document_name: newDocRequirement.name,
+          template_url: templateUrl,
+          is_mandatory: newDocRequirement.is_mandatory
+        }]);
+
+      if (error) throw error;
+      toast.success('Document requirement added!');
+      setNewDocRequirement({ name: '', is_mandatory: true });
+      setDocTemplate(null);
+      fetchDocRequirements(selectedPGForTenants.id);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setIsUploadingDoc(false);
+    }
+  };
+
+  const handleDeleteRequirement = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this document requirement?')) return;
+    try {
+      const { error } = await supabase
+        .from('pg_document_requirements')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      toast.success('Requirement removed');
+      fetchDocRequirements(selectedPGForTenants.id);
+    } catch (err) {
+      toast.error(err.message);
     }
   };
 
@@ -284,10 +325,36 @@ const AdminPanel = ({ section = 'admin' }) => {
     setLoading(true);
     try {
       const imageUrl = await uploadImage(pgImage, 'pgs');
+      let docUrl = '';
+      
+      if (ownerDoc) {
+        if (ownerDoc.size > 1024 * 1024) throw new Error('Vidu Document template must be under 1MB');
+        const docFileName = `${Date.now()}_${ownerDoc.name}`;
+        const { error: docError } = await supabase.storage
+          .from('pg-images')
+          .upload(`documents/${docFileName}`, ownerDoc);
+        if (docError) throw docError;
+        const { data: { publicUrl } } = supabase.storage.from('pg-images').getPublicUrl(`documents/${docFileName}`);
+        docUrl = publicUrl;
+      }
+
+      let policeUrl = '';
+      if (policeDoc) {
+        if (policeDoc.size > 1024 * 1024) throw new Error('Police Verification template must be under 1MB');
+        const policeFileName = `${Date.now()}_police_${policeDoc.name}`;
+        const { error: policeError } = await supabase.storage
+          .from('pg-images')
+          .upload(`documents/${policeFileName}`, policeDoc);
+        if (policeError) throw policeError;
+        const { data: { publicUrl: pUrl } } = supabase.storage.from('pg-images').getPublicUrl(`documents/${policeFileName}`);
+        policeUrl = pUrl;
+      }
       
       const { error } = await supabase.from('pgs').insert([{
         ...newPG,
         main_image: imageUrl,
+        owner_doc_url: docUrl,
+        police_verification_template_url: policeUrl,
         amenities: newPG.amenities.split(',').map(a => a.trim()).filter(a => a !== ''),
         rules: newPG.rules.split(',').map(r => r.trim()).filter(r => r !== '')
       }]);
@@ -295,9 +362,13 @@ const AdminPanel = ({ section = 'admin' }) => {
       if (error) throw error;
       toast.success('PG Added Successfully!');
       setShowAddPGModal(false);
-      setNewPG({ name: '', description: '', address: '', city: '', security_deposit: 2000, amenities: '', rules: '' });
+      setNewPG({ name: '', description: '', address: '', city: '', security_deposit: 2000, amenities: '', rules: '', accommodation_type: 'Both' });
       setPgImage(null);
       setPgImagePreview(null);
+      setOwnerDoc(null);
+      setOwnerDocName('');
+      setPoliceDoc(null);
+      setPoliceDocName('');
       fetchAdminData();
     } catch (error) {
       toast.error(error.message);
@@ -314,6 +385,30 @@ const AdminPanel = ({ section = 'admin' }) => {
       if (pgImage) {
         imageUrl = await uploadImage(pgImage, 'pgs');
       }
+
+      let docUrl = editingPG.owner_doc_url;
+      if (ownerDoc) {
+        if (ownerDoc.size > 1024 * 1024) throw new Error('Vidu Document template must be under 1MB');
+        const docFileName = `${Date.now()}_${ownerDoc.name}`;
+        const { error: docError } = await supabase.storage
+          .from('pg-images')
+          .upload(`documents/${docFileName}`, ownerDoc);
+        if (docError) throw docError;
+        const { data: { publicUrl } } = supabase.storage.from('pg-images').getPublicUrl(`documents/${docFileName}`);
+        docUrl = publicUrl;
+      }
+
+      let policeUrl = editingPG.police_verification_template_url;
+      if (policeDoc) {
+        if (policeDoc.size > 1024 * 1024) throw new Error('Police Verification template must be under 1MB');
+        const policeFileName = `${Date.now()}_police_${policeDoc.name}`;
+        const { error: policeError } = await supabase.storage
+          .from('pg-images')
+          .upload(`documents/${policeFileName}`, policeDoc);
+        if (policeError) throw policeError;
+        const { data: { publicUrl: pUrl } } = supabase.storage.from('pg-images').getPublicUrl(`documents/${policeFileName}`);
+        policeUrl = pUrl;
+      }
       
       const { error } = await supabase.from('pgs').update({
         name: editingPG.name,
@@ -322,6 +417,9 @@ const AdminPanel = ({ section = 'admin' }) => {
         city: editingPG.city,
         security_deposit: editingPG.security_deposit,
         main_image: imageUrl,
+        owner_doc_url: docUrl,
+        police_verification_template_url: policeUrl,
+        accommodation_type: editingPG.accommodation_type,
         amenities: typeof editingPG.amenities === 'string' 
           ? editingPG.amenities.split(',').map(a => a.trim()).filter(a => a !== '')
           : editingPG.amenities,
@@ -336,6 +434,10 @@ const AdminPanel = ({ section = 'admin' }) => {
       setEditingPG(null);
       setPgImage(null);
       setPgImagePreview(null);
+      setOwnerDoc(null);
+      setOwnerDocName('');
+      setPoliceDoc(null);
+      setPoliceDocName('');
       fetchAdminData();
     } catch (error) {
       toast.error(error.message);
@@ -449,12 +551,57 @@ const AdminPanel = ({ section = 'admin' }) => {
     } catch (error) {
       console.error('Fetch Tenants Error:', error);
       toast.error('Failed to fetch tenants');
-    } finally {
-      setLoadingTenants(false);
     }
   };
 
-  const handleVerifyKYC = async (bookingId, status) => {
+
+  const handleUpdateComplaintStatus = async (id, status) => {
+    const { error } = await supabase.from('complaints').update({ status }).eq('id', id);
+    if (!error) {
+      toast.success(`Complaint marked as ${status.replace('_', ' ')}`);
+      fetchAdminData();
+    }
+  };
+
+  const handleViewKYC = async (tenant) => {
+    setSelectedTenant(tenant);
+    setKycUrls({});
+    setDynamicDocs([]);
+    setShowKYCModal(true);
+
+    try {
+      // 1. Fetch static KYC documents manually (to ensure clean URLs)
+      const docs = [
+        { key: 'aadhar_front', url: tenant.users?.aadhar_front_url || tenant.aadhar_front_url },
+        { key: 'aadhar_back', url: tenant.users?.aadhar_back_url || tenant.aadhar_back_url },
+        { key: 'pan', url: tenant.users?.pan_card_url || tenant.pan_card_url },
+        { key: 'student_id', url: tenant.users?.student_id_url || tenant.student_id_url },
+        { key: 'passport', url: tenant.users?.passport_url || tenant.passport_url },
+        { key: 'visa', url: tenant.users?.visa_url || tenant.visa_url },
+        { key: 'photo', url: tenant.users?.profile_photo_url || tenant.profile_photo_url || tenant.user_photo_url }
+      ];
+      
+      const newUrls = {};
+      docs.forEach(doc => {
+        if (doc.url) newUrls[doc.key] = doc.url;
+      });
+      setKycUrls(newUrls);
+
+      // 2. Fetch dynamic documents from booking_documents
+      const { data, error } = await supabase
+        .from('booking_documents')
+        .select('*')
+        .eq('booking_id', tenant.id);
+      
+      if (error) throw error;
+      setDynamicDocs(data || []);
+    } catch (err) {
+      console.error('KYC Fetch Error:', err);
+      toast.error('Failed to load documents');
+    }
+  };
+
+  const handleUpdateKYC = async (bookingId, status) => {
     try {
       const { error } = await supabase
         .from('bookings')
@@ -469,45 +616,6 @@ const AdminPanel = ({ section = 'admin' }) => {
     } catch (error) {
       toast.error('Failed to update KYC status');
     }
-  };
-
-  const handleUpdateComplaintStatus = async (id, status) => {
-    const { error } = await supabase.from('complaints').update({ status }).eq('id', id);
-    if (!error) {
-      toast.success(`Complaint marked as ${status.replace('_', ' ')}`);
-      fetchAdminData();
-    }
-  };
-
-  const handleViewKYC = async (tenant) => {
-    setSelectedTenant(tenant);
-    setShowKYCModal(true);
-    setKycUrls({}); // Reset previous URLs while loading
-
-    const fetchSignedUrl = async (path) => {
-      if (!path) return null;
-      if (path.startsWith('http')) return path; // Handle legacy full URLs if any
-      try {
-        const { data, error } = await supabase.storage.from('kyc-documents').createSignedUrl(path, 3600);
-        if (error) {
-          console.error('Error fetching signed URL for', path, error);
-          return null;
-        }
-        return data.signedUrl;
-      } catch (err) {
-        console.error('Exception fetching signed URL', err);
-        return null;
-      }
-    };
-
-    const urls = {
-      userPhoto: await fetchSignedUrl(tenant.user_photo_url),
-      universityId: await fetchSignedUrl(tenant.university_id_url),
-      aadharFront: await fetchSignedUrl(tenant.aadhar_front_url),
-      aadharBack: await fetchSignedUrl(tenant.aadhar_back_url),
-    };
-    
-    setKycUrls(urls);
   };
 
   if (loading && !showAddPGModal && !showAddRoomModal) return <div className="flex items-center justify-center h-64"><Clock className="animate-spin w-8 h-8 text-accent" /></div>;
@@ -721,6 +829,21 @@ const AdminPanel = ({ section = 'admin' }) => {
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-100 flex justify-between items-center">
             <h3 className="text-xl font-bold">All Registered Tenants</h3>
+            <button 
+              onClick={() => {
+                if (pgs.length > 0) {
+                  setSelectedPGForTenants(pgs[0]);
+                  fetchDocRequirements(pgs[0].id);
+                  setShowDocManager(true);
+                } else {
+                  toast.error('No properties found to manage documents for.');
+                }
+              }}
+              className="px-6 py-2 bg-accent text-white rounded-xl font-bold text-sm hover:bg-blue-600 transition-all flex items-center space-x-2"
+            >
+              <FileEdit className="w-4 h-4" />
+              <span>Manage Document Requirements</span>
+            </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -1294,8 +1417,84 @@ const AdminPanel = ({ section = 'admin' }) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <input type="number" placeholder="Deposit (₹)" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newPG.security_deposit} onChange={e => setNewPG({...newPG, security_deposit: e.target.value})} />
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase">Accommodation Type</label>
+                    <select 
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none"
+                      value={newPG.accommodation_type}
+                      onChange={e => setNewPG({...newPG, accommodation_type: e.target.value})}
+                    >
+                      <option value="Indian">Indian Students</option>
+                      <option value="International">International Students</option>
+                      <option value="Both">Both (Indian & International)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase">Security Deposit (₹)</label>
+                    <input type="number" placeholder="2000" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newPG.security_deposit} onChange={e => setNewPG({...newPG, security_deposit: e.target.value})} />
+                  </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase">Vidu Document (Template)</label>
+                    <div className="relative border-2 border-dashed border-gray-200 rounded-xl p-4 bg-gray-50 flex items-center justify-between group hover:border-accent transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <FileText className="w-5 h-5 text-gray-400" />
+                        <span className="text-xs font-medium text-gray-600 truncate max-w-[120px]">
+                          {ownerDocName || 'Vidu Template'}
+                        </span>
+                      </div>
+                      <input 
+                        type="file" 
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            if (file.size > 1024 * 1024) {
+                              toast.error('File size must be under 1MB');
+                              return;
+                            }
+                            setOwnerDoc(file);
+                            setOwnerDocName(file.name);
+                          }
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                      <button type="button" className="bg-white border border-gray-200 text-gray-700 px-3 py-1 rounded-lg text-[10px] font-bold">Browse</button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase">Police Verification (Template)</label>
+                    <div className="relative border-2 border-dashed border-gray-200 rounded-xl p-4 bg-gray-50 flex items-center justify-between group hover:border-accent transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <Shield className="w-5 h-5 text-gray-400" />
+                        <span className="text-xs font-medium text-gray-600 truncate max-w-[120px]">
+                          {policeDocName || 'Police Template'}
+                        </span>
+                      </div>
+                      <input 
+                        type="file" 
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            if (file.size > 1024 * 1024) {
+                              toast.error('File size must be under 1MB');
+                              return;
+                            }
+                            setPoliceDoc(file);
+                            setPoliceDocName(file.name);
+                          }
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                      <button type="button" className="bg-white border border-gray-200 text-gray-700 px-3 py-1 rounded-lg text-[10px] font-bold">Browse</button>
+                    </div>
+                  </div>
+                </div>
+
                 <button type="submit" disabled={loading} className="w-full bg-accent text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-600 transition-all shadow-lg disabled:opacity-50">
                   {loading ? 'Creating...' : 'Create PG Listing'}
                 </button>
@@ -1367,8 +1566,94 @@ const AdminPanel = ({ section = 'admin' }) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <input type="number" placeholder="Deposit (₹)" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={editingPG.security_deposit} onChange={e => setEditingPG({...editingPG, security_deposit: e.target.value})} />
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase">Accommodation Type</label>
+                    <select 
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none"
+                      value={editingPG.accommodation_type}
+                      onChange={e => setEditingPG({...editingPG, accommodation_type: e.target.value})}
+                    >
+                      <option value="Indian">Indian Students</option>
+                      <option value="International">International Students</option>
+                      <option value="Both">Both (Indian & International)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase">Security Deposit (₹)</label>
+                    <input type="number" placeholder="2000" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={editingPG.security_deposit} onChange={e => setEditingPG({...editingPG, security_deposit: e.target.value})} />
+                  </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase">Vidu Document (Template)</label>
+                    <div className="relative border-2 border-dashed border-gray-200 rounded-xl p-4 bg-gray-50 flex items-center justify-between group hover:border-accent transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <FileText className="w-5 h-5 text-gray-400" />
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-medium text-gray-600 truncate max-w-[120px]">
+                            {ownerDocName || (editingPG.owner_doc_url ? 'Template Uploaded' : 'Upload Template')}
+                          </span>
+                          {editingPG.owner_doc_url && (
+                            <a href={editingPG.owner_doc_url} target="_blank" rel="noopener noreferrer" className="text-[9px] text-accent hover:underline">View Current Doc</a>
+                          )}
+                        </div>
+                      </div>
+                      <input 
+                        type="file" 
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            if (file.size > 1024 * 1024) {
+                              toast.error('File size must be under 1MB');
+                              return;
+                            }
+                            setOwnerDoc(file);
+                            setOwnerDocName(file.name);
+                          }
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                      <button type="button" className="bg-white border border-gray-200 text-gray-700 px-3 py-1 rounded-lg text-[10px] font-bold">Browse</button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase">Police Verification (Template)</label>
+                    <div className="relative border-2 border-dashed border-gray-200 rounded-xl p-4 bg-gray-50 flex items-center justify-between group hover:border-accent transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <Shield className="w-5 h-5 text-gray-400" />
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-medium text-gray-600 truncate max-w-[120px]">
+                            {policeDocName || (editingPG.police_verification_template_url ? 'Format Uploaded' : 'Upload Format')}
+                          </span>
+                          {editingPG.police_verification_template_url && (
+                            <a href={editingPG.police_verification_template_url} target="_blank" rel="noopener noreferrer" className="text-[9px] text-accent hover:underline">View Current Format</a>
+                          )}
+                        </div>
+                      </div>
+                      <input 
+                        type="file" 
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            if (file.size > 1024 * 1024) {
+                              toast.error('File size must be under 1MB');
+                              return;
+                            }
+                            setPoliceDoc(file);
+                            setPoliceDocName(file.name);
+                          }
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                      <button type="button" className="bg-white border border-gray-200 text-gray-700 px-3 py-1 rounded-lg text-[10px] font-bold">Browse</button>
+                    </div>
+                  </div>
+                </div>
+
                 <button type="submit" disabled={loading} className="w-full bg-accent text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-600 transition-all shadow-lg disabled:opacity-50">
                   {loading ? 'Updating...' : 'Update PG Listing'}
                 </button>
@@ -1389,14 +1674,10 @@ const AdminPanel = ({ section = 'admin' }) => {
               </div>
               <form onSubmit={handleAddRoom} className="space-y-4">
                 <input required placeholder="Room Number (e.g. 101)" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newRoom.room_number} onChange={e => setNewRoom({...newRoom, room_number: e.target.value})} />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Total Seats</label>
-                    <input required type="number" placeholder="2" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newRoom.total_seats} onChange={e => setNewRoom({...newRoom, total_seats: Number(e.target.value)})} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Price Per Seat (₹)</label>
-                    <input required type="number" placeholder="5000" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newRoom.price_per_seat} onChange={e => setNewRoom({...newRoom, price_per_seat: Number(e.target.value)})} />
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Monthly Room Rent (₹)</label>
+                    <input required type="number" placeholder="5000" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newRoom.price_per_seat} onChange={e => setNewRoom({...newRoom, price_per_seat: Number(e.target.value), total_seats: 1})} />
                   </div>
                 </div>
                 <div>
@@ -1549,9 +1830,9 @@ const AdminPanel = ({ section = 'admin' }) => {
                       <thead className="bg-gray-50 text-gray-400 text-xs uppercase tracking-wider font-bold sticky top-0 z-10">
                         <tr>
                           <th className="px-6 py-4">Tenant Details</th>
-                          <th className="px-6 py-4">Room</th>
-                          <th className="px-6 py-4">Contract</th>
-                          <th className="px-6 py-4">Payment Status</th>
+                          <th className="px-6 py-4">Room #</th>
+                          <th className="px-6 py-4">Monthly Rent</th>
+                          <th className="px-6 py-4">Booking Status</th>
                           <th className="px-6 py-4">KYC Status</th>
                           <th className="px-6 py-4">Actions</th>
                         </tr>
@@ -1601,13 +1882,24 @@ const AdminPanel = ({ section = 'admin' }) => {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <button 
-                                onClick={() => handleViewKYC(tenant)}
-                                className="px-4 py-2 bg-accent text-white rounded-xl text-xs font-bold hover:bg-blue-600 transition-all flex items-center space-x-2"
-                              >
-                                <FileText className="w-3 h-3" />
-                                <span>Review KYC</span>
-                              </button>
+                              <div className="flex flex-col space-y-2">
+                                <button 
+                                  onClick={() => handleViewKYC(tenant)}
+                                  className="px-4 py-2 bg-white border border-accent/20 text-accent rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-accent/5 transition-all flex items-center justify-center space-x-2"
+                                >
+                                  <FileText className="w-3 h-3" />
+                                  <span>Review KYC</span>
+                                </button>
+                                {tenant.status === 'pending' && (
+                                  <button 
+                                    onClick={() => handleApprovePayment(tenant.id)}
+                                    className="px-4 py-2 bg-accent text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-accent/20 flex items-center justify-center space-x-2"
+                                  >
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>Confirm Payment</span>
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1709,7 +2001,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                   </div>
                 </div>
 
-                {/* Aadhar Front */}
+                {/* Aadhar Card Front */}
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
                     <Shield className="w-3 h-3 mr-2" /> Aadhar Card (Front)
@@ -1741,7 +2033,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                   </div>
                 </div>
 
-                {/* Aadhar Back */}
+                {/* Aadhar Card Back */}
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
                     <Shield className="w-3 h-3 mr-2" /> Aadhar Card (Back)
@@ -1772,7 +2064,165 @@ const AdminPanel = ({ section = 'admin' }) => {
                     )}
                   </div>
                 </div>
-              </div>
+
+                {/* Parent Aadhar */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
+                    <Shield className="w-3 h-3 mr-2" /> Parent/Guardian Aadhar
+                  </label>
+                  <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
+                    {selectedTenant.parent_aadhar_url ? (
+                      kycUrls.parentAadhar ? (
+                        <>
+                          <img src={kycUrls.parentAadhar} alt="Parent Aadhar" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <a href={kycUrls.parentAadhar} download target="_blank" rel="noopener noreferrer" className="bg-white text-gray-900 px-4 py-2 rounded-xl font-bold flex items-center space-x-2 shadow-xl hover:scale-105 transition-transform">
+                              <Download className="w-4 h-4" />
+                              <span>Download</span>
+                            </a>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                          <Clock className="w-8 h-8 mb-2 animate-spin" />
+                          <span className="text-xs">Loading...</span>
+                        </div>
+                      )
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                        <Shield className="w-8 h-8 mb-2" />
+                        <span className="text-xs">No document uploaded</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Passport (International Only) */}
+                {selectedTenant.users?.student_category === 'International' && (
+                  <div className="space-y-3">
+                    <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
+                      <Globe className="w-3 h-3 mr-2" /> Global Passport
+                    </label>
+                    <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
+                      {selectedTenant.passport_url ? (
+                        kycUrls.passport ? (
+                          <>
+                            <img src={kycUrls.passport} alt="Passport" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <a href={kycUrls.passport} download target="_blank" rel="noopener noreferrer" className="bg-white text-gray-900 px-4 py-2 rounded-xl font-bold flex items-center space-x-2 shadow-xl hover:scale-105 transition-transform">
+                                <Download className="w-4 h-4" />
+                                <span>Download</span>
+                              </a>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                            <Clock className="w-8 h-8 mb-2 animate-spin" />
+                            <span className="text-xs">Loading...</span>
+                          </div>
+                        )
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                          <Globe className="w-8 h-8 mb-2" />
+                          <span className="text-xs">No passport uploaded</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Visa / Permit (International Only) */}
+                {selectedTenant.users?.student_category === 'International' && (
+                  <div className="space-y-3">
+                    <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
+                      <Shield className="w-3 h-3 mr-2" /> Visa / Residence Permit
+                    </label>
+                    <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
+                      {selectedTenant.visa_url ? (
+                        kycUrls.visa ? (
+                          <>
+                            <img src={kycUrls.visa} alt="Visa" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <a href={kycUrls.visa} download target="_blank" rel="noopener noreferrer" className="bg-white text-gray-900 px-4 py-2 rounded-xl font-bold flex items-center space-x-2 shadow-xl hover:scale-105 transition-transform">
+                                <Download className="w-4 h-4" />
+                                <span>Download</span>
+                              </a>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                            <Clock className="w-8 h-8 mb-2 animate-spin" />
+                            <span className="text-xs">Loading...</span>
+                          </div>
+                        )
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                          <Shield className="w-8 h-8 mb-2" />
+                          <span className="text-xs">No visa uploaded</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Vidu Doc */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
+                    <FileText className="w-3 h-3 mr-2" /> Vidu Authorization Form
+                  </label>
+                  <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
+                    {selectedTenant.vidu_doc_url ? (
+                      kycUrls.viduDoc ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-accent/5">
+                          <FileText className="w-12 h-12 text-accent mb-4" />
+                          <a href={kycUrls.viduDoc} target="_blank" rel="noopener noreferrer" className="bg-accent text-white px-6 py-2 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg shadow-accent/20">
+                            View Vidu Document
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                          <Clock className="w-8 h-8 mb-2 animate-spin" />
+                          <span className="text-xs">Loading...</span>
+                        </div>
+                      )
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                        <FileX className="w-8 h-8 mb-2" />
+                        <span className="text-xs">No Vidu doc uploaded</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Police Verification */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-gray-400 uppercase flex items-center">
+                    <ShieldCheck className="w-3 h-3 mr-2" /> Police Verification Doc
+                  </label>
+                  <div className="aspect-[4/3] rounded-2xl bg-gray-100 overflow-hidden border border-gray-100 group relative">
+                    {selectedTenant.police_verification_url ? (
+                      kycUrls.policeVerification ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-green-50">
+                          <ShieldCheck className="w-12 h-12 text-green-600 mb-4" />
+                          <a href={kycUrls.policeVerification} target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white px-6 py-2 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg shadow-green-600/20">
+                            View Verification
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                          <Clock className="w-8 h-8 mb-2 animate-spin" />
+                          <span className="text-xs">Loading...</span>
+                        </div>
+                      )
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                        <FileX className="w-8 h-8 mb-2" />
+                        <span className="text-xs">No verification doc</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                </div>
 
               <div className="bg-gray-50 rounded-2xl p-6 mb-8">
                 <h4 className="font-bold text-primary mb-4">Tenant Information</h4>
@@ -1801,14 +2251,14 @@ const AdminPanel = ({ section = 'admin' }) => {
               <div className="flex space-x-4">
                 {selectedTenant.is_kyc_verified ? (
                   <button 
-                    onClick={() => handleVerifyKYC(selectedTenant.id, false)}
+                    onClick={() => handleUpdateKYC(selectedTenant.id, false)}
                     className="flex-grow py-4 bg-red-50 text-red-600 rounded-2xl font-bold hover:bg-red-600 hover:text-white transition-all"
                   >
                     Revoke Verification
                   </button>
                 ) : (
                   <button 
-                    onClick={() => handleVerifyKYC(selectedTenant.id, true)}
+                    onClick={() => handleUpdateKYC(selectedTenant.id, true)}
                     className="flex-grow py-4 bg-green-50 text-green-600 rounded-2xl font-bold hover:bg-green-600 hover:text-white transition-all flex items-center justify-center"
                   >
                     <ShieldCheck className="w-5 h-5 mr-2" />

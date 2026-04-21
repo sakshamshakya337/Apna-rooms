@@ -7,7 +7,7 @@ const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const signup = async (req, res) => {
-  const { password, fullName, role = 'user' } = req.body;
+  const { password, fullName, role = 'user', studentCategory = 'National' } = req.body;
   const email = (req.body.email || '').trim().toLowerCase();
 
   try {
@@ -39,7 +39,8 @@ const signup = async (req, res) => {
           email, 
           password: hashedPassword, // Storing hashed password securely
           full_name: fullName, 
-          role 
+          role,
+          student_category: studentCategory
         }
       ])
       .select()
@@ -57,7 +58,13 @@ const signup = async (req, res) => {
     res.status(201).json({ 
       message: 'User created successfully',
       token,
-      user: { id: newUser.id, email: newUser.email, fullName: newUser.full_name, role: newUser.role }
+      user: { 
+        id: newUser.id, 
+        email: newUser.email, 
+        fullName: newUser.full_name, 
+        role: newUser.role,
+        studentCategory: newUser.student_category 
+      }
     });
   } catch (error) {
     console.error('Signup error:', error);
@@ -104,7 +111,13 @@ const login = async (req, res) => {
     res.status(200).json({ 
       message: 'Login successful',
       token,
-      user: { id: user.id, email: user.email, fullName: user.full_name, role: user.role }
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        fullName: user.full_name, 
+        role: user.role,
+        studentCategory: user.student_category 
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -153,7 +166,13 @@ const googleLogin = async (req, res) => {
     res.status(200).json({ 
       message: 'Google login successful',
       token,
-      user: { id: user.id, email: user.email, fullName: user.full_name, role: user.role }
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        fullName: user.full_name, 
+        role: user.role,
+        studentCategory: user.student_category 
+      }
     });
   } catch (error) {
     console.error('Google Login Error:', error);
@@ -162,7 +181,7 @@ const googleLogin = async (req, res) => {
 };
 
 const updateProfile = async (req, res) => {
-  const { fullName, phoneNumber, address, city, state } = req.body;
+  const { fullName, phoneNumber, address, city, state, studentCategory } = req.body;
   const userId = req.user.id;
 
   try {
@@ -174,6 +193,7 @@ const updateProfile = async (req, res) => {
         address: address,
         city: city,
         state: state,
+        student_category: studentCategory,
         updated_at: new Date() 
       })
       .eq('id', userId)
@@ -195,7 +215,8 @@ const updateProfile = async (req, res) => {
         address: updatedUser.address,
         city: updatedUser.city,
         state: updatedUser.state,
-        role: updatedUser.role 
+        role: updatedUser.role,
+        studentCategory: updatedUser.student_category 
       }
     });
   } catch (error) {

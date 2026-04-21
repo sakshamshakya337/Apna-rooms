@@ -4,14 +4,14 @@ import { Building2, Mail, Phone, MapPin, ShieldCheck, CreditCard, Facebook, Twit
 
 const Footer = () => {
   return (
-    <footer className="bg-primary text-white pt-16 pb-8">
+    <footer className="bg-[#0a051d] text-white pt-20 pb-8">
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand Column */}
           <div className="space-y-6">
             <div className="flex items-center space-x-3 group cursor-pointer">
               <img 
-                src="/logo.png" 
+                src="/apna_light.jpg" 
                 alt="Apna Rooms Logo" 
                 className="h-10 w-auto object-contain rounded-lg group-hover:scale-105 transition-transform duration-300 shadow-sm"
               />
@@ -21,13 +21,13 @@ const Footer = () => {
               India's most professional and secure PG management platform. Experience premium living with digital ease and transparent management.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="p-2 bg-white/5 rounded-lg hover:bg-accent transition-colors">
+              <a href="#" className="p-2.5 bg-white/5 rounded-xl hover:bg-accent transition-all hover:-translate-y-1">
                 <Facebook className="w-5 h-5" />
               </a>
-              <a href="#" className="p-2 bg-white/5 rounded-lg hover:bg-accent transition-colors">
+              <a href="#" className="p-2.5 bg-white/5 rounded-xl hover:bg-accent transition-all hover:-translate-y-1">
                 <Twitter className="w-5 h-5" />
               </a>
-              <a href="#" className="p-2 bg-white/5 rounded-lg hover:bg-accent transition-colors">
+              <a href="#" className="p-2.5 bg-white/5 rounded-xl hover:bg-accent transition-all hover:-translate-y-1">
                 <Instagram className="w-5 h-5" />
               </a>
             </div>

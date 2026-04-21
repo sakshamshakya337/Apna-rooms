@@ -49,7 +49,7 @@ const Home = () => {
   const MOCKUP_IMAGE = "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80";
 
   return (
-    <div className="bg-[#fdf8ff] min-h-screen font-['Manrope'] text-[#342d55] overflow-hidden">
+    <div className="bg-secondary min-h-screen text-primary overflow-hidden">
       {/* Hero Section */}
       <section className="relative px-6 pt-32 pb-24 md:pt-48 md:pb-32 flex flex-col items-center justify-center min-h-[90vh]">
         {/* Abstract Background Ethereal Blobs */}
@@ -57,24 +57,31 @@ const Home = () => {
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#34b5fa]/20 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3"></div>
         
         <div className="relative z-10 max-w-5xl mx-auto text-center space-y-8">
-          <div className="inline-flex items-center space-x-2 px-4 py-2 bg-[#ffffff]/60 backdrop-blur-xl rounded-full border border-[#e6deff] shadow-[0_20px_40px_rgba(52,45,85,0.06)] text-sm font-bold text-[#4a4bd7] mb-4">
-            <span className="flex w-2 h-2 rounded-full bg-[#4a4bd7] animate-pulse"></span>
-            <span>Welcome to The Ethereal Academic Living</span>
+          <div className="inline-flex items-center space-x-2 px-6 py-2.5 bg-white/60 backdrop-blur-2xl rounded-full border border-white/40 shadow-xl text-sm font-bold text-accent mb-4">
+            <span className="flex w-2.5 h-2.5 rounded-full bg-accent animate-pulse"></span>
+            <span className="tracking-wide">Experience Premium Student Living</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-['Plus_Jakarta_Sans'] font-extrabold tracking-tight leading-[1.1] text-[#0f0b20]">
-            Find Your Perfect Stay with <br className="hidden md:block"/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#4a4bd7] to-[#842cd3]">Apna Rooms</span>
-          </h1>
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <img 
+              src="/apna_light.jpg" 
+              alt="Apna Rooms Logo" 
+              className="h-20 w-20 object-contain rounded-[2rem] shadow-2xl border border-white/20 animate-float"
+            />
+            <h1 className="text-5xl md:text-8xl font-black tracking-tight leading-[0.95] text-primary">
+              Stay in <br className="hidden md:block"/>
+              <span className="text-gradient">Apna Rooms</span>
+            </h1>
+          </div>
           
           <p className="text-lg md:text-xl text-[#615985] max-w-2xl mx-auto font-medium leading-relaxed">
             Experience premium living spaces built for students. Secure, verified, and beautifully curated to elevate your academic journey.
           </p>
 
-          <form onSubmit={handleSearch} className="w-full max-w-3xl mx-auto mt-12 relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#4a4bd7] to-[#842cd3] rounded-[2rem] blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative flex items-center bg-[#ffffff] p-2 rounded-[2rem] shadow-[0_20px_40px_rgba(52,45,85,0.08)] border border-[#f1ebff]">
-              <div className="p-4 bg-[#f7f1ff] rounded-[1.5rem] text-[#4a4bd7]">
+          <form onSubmit={handleSearch} className="w-full max-w-3xl mx-auto mt-16 relative group">
+            <div className="absolute -inset-1.5 bg-gradient-to-r from-accent to-accent-light rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+            <div className="relative flex items-center bg-white p-2.5 rounded-[2.5rem] shadow-2xl border border-white/50">
+              <div className="p-4 bg-accent/10 rounded-[1.8rem] text-accent">
                 <MapPin className="w-6 h-6" />
               </div>
               <input 
@@ -84,10 +91,10 @@ const Home = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <button type="submit" className="hidden md:flex px-8 py-5 bg-gradient-to-r from-[#4a4bd7] to-[#842cd3] text-white rounded-[1.5rem] font-bold text-lg hover:shadow-[0_10px_20px_rgba(74,75,215,0.3)] transition-all hover:-translate-y-0.5">
+              <button type="submit" className="hidden md:flex px-10 py-5 bg-gradient-to-r from-accent to-accent-light text-white rounded-[1.8rem] font-black text-lg hover:shadow-2xl hover:shadow-purple-400/30 transition-all hover:-translate-y-1">
                 Explore Rooms
               </button>
-              <button type="submit" className="md:hidden p-4 bg-gradient-to-r from-[#4a4bd7] to-[#842cd3] text-white rounded-[1.5rem]">
+              <button type="submit" className="md:hidden p-5 bg-accent text-white rounded-[1.8rem]">
                 <Search className="w-6 h-6" />
               </button>
             </div>
@@ -115,31 +122,31 @@ const Home = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-[#ffffff]/80 backdrop-blur-3xl p-10 rounded-[2rem] shadow-[0_20px_40px_rgba(52,45,85,0.06)] border border-[#ffffff] relative overflow-hidden group hover:-translate-y-2 transition-all duration-300">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#e7c9ff] rounded-bl-full opacity-20 transition-transform group-hover:scale-110"></div>
-              <div className="w-16 h-16 bg-[#f0dbff] rounded-2xl flex items-center justify-center mb-8 rotate-3 shadow-sm">
-                <Shield className="w-8 h-8 text-[#7614c4]" />
+            <div className="glass-morphism p-10 rounded-[2.5rem] relative overflow-hidden group hover:-translate-y-2 transition-all duration-500">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-5 transition-transform group-hover:scale-110"></div>
+              <div className="w-16 h-16 bg-accent/10 rounded-3xl flex items-center justify-center mb-8 rotate-3 shadow-lg shadow-purple-200">
+                <Shield className="w-8 h-8 text-accent" />
               </div>
-              <h3 className="text-2xl font-bold font-['Plus_Jakarta_Sans'] mb-4">Secure & Verified</h3>
-              <p className="text-[#615985] leading-relaxed">Complete peace of mind. Every property undergoes rigorous background checks and quality assurance before listing.</p>
+              <h3 className="text-2xl font-bold mb-4">Secure & Verified</h3>
+              <p className="text-gray-500 leading-relaxed text-sm">Complete peace of mind. Every property undergoes rigorous background checks and quality assurance before listing.</p>
             </div>
             
-            <div className="bg-[#ffffff]/80 backdrop-blur-3xl p-10 rounded-[2rem] shadow-[0_20px_40px_rgba(52,45,85,0.06)] border border-[#ffffff] relative overflow-hidden group hover:-translate-y-2 transition-all duration-300">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-[#34b5fa] rounded-bl-full opacity-10 transition-transform group-hover:scale-110"></div>
-              <div className="w-16 h-16 bg-[#f5f9ff] rounded-2xl flex items-center justify-center mb-8 -rotate-3 shadow-sm">
-                <Star className="w-8 h-8 text-[#006592]" />
+            <div className="glass-morphism p-10 rounded-[2.5rem] relative overflow-hidden group hover:-translate-y-2 transition-all duration-500">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-5 transition-transform group-hover:scale-110"></div>
+              <div className="w-16 h-16 bg-accent/10 rounded-3xl flex items-center justify-center mb-8 -rotate-3 shadow-lg shadow-purple-200">
+                <Star className="w-8 h-8 text-accent" />
               </div>
-              <h3 className="text-2xl font-bold font-['Plus_Jakarta_Sans'] mb-4">Premium Amenities</h3>
-              <p className="text-[#615985] leading-relaxed">From blazing-fast WiFi to nutritious curated meals and professional housekeeping, we handle the chores.</p>
+              <h3 className="text-2xl font-bold mb-4">Premium Living</h3>
+              <p className="text-gray-500 leading-relaxed text-sm">From blazing-fast WiFi to nutritious curated meals and professional housekeeping, we handle everything.</p>
             </div>
             
-            <div className="bg-[#ffffff]/80 backdrop-blur-3xl p-10 rounded-[2rem] shadow-[0_20px_40px_rgba(52,45,85,0.06)] border border-[#ffffff] relative overflow-hidden group hover:-translate-y-2 transition-all duration-300">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-[#babbff] rounded-bl-full opacity-20 transition-transform group-hover:scale-110"></div>
-              <div className="w-16 h-16 bg-[#fdf8ff] border border-[#e6deff] rounded-2xl flex items-center justify-center mb-8 rotate-3 shadow-sm">
-                <Zap className="w-8 h-8 text-[#4a4bd7]" />
+            <div className="glass-morphism p-10 rounded-[2.5rem] relative overflow-hidden group hover:-translate-y-2 transition-all duration-500">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-5 transition-transform group-hover:scale-110"></div>
+              <div className="w-16 h-16 bg-accent/10 rounded-3xl flex items-center justify-center mb-8 rotate-3 shadow-lg shadow-purple-200">
+                <Zap className="w-8 h-8 text-accent" />
               </div>
-              <h3 className="text-2xl font-bold font-['Plus_Jakarta_Sans'] mb-4">Seamless Experience</h3>
-              <p className="text-[#615985] leading-relaxed">Book a room, pay rent securely, and raise service requests entirely through our digital ecosystem.</p>
+              <h3 className="text-2xl font-bold mb-4">Seamless Tech</h3>
+              <p className="text-gray-500 leading-relaxed text-sm">Book a room, pay rent securely, and raise service requests entirely through our digital ecosystem.</p>
             </div>
           </div>
         </div>
@@ -154,7 +161,7 @@ const Home = () => {
               <h2 className="text-4xl md:text-5xl font-['Plus_Jakarta_Sans'] font-extrabold mb-4 tracking-tight">Featured Stays</h2>
               <p className="text-[#615985] text-lg">Handpicked premium accommodations ready for you to move in.</p>
             </div>
-            <Link to="/pgs" className="inline-flex items-center px-6 py-3 bg-[#f1ebff] text-[#4a4bd7] rounded-full font-bold hover:bg-[#ece4ff] transition-colors group">
+            <Link to="/pgs" className="inline-flex items-center px-8 py-3.5 bg-accent/10 text-accent rounded-full font-black text-sm hover:bg-accent hover:text-white transition-all group">
               View All Properties
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </Link>
@@ -172,9 +179,9 @@ const Home = () => {
                 <Link 
                   key={pg.id} 
                   to={`/pg/${pg.id}`}
-                  className="group bg-[#ffffff] rounded-[2.5rem] overflow-hidden shadow-[0_20px_40px_rgba(52,45,85,0.04)] hover:shadow-[0_40px_80px_rgba(74,75,215,0.12)] transition-all duration-500 border border-[#fdf8ff] flex flex-col hover:-translate-y-2 relative"
+                  className="group bg-white rounded-[2.5rem] overflow-hidden shadow-2xl shadow-purple-900/5 hover:shadow-purple-900/10 transition-all duration-500 border border-white flex flex-col hover:-translate-y-2 relative"
                 >
-                  <div className="h-72 relative overflow-hidden m-3 rounded-[2rem]">
+                  <div className="h-72 relative overflow-hidden m-4 rounded-[2rem]">
                     <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors z-10"></div>
                     <img 
                       src={pg.main_image || MOCKUP_IMAGE} 
