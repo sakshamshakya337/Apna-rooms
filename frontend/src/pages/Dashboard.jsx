@@ -338,27 +338,43 @@ const Dashboard = () => {
         .eq('email', roommateForm.email.trim().toLowerCase())
         .maybeSingle();
       
-      if (userError) throw userError;
+      if (userError && userError.code !== 'PGRST116') {
+        console.error('User Check Error:', userError);
+      }
 
-      const { error } = await supabase
+      const payload = {
+        booking_id: booking.id,
+        pg_id: booking.pg_id,
+        room_id: booking.room_id,
+        requested_by_user_id: currentUser.uid,
+        roommate_full_name: roommateForm.full_name.trim(),
+        roommate_email: roommateForm.email.trim().toLowerCase(),
+        roommate_phone: roommateForm.phone_number.trim(),
+        roommate_user_id: existingUser?.uid || null,
+        status: 'pending'
+      };
+
+      console.log('Sending Roommate Request:', payload);
+
+      const { error, status } = await supabase
         .from('roommate_requests')
-        .insert([{
-          booking_id: booking.id,
-          pg_id: booking.pg_id,
-          room_id: booking.room_id,
-          requested_by_user_id: currentUser.uid,
-          roommate_full_name: roommateForm.full_name.trim(),
-          roommate_email: roommateForm.email.trim().toLowerCase(),
-          roommate_phone: roommateForm.phone_number.trim(),
-          roommate_user_id: existingUser?.uid || null,
-          status: 'pending'
-        }]);
+        .insert([payload]);
 
-      if (error) throw error;
+      if (error) {
+        if (status === 401 || error.message?.includes('JWT')) {
+          throw new Error('Your session may have expired. Please log out and log back in to send this request.');
+        }
+        if (error.code === '42501') {
+          throw new Error('Database permission denied. Please ensure you have run the RLS SQL script in your Supabase dashboard.');
+        }
+        throw error;
+      }
+      
       toast.success('Roommate request sent for admin verification.');
       setRoommateForm({ full_name: '', email: '', phone_number: '' });
       fetchUserBooking();
     } catch (error) {
+      console.error('Roommate Request Error:', error);
       toast.error(error.message || 'Failed to send roommate request.');
     } finally {
       setRoommateSubmitting(false);
