@@ -77,35 +77,54 @@ const Dashboard = () => {
     }
   }, [requestedTab, isAdmin, activeTab]);
 
+  const enrichBookingRecord = async (rawBooking) => {
+    if (!rawBooking) return null;
+
+    const [pgRes, roomRes] = await Promise.all([
+      supabase
+        .from('pgs')
+        .select('id, name, address, city, accommodation_type, owner_doc_url, police_verification_template_url')
+        .eq('id', rawBooking.pg_id)
+        .maybeSingle(),
+      supabase
+        .from('rooms')
+        .select('room_number, total_seats, available_seats')
+        .eq('id', rawBooking.room_id)
+        .maybeSingle()
+    ]);
+
+    return {
+      ...rawBooking,
+      pgs: pgRes.data || null,
+      rooms: roomRes.data || null
+    };
+  };
+
   const fetchUserBooking = async () => {
     setLoading(true);
     try {
       let bookingData = null;
 
-      const { data: primaryBooking } = await supabase
+      const { data: primaryBooking, error: primaryBookingError } = await supabase
         .from('bookings')
-        .select(`
-          *,
-          pgs:pg_id (id, name, address, city, accommodation_type, owner_doc_url, police_verification_template_url),
-          rooms:room_id (room_number, total_seats, available_seats)
-        `)
+        .select('*')
         .eq('user_id', currentUser.uid)
         .in('status', ['confirmed', 'pending'])
         .maybeSingle();
 
+      if (primaryBookingError) {
+        throw primaryBookingError;
+      }
+
       if (primaryBooking) {
-        bookingData = { ...primaryBooking, occupant_role: 'primary' };
+        bookingData = {
+          ...(await enrichBookingRecord(primaryBooking)),
+          occupant_role: 'primary'
+        };
       } else if (currentUser?.email) {
         const { data: roommateMatches, error: roommateError } = await supabase
           .from('roommate_requests')
-          .select(`
-            *,
-            bookings:booking_id (
-              *,
-              pgs:pg_id (id, name, address, city, accommodation_type, owner_doc_url, police_verification_template_url),
-              rooms:room_id (room_number, total_seats, available_seats)
-            )
-          `)
+          .select('*')
           .eq('roommate_email', currentUser.email.trim().toLowerCase())
           .eq('status', 'approved')
           .order('verified_at', { ascending: false })
@@ -113,9 +132,18 @@ const Dashboard = () => {
 
         if (roommateError) throw roommateError;
 
-        if (roommateMatches?.[0]?.bookings) {
+        if (roommateMatches?.[0]?.booking_id) {
+          const { data: roommateBooking, error: roommateBookingError } = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('id', roommateMatches[0].booking_id)
+            .maybeSingle();
+
+          if (roommateBookingError) throw roommateBookingError;
+          if (!roommateBooking) throw new Error('Approved roommate booking could not be found.');
+
           bookingData = {
-            ...roommateMatches[0].bookings,
+            ...(await enrichBookingRecord(roommateBooking)),
             occupant_role: 'approved_roommate',
             occupant_record_id: roommateMatches[0].id,
             occupant_display_name: roommateMatches[0].roommate_full_name
@@ -130,15 +158,15 @@ const Dashboard = () => {
           supabase.from('pg_document_requirements').select('*').eq('pg_id', bookingData.pg_id),
           supabase.from('booking_documents').select('*').eq('booking_id', bookingData.id)
         ]);
-        setDocRequirements(reqsRes.data || []);
-        setDynamicDocs(docsRes.data || []);
+        setDocRequirements(reqsRes.error ? [] : (reqsRes.data || []));
+        setDynamicDocs(docsRes.error ? [] : (docsRes.data || []));
 
-        const { data: roommateData } = await supabase
+        const { data: roommateData, error: roommateListError } = await supabase
           .from('roommate_requests')
           .select('*')
           .eq('booking_id', bookingData.id)
           .order('created_at', { ascending: false });
-        setRoommateRequests(roommateData || []);
+        setRoommateRequests(roommateListError ? [] : (roommateData || []));
       } else {
         setBooking(null);
         setDocRequirements([]);

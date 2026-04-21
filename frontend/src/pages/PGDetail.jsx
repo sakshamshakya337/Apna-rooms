@@ -60,12 +60,26 @@ const PGDetail = () => {
         setPg(pgData);
         const { data: roomData, error: roomError } = await supabase
           .from('rooms')
-          .select('*, bookings (id, status)')
+          .select('*')
           .eq('pg_id', id)
           .order('room_number', { ascending: true });
         
         if (roomError) throw roomError;
-        setRooms(roomData || []);
+
+        const enrichedRooms = await Promise.all((roomData || []).map(async (room) => {
+          const { data: bookingData, error: bookingError } = await supabase
+            .from('bookings')
+            .select('id, status')
+            .eq('room_id', room.id)
+            .in('status', ACTIVE_BOOKING_STATUSES);
+
+          return {
+            ...room,
+            bookings: bookingError ? [] : (bookingData || [])
+          };
+        }));
+
+        setRooms(enrichedRooms);
       }
     } catch (err) {
       console.error('Error fetching PG details:', err);

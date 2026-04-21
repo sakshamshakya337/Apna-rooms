@@ -36,21 +36,51 @@ const PGList = () => {
 
   const fetchPGs = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('pgs')
-      .select('*, rooms (price_per_seat, bookings (id, status))')
-      .eq('is_active', true);
-    
-    if (data) {
-      const pgsWithPrice = data.map(pg => {
-        const availableRooms = pg.rooms?.filter(isRoomAvailable) || [];
-        const prices = availableRooms.map(r => Number(r.price_per_seat)) || [];
+    try {
+      const [{ data: pgData, error: pgError }, { data: roomData, error: roomError }] = await Promise.all([
+        supabase.from('pgs').select('*').eq('is_active', true),
+        supabase.from('rooms').select('id, pg_id, price_per_seat')
+      ]);
+
+      if (pgError) throw pgError;
+      if (roomError) throw roomError;
+
+      const activeRoomStatuses = await Promise.all(
+        (roomData || []).map(async (room) => {
+          const { data: bookingData, error: bookingError } = await supabase
+            .from('bookings')
+            .select('id, status')
+            .eq('room_id', room.id)
+            .in('status', ACTIVE_BOOKING_STATUSES);
+
+          return {
+            ...room,
+            bookings: bookingError ? [] : (bookingData || [])
+          };
+        })
+      );
+
+      const pgsWithPrice = (pgData || []).map((pg) => {
+        const roomsForPg = activeRoomStatuses.filter((room) => room.pg_id === pg.id);
+        const availableRooms = roomsForPg.filter(isRoomAvailable);
+        const prices = availableRooms.map((room) => Number(room.price_per_seat)) || [];
         const startingPrice = prices.length > 0 ? Math.min(...prices) : 0;
-        return { ...pg, rooms: availableRooms, starting_price: startingPrice, available_room_count: availableRooms.length };
-      }).filter(pg => pg.available_room_count > 0);
+
+        return {
+          ...pg,
+          rooms: availableRooms,
+          starting_price: startingPrice,
+          available_room_count: availableRooms.length
+        };
+      }).filter((pg) => pg.available_room_count > 0);
+
       setPgs(pgsWithPrice);
+    } catch (error) {
+      console.error('Failed to fetch PG list:', error);
+      setPgs([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const toggleAmenity = (amenityName) => {

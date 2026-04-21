@@ -82,18 +82,26 @@ const BookingConfirmation = () => {
       const { data: pgData } = await supabase.from('pgs').select('*').eq('id', id).single();
       const { data: roomData } = await supabase
         .from('rooms')
-        .select('*, bookings (id, status, user_id)')
+        .select('*')
         .eq('id', roomId)
         .single();
 
-      if (!roomData || isRoomSoldOut(roomData)) {
+      const { data: bookingData } = await supabase
+        .from('bookings')
+        .select('id, status, user_id')
+        .eq('room_id', roomId)
+        .in('status', ACTIVE_BOOKING_STATUSES);
+
+      const enrichedRoom = roomData ? { ...roomData, bookings: bookingData || [] } : null;
+
+      if (!enrichedRoom || isRoomSoldOut(enrichedRoom)) {
         toast.error('This room is sold out.');
         navigate(`/pg/${id}`);
         return;
       }
 
       setPg(pgData);
-      setRoom(roomData);
+      setRoom(enrichedRoom);
 
       // Fetch dynamic document requirements for this PG
       const { data: reqs } = await supabase
@@ -132,12 +140,22 @@ const BookingConfirmation = () => {
   const createPendingBooking = async () => {
     const { data: latestRoom, error: roomError } = await supabase
       .from('rooms')
-      .select('*, bookings (id, status, user_id)')
+      .select('*')
       .eq('id', room.id)
       .single();
 
     if (roomError) throw roomError;
-    if (isRoomSoldOut(latestRoom)) {
+
+    const { data: latestBookings, error: bookingsError } = await supabase
+      .from('bookings')
+      .select('id, status, user_id')
+      .eq('room_id', room.id)
+      .in('status', ACTIVE_BOOKING_STATUSES);
+
+    if (bookingsError) throw bookingsError;
+
+    const latestRoomState = { ...latestRoom, bookings: latestBookings || [] };
+    if (isRoomSoldOut(latestRoomState)) {
       throw new Error('This room has already been booked.');
     }
 
