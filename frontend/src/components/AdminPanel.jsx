@@ -150,14 +150,70 @@ const AdminPanel = ({ section = 'admin' }) => {
   const fetchAllTenants = async () => {
     setLoading(true);
     try {
-      const { data: pgsData } = await supabase.from('pgs').select('id');
-      if (pgsData && pgsData.length > 0) {
-        const allTenantsPromises = pgsData.map(pg => fetchTenantsForList(pg.id));
-        const allTenantsResults = await Promise.all(allTenantsPromises);
-        setTenants(allTenantsResults.flat());
+      // 1. Fetch all bookings directly
+      const { data: bookingData, error: bookingError } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
+          rooms (room_number, total_seats),
+          pgs (name),
+          roommate_requests (*)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (bookingError) throw bookingError;
+
+      // 2. Identify missing roommate records
+      const roommateEmails = (bookingData || [])
+        .flatMap(b => b.roommate_requests || [])
+        .filter(r => r.status === 'approved')
+        .map(r => r.roommate_email.toLowerCase());
+
+      let roommateBookings = [];
+      if (roommateEmails.length > 0) {
+        const { data: roommateUsers } = await supabase
+          .from('users')
+          .select('id, email')
+          .in('email', roommateEmails);
+        
+        if (roommateUsers?.length > 0) {
+          // Check who doesn't have a booking yet
+          const missingRoommates = roommateUsers.filter(u => !bookingData.some(b => b.user_id === u.id));
+          
+          if (missingRoommates.length > 0) {
+            console.log('Fixing missing records for:', missingRoommates);
+            for (const rm of missingRoommates) {
+              const request = (bookingData || []).flatMap(b => b.roommate_requests || []).find(r => r.roommate_email.toLowerCase() === rm.email.toLowerCase());
+              const primaryBooking = (bookingData || []).find(b => b.id === request?.booking_id);
+              
+              if (request && primaryBooking) {
+                const { data: newRB } = await supabase.from('bookings').upsert([{
+                  user_id: rm.id,
+                  pg_id: primaryBooking.pg_id,
+                  room_id: request.room_id,
+                  status: 'confirmed',
+                  occupant_role: 'approved_roommate',
+                  amount: primaryBooking.amount
+                }], { onConflict: 'user_id, room_id' }).select(`
+                  *,
+                  users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
+                  rooms (room_number, total_seats),
+                  pgs (name)
+                `).single();
+                if (newRB) roommateBookings.push(newRB);
+              }
+            }
+          }
+        }
       }
+
+      // Combine and set
+      const finalTenants = [...(bookingData || []), ...roommateBookings];
+      setTenants(finalTenants);
     } catch (error) {
       console.error('Error fetching all tenants:', error);
+      toast.error('Failed to load complete tenant list');
     } finally {
       setLoading(false);
     }
@@ -166,7 +222,6 @@ const AdminPanel = ({ section = 'admin' }) => {
   useEffect(() => {
     fetchAdminData();
     if (section === 'users_admin') {
-      setTenants([]);
       fetchAllTenants();
     }
   }, [section]);
@@ -854,8 +909,9 @@ const AdminPanel = ({ section = 'admin' }) => {
 
   const fetchTenants = async (pgId) => {
     setLoadingTenants(true);
+    setTenants([]); // Clear old list to prevent UI confusion
     try {
-      // 1. Fetch primary residents and their roommate requests
+      // 1. Fetch all bookings directly for this PG
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .select(`
@@ -870,7 +926,7 @@ const AdminPanel = ({ section = 'admin' }) => {
 
       if (bookingError) throw bookingError;
 
-      // 2. Fetch all roommates who have individual accounts (to get their KYC docs)
+      // 2. Handle roommates missing booking records
       const roommateEmails = (bookingData || [])
         .flatMap(b => b.roommate_requests || [])
         .filter(r => r.status === 'approved')
@@ -878,31 +934,14 @@ const AdminPanel = ({ section = 'admin' }) => {
 
       let roommateBookings = [];
       if (roommateEmails.length > 0) {
-        // Find users by these emails
         const { data: roommateUsers } = await supabase
           .from('users')
           .select('id, email')
           .in('email', roommateEmails);
         
         if (roommateUsers?.length > 0) {
-          // Fetch their individual bookings to see their KYC
-          const { data: rbData } = await supabase
-            .from('bookings')
-            .select(`
-              *,
-              users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
-              rooms (room_number, total_seats),
-              pgs (name)
-            `)
-            .in('user_id', roommateUsers.map(u => u.id))
-            .eq('pg_id', pgId);
-          roommateBookings = rbData || [];
-
-          // RETROACTIVE FIX: If an approved roommate exists as a user but has NO booking record, 
-          // they won't be able to upload KYC. We should create one for them now.
-          const missingRoommates = roommateUsers.filter(u => !roommateBookings.some(rb => rb.user_id === u.id));
+          const missingRoommates = roommateUsers.filter(u => !bookingData.some(b => b.user_id === u.id));
           if (missingRoommates.length > 0) {
-            console.log('Creating missing booking records for approved roommates:', missingRoommates);
             for (const rm of missingRoommates) {
               const request = (bookingData || []).flatMap(b => b.roommate_requests || []).find(r => r.roommate_email.toLowerCase() === rm.email.toLowerCase());
               const primaryBooking = (bookingData || []).find(b => b.id === request?.booking_id);
@@ -927,15 +966,7 @@ const AdminPanel = ({ section = 'admin' }) => {
         }
       }
 
-      // Combine into a flat list for the admin
-      const combinedTenants = [...(bookingData || [])];
-      roommateBookings.forEach(rb => {
-        if (!combinedTenants.find(t => t.id === rb.id)) {
-          combinedTenants.push({ ...rb, is_roommate_row: true });
-        }
-      });
-
-      setTenants(combinedTenants);
+      setTenants([...(bookingData || []), ...roommateBookings]);
     } catch (error) {
       console.error('Fetch Tenants Error:', error);
       toast.error('Failed to fetch tenants');
