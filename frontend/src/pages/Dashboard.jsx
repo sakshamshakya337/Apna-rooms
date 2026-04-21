@@ -331,18 +331,16 @@ const Dashboard = () => {
 
     setRoommateSubmitting(true);
     try {
-      // Check if user already exists
-      const { data: existingUser, error: userError } = await supabase
-        .from('users')
-        .select('uid')
-        .eq('email', roommateForm.email.trim().toLowerCase())
-        .maybeSingle();
-      
-      if (userError && userError.code !== 'PGRST116') {
-        console.error('User Check Error:', userError);
+      // Robustly find existing user - trying both 'uid' and 'id' columns
+      let existingUserId = null;
+      try {
+        const { data: userByUid } = await supabase.from('users').select('*').eq('email', roommateForm.email.trim().toLowerCase()).maybeSingle();
+        existingUserId = userByUid?.uid || userByUid?.id;
+      } catch (e) {
+        console.warn('Could not query users by email safely', e);
       }
 
-      const payload = {
+      let payload = {
         booking_id: booking.id,
         pg_id: booking.pg_id,
         room_id: booking.room_id,
@@ -350,26 +348,32 @@ const Dashboard = () => {
         roommate_full_name: roommateForm.full_name.trim(),
         roommate_email: roommateForm.email.trim().toLowerCase(),
         roommate_phone: roommateForm.phone_number.trim(),
-        roommate_user_id: existingUser?.uid || null,
+        roommate_user_id: existingUserId,
         status: 'pending'
       };
 
-      console.log('Sending Roommate Request:', payload);
+      // Robust insert loop to handle missing columns (like roommate_user_id)
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { error, status } = await supabase.from('roommate_requests').insert([payload]);
+        
+        if (!error) break;
 
-      const { error, status } = await supabase
-        .from('roommate_requests')
-        .insert([payload]);
+        const message = error.message || '';
+        const missingColumn = message.match(/'([^']+)' column/)?.[1] || message.match(/column "([^"]+)"/)?.[1];
+        
+        if (missingColumn && missingColumn in payload) {
+          console.warn(`Column '${missingColumn}' missing in database. Retrying roommate request without it.`);
+          delete payload[missingColumn];
+          continue;
+        }
 
-      if (error) {
-        if (status === 401 || error.message?.includes('JWT')) {
-          throw new Error('Your session may have expired. Please log out and log back in to send this request.');
+        if (status === 401 || message.includes('JWT')) {
+          throw new Error('Your session expired. Please log out and back in.');
         }
-        if (error.code === '42501') {
-          throw new Error('Database permission denied. Please ensure you have run the RLS SQL script in your Supabase dashboard.');
-        }
+        
         throw error;
       }
-      
+
       toast.success('Roommate request sent for admin verification.');
       setRoommateForm({ full_name: '', email: '', phone_number: '' });
       fetchUserBooking();
