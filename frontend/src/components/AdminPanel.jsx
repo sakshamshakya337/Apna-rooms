@@ -149,7 +149,75 @@ const AdminPanel = ({ section = 'admin' }) => {
 
   useEffect(() => {
     fetchAdminData();
+    // Also fetch tenants if we are in the users section
+    if (section === 'users_admin') {
+      setTenants([]);
+      const fetchAllTenants = async () => {
+        setLoading(true);
+        try {
+          const { data: pgsData } = await supabase.from('pgs').select('id');
+          if (pgsData && pgsData.length > 0) {
+            // Fetch tenants for all PGs to show a complete list in Users & Tenants
+            const allTenantsPromises = pgsData.map(pg => fetchTenantsForList(pg.id));
+            const allTenantsResults = await Promise.all(allTenantsPromises);
+            setTenants(allTenantsResults.flat());
+          }
+        } catch (error) {
+          console.error('Error fetching all tenants:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchAllTenants();
+    }
   }, [section]);
+
+  const fetchTenantsForList = async (pgId) => {
+    try {
+      const { data: bookingData } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
+          rooms (room_number, total_seats),
+          pgs (name),
+          roommate_requests (*)
+        `)
+        .eq('pg_id', pgId)
+        .in('status', ACTIVE_BOOKING_STATUSES);
+
+      const roommateEmails = (bookingData || [])
+        .flatMap(b => b.roommate_requests || [])
+        .filter(r => r.status === 'approved')
+        .map(r => r.roommate_email.toLowerCase());
+
+      let roommateBookings = [];
+      if (roommateEmails.length > 0) {
+        const { data: roommateUsers } = await supabase.from('users').select('id').in('email', roommateEmails);
+        if (roommateUsers?.length > 0) {
+          const { data: rbData } = await supabase
+            .from('bookings')
+            .select(`
+              *,
+              users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
+              rooms (room_number, total_seats),
+              pgs (name)
+            `)
+            .in('user_id', roommateUsers.map(u => u.id))
+            .eq('pg_id', pgId);
+          roommateBookings = rbData || [];
+        }
+      }
+
+      const combined = [...(bookingData || [])];
+      roommateBookings.forEach(rb => {
+        if (!combined.find(t => t.id === rb.id)) combined.push({ ...rb, is_roommate_row: true });
+      });
+      return combined;
+    } catch (e) {
+      return [];
+    }
+  };
 
   const fetchAdminData = async () => {
     setLoading(true);
@@ -788,23 +856,66 @@ const AdminPanel = ({ section = 'admin' }) => {
   const fetchTenants = async (pgId) => {
     setLoadingTenants(true);
     try {
-      const { data, error } = await supabase
+      // 1. Fetch primary residents and their roommate requests
+      const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .select(`
           *,
           users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
           rooms (room_number, total_seats),
+          pgs (name),
           roommate_requests (*)
         `)
         .eq('pg_id', pgId)
         .in('status', ACTIVE_BOOKING_STATUSES)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setTenants(data || []);
+      if (bookingError) throw bookingError;
+
+      // 2. Fetch all roommates who have individual accounts (to get their KYC docs)
+      const roommateEmails = (bookingData || [])
+        .flatMap(b => b.roommate_requests || [])
+        .filter(r => r.status === 'approved')
+        .map(r => r.roommate_email.toLowerCase());
+
+      let roommateBookings = [];
+      if (roommateEmails.length > 0) {
+        // Find users by these emails
+        const { data: roommateUsers } = await supabase
+          .from('users')
+          .select('id')
+          .in('email', roommateEmails);
+        
+        if (roommateUsers?.length > 0) {
+          // Fetch their individual bookings to see their KYC
+          const { data: rbData } = await supabase
+            .from('bookings')
+            .select(`
+              *,
+              users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
+              rooms (room_number, total_seats),
+              pgs (name)
+            `)
+            .in('user_id', roommateUsers.map(u => u.id))
+            .eq('pg_id', pgId);
+          roommateBookings = rbData || [];
+        }
+      }
+
+      // Combine into a flat list for the admin
+      const combinedTenants = [...(bookingData || [])];
+      roommateBookings.forEach(rb => {
+        if (!combinedTenants.find(t => t.id === rb.id)) {
+          combinedTenants.push({ ...rb, is_roommate_row: true });
+        }
+      });
+
+      setTenants(combinedTenants);
     } catch (error) {
       console.error('Fetch Tenants Error:', error);
       toast.error('Failed to fetch tenants');
+    } finally {
+      setLoadingTenants(false);
     }
   };
 
