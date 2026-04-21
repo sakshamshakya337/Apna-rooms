@@ -84,15 +84,18 @@ const Dashboard = () => {
     const [pgRes, roomRes] = await Promise.all([
       supabase
         .from('pgs')
-        .select('id, name, address, city, accommodation_type, owner_doc_url, police_verification_template_url')
+        .select('*')
         .eq('id', rawBooking.pg_id)
         .maybeSingle(),
       supabase
         .from('rooms')
-        .select('room_number, total_seats, available_seats')
+        .select('*')
         .eq('id', rawBooking.room_id)
         .maybeSingle()
     ]);
+
+    if (pgRes.error) console.error('PG Fetch Error:', pgRes.error);
+    if (roomRes.error) console.error('Room Fetch Error:', roomRes.error);
 
     return {
       ...rawBooking,
@@ -758,9 +761,14 @@ const Dashboard = () => {
                     </ul>
 
                     {/* Template Section */}
-                    {(isInternationalStudent || booking.pgs?.police_verification_template_url || docRequirements.some((req) => req.template_url)) && (
+                    {booking.pgs && (
                     <div className="pt-6 border-t border-gray-100 space-y-4">
-                      <h4 className="font-black text-sm uppercase tracking-widest text-gray-400">Required Templates</h4>
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-black text-sm uppercase tracking-widest text-gray-400">Required Templates</h4>
+                        {!booking.pgs.police_verification_template_url && !isInternationalStudent && (
+                           <div className="text-[8px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase">Contact Admin</div>
+                        )}
+                      </div>
                       
                       {/* Quick Templates */}
                       <div className="grid grid-cols-1 gap-4">
@@ -778,7 +786,7 @@ const Dashboard = () => {
                             </a>
                           ) : (
                             <div className="p-4 bg-red-50 text-red-500 rounded-2xl text-[10px] font-bold border border-red-100 italic">
-                              Template Not Uploaded
+                              Vidu Template Not Uploaded
                             </div>
                           )}
                         </div>
@@ -798,7 +806,7 @@ const Dashboard = () => {
                             </a>
                           ) : (
                             <div className="p-4 bg-gray-50 text-gray-500 rounded-2xl text-[10px] font-bold border border-gray-100 italic">
-                              Contact admin for police form
+                              Admin hasn't uploaded police form
                             </div>
                           )}
                         </div>

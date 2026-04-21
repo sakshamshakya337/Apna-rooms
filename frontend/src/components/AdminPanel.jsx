@@ -63,6 +63,7 @@ const AdminPanel = ({ section = 'admin' }) => {
   
   const [selectedPG, setSelectedPG] = useState(null);
   const [viewingPG, setViewingPG] = useState(null);
+  const [schemaIssues, setSchemaIssues] = useState([]);
   
   // Tenants Modal
   const [showTenantsModal, setShowTenantsModal] = useState(false);
@@ -154,11 +155,24 @@ const AdminPanel = ({ section = 'admin' }) => {
     setLoading(true);
     try {
       if (['pgs', 'bills_admin', 'users_admin', 'workers_admin', 'team'].includes(section)) {
-        const { data: pgData } = await supabase
+        const { data: pgData, error: pgError } = await supabase
           .from('pgs')
           .select('*, rooms (*)')
           .order('created_at', { ascending: false });
-        if (pgData) setPgs(pgData);
+        
+        if (pgError) throw pgError;
+        if (pgData) {
+          setPgs(pgData);
+          
+          // Check for missing columns in first record
+          const sample = pgData[0];
+          if (sample) {
+            const missing = [];
+            if (!('owner_doc_url' in sample)) missing.push('owner_doc_url');
+            if (!('police_verification_template_url' in sample)) missing.push('police_verification_template_url');
+            setSchemaIssues(missing);
+          }
+        }
       }
 
       if (section === 'admin' || section === 'revenue') {
