@@ -60,6 +60,10 @@ CREATE TABLE IF NOT EXISTS pgs (
     images TEXT[] DEFAULT '{}', 
     amenities TEXT[] DEFAULT '{}', 
     rules TEXT[] DEFAULT '{}',
+    accommodation_type TEXT DEFAULT 'Indian',
+    google_map_url TEXT,
+    owner_doc_url TEXT,
+    police_verification_template_url TEXT,
     security_deposit DECIMAL(10, 2) DEFAULT 0.00,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
@@ -191,11 +195,20 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pgs' AND column_name='main_image') THEN
         ALTER TABLE pgs ADD COLUMN main_image TEXT;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pgs' AND column_name='images') THEN
+        ALTER TABLE pgs ADD COLUMN images TEXT[] DEFAULT '{}';
+    END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pgs' AND column_name='accommodation_type') THEN
         ALTER TABLE pgs ADD COLUMN accommodation_type TEXT DEFAULT 'Indian';
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pgs' AND column_name='google_map_url') THEN
+        ALTER TABLE pgs ADD COLUMN google_map_url TEXT;
+    END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pgs' AND column_name='owner_doc_url') THEN
         ALTER TABLE pgs ADD COLUMN owner_doc_url TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pgs' AND column_name='police_verification_template_url') THEN
+        ALTER TABLE pgs ADD COLUMN police_verification_template_url TEXT;
     END IF;
 
     -- Rooms Table Updates

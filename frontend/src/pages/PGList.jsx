@@ -231,6 +231,17 @@ const PGList = () => {
                           <MapPin className="w-4 h-4 mr-1 text-[#a099b4]" />
                           {pg.address}, {pg.city}
                         </p>
+                        {pg.google_map_url && (
+                          <a
+                            href={pg.google_map_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center mt-2 text-[10px] font-black uppercase tracking-widest text-[#4a4bd7] hover:text-[#34b5fa]"
+                          >
+                            <MapPin className="w-3 h-3 mr-1" />
+                            Open in Maps
+                          </a>
+                        )}
                       </div>
                       <div className="bg-[#f0dbff] text-[#7614c4] px-4 py-2 rounded-2xl flex flex-col items-end shadow-sm">
                         <span className="text-[10px] uppercase tracking-wider font-bold opacity-80">Starting at</span>

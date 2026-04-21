@@ -83,6 +83,9 @@ const PGDetail = () => {
   const pricing = getPricing();
 
   const toUSD = (inr) => Math.round(inr / USD_RATE);
+  const pgImages = pg
+    ? Array.from(new Set([pg.main_image, ...(pg.images || [])].filter(Boolean)))
+    : [];
 
   const handleBooking = async () => {
     if (!currentUser) {
@@ -116,7 +119,7 @@ const PGDetail = () => {
         <div className="lg:col-span-2 space-y-8 text-white">
           <div className="rounded-[3rem] overflow-hidden shadow-2xl shadow-purple-900/10 h-[550px] relative group border-4 border-white/5">
             <img 
-              src={pg.main_image || MOCKUP_IMAGE} 
+              src={pgImages[0] || MOCKUP_IMAGE} 
               alt={pg.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
             />
@@ -126,9 +129,33 @@ const PGDetail = () => {
             </div>
           </div>
 
+          {pgImages.length > 1 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {pgImages.slice(1, 6).map((image, index) => (
+                <div key={image} className="aspect-[4/3] rounded-3xl overflow-hidden border border-white/20 shadow-xl bg-white/10">
+                  <img
+                    src={image}
+                    alt={`${pg.name} gallery ${index + 2}`}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
             <div className="flex items-center text-gray-300 mb-8 px-2 font-black text-sm uppercase tracking-widest">
               <MapPin className="w-5 h-5 mr-2 text-accent" />
               <span>{pg.address}, {pg.city}</span>
+              {pg.google_map_url && (
+                <a
+                  href={pg.google_map_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-4 px-4 py-2 bg-accent text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-accent-light transition-colors"
+                >
+                  Open Maps
+                </a>
+              )}
             </div>
             
             <div className="bg-white/40 backdrop-blur-3xl p-10 rounded-[3rem] border border-white/20 shadow-2xl">

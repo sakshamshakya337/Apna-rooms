@@ -79,10 +79,13 @@ const AdminPanel = ({ section = 'admin' }) => {
     security_deposit: 2000,
     amenities: '',
     rules: '',
-    accommodation_type: 'Indian'
+    accommodation_type: 'Indian',
+    google_map_url: ''
   });
   const [pgImage, setPgImage] = useState(null);
   const [pgImagePreview, setPgImagePreview] = useState(null);
+  const [pgImages, setPgImages] = useState([]);
+  const [pgImagePreviews, setPgImagePreviews] = useState([]);
   const [ownerDoc, setOwnerDoc] = useState(null);
   const [ownerDocName, setOwnerDocName] = useState('');
   const [policeDoc, setPoliceDoc] = useState(null);
@@ -123,6 +126,7 @@ const AdminPanel = ({ section = 'admin' }) => {
 
   const MOCKUP_IMAGE = "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80";
   const ACTIVE_BOOKING_STATUSES = ['pending', 'confirmed'];
+  const MAX_PG_IMAGES = 6;
 
   const roomDisplayName = (pgName, roomNumber) => {
     return `${pgName || 'PG'} - Room ${roomNumber || 'N/A'}`;
@@ -400,11 +404,87 @@ const AdminPanel = ({ section = 'admin' }) => {
     }
   };
 
+  const resetAddPGForm = () => {
+    setNewPG({
+      name: '',
+      description: '',
+      address: '',
+      city: '',
+      security_deposit: 2000,
+      amenities: '',
+      rules: '',
+      accommodation_type: 'Both',
+      google_map_url: ''
+    });
+    setPgImages([]);
+    setPgImagePreviews([]);
+    setOwnerDoc(null);
+    setOwnerDocName('');
+    setPoliceDoc(null);
+    setPoliceDocName('');
+  };
+
+  const handlePGImagesChange = (files) => {
+    const selectedFiles = Array.from(files || []);
+    if (selectedFiles.length === 0) return;
+
+    const availableSlots = MAX_PG_IMAGES - pgImages.length;
+    if (availableSlots <= 0) {
+      toast.error('Maximum 6 PG images allowed');
+      return;
+    }
+
+    if (selectedFiles.length > availableSlots) {
+      toast.error(`Only ${availableSlots} more image${availableSlots === 1 ? '' : 's'} can be added`);
+    }
+
+    const validFiles = selectedFiles.slice(0, availableSlots).filter(file => {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not an image`);
+        return false;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error(`${file.name} must be under 2MB`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+    setPgImages(prev => [...prev, ...validFiles]);
+    setPgImagePreviews(prev => [...prev, ...validFiles.map(file => URL.createObjectURL(file))]);
+  };
+
+  const removePGImage = (index) => {
+    setPgImages(prev => prev.filter((_, i) => i !== index));
+    setPgImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const insertPGListing = async (payload) => {
+    let insertPayload = { ...payload };
+
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const { error } = await supabase.from('pgs').insert([insertPayload]);
+      if (!error) return;
+
+      const message = error.message || '';
+      const missingColumn = message.match(/'([^']+)' column/)?.[1] || message.match(/column "([^"]+)"/)?.[1];
+      if (!missingColumn || !(missingColumn in insertPayload)) {
+        throw error;
+      }
+
+      delete insertPayload[missingColumn];
+    }
+  };
+
   const handleAddPG = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const imageUrl = await uploadImage(pgImage, 'pgs');
+      const uploadedImageUrls = pgImages.length > 0
+        ? await Promise.all(pgImages.map(file => uploadImage(file, 'pgs')))
+        : [];
+      const imageUrl = uploadedImageUrls[0] || MOCKUP_IMAGE;
       let docUrl = '';
       
       if (ownerDoc) {
@@ -430,25 +510,20 @@ const AdminPanel = ({ section = 'admin' }) => {
         policeUrl = pUrl;
       }
       
-      const { error } = await supabase.from('pgs').insert([{
+      await insertPGListing({
         ...newPG,
         main_image: imageUrl,
+        images: uploadedImageUrls,
         owner_doc_url: docUrl,
         police_verification_template_url: policeUrl,
+        google_map_url: newPG.google_map_url?.trim() || null,
         amenities: newPG.amenities.split(',').map(a => a.trim()).filter(a => a !== ''),
         rules: newPG.rules.split(',').map(r => r.trim()).filter(r => r !== '')
-      }]);
+      });
       
-      if (error) throw error;
       toast.success('PG Added Successfully!');
       setShowAddPGModal(false);
-      setNewPG({ name: '', description: '', address: '', city: '', security_deposit: 2000, amenities: '', rules: '', accommodation_type: 'Both' });
-      setPgImage(null);
-      setPgImagePreview(null);
-      setOwnerDoc(null);
-      setOwnerDocName('');
-      setPoliceDoc(null);
-      setPoliceDocName('');
+      resetAddPGForm();
       fetchAdminData();
     } catch (error) {
       toast.error(error.message);
@@ -763,7 +838,10 @@ const AdminPanel = ({ section = 'admin' }) => {
         <div className="flex space-x-3">
           {section === 'pgs' && (
             <button 
-              onClick={() => setShowAddPGModal(true)}
+              onClick={() => {
+                resetAddPGForm();
+                setShowAddPGModal(true);
+              }}
               className="bg-accent text-white px-6 py-3 rounded-xl font-bold flex items-center space-x-2 hover:bg-blue-600 transition-all shadow-lg shadow-blue-100"
             >
               <Plus className="w-5 h-5" />
@@ -1488,7 +1566,7 @@ const AdminPanel = ({ section = 'admin' }) => {
             <motion.div initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 12 }} className="bg-white rounded-3xl p-5 sm:p-8 max-w-2xl w-full shadow-2xl max-h-[calc(100dvh-3rem)] overflow-y-auto">
               <div className="flex justify-between items-start gap-4 mb-6">
                 <h3 className="text-2xl font-bold">Add New PG Property</h3>
-                <button onClick={() => setShowAddPGModal(false)} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
+                <button onClick={() => { resetAddPGForm(); setShowAddPGModal(false); }} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
               </div>
               <form onSubmit={handleAddPG} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1496,6 +1574,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                   <input required placeholder="City" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newPG.city} onChange={e => setNewPG({...newPG, city: e.target.value})} />
                 </div>
                 <input required placeholder="Full Address" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newPG.address} onChange={e => setNewPG({...newPG, address: e.target.value})} />
+                <input placeholder="Google Maps link (optional)" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newPG.google_map_url} onChange={e => setNewPG({...newPG, google_map_url: e.target.value})} />
                 <textarea placeholder="Description" rows="3" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" value={newPG.description} onChange={e => setNewPG({...newPG, description: e.target.value})} />
                 
                 <div className="space-y-2">
@@ -1509,38 +1588,44 @@ const AdminPanel = ({ section = 'admin' }) => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold text-gray-400 uppercase">PG Image</label>
-                  <div className="relative border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-accent transition-colors group bg-gray-50 overflow-hidden min-h-[120px] flex items-center justify-center">
-                    {pgImagePreview ? (
-                      <div className="relative w-full h-full group">
-                        <img src={pgImagePreview} alt="Preview" className="max-h-32 mx-auto rounded-lg object-cover" />
-                        <button 
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="block text-xs font-bold text-gray-400 uppercase">PG Images</label>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-accent">{pgImages.length}/{MAX_PG_IMAGES} selected</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {pgImagePreviews.map((preview, index) => (
+                      <div key={preview} className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+                        <img src={preview} alt={`PG preview ${index + 1}`} className="w-full h-full object-cover" />
+                        <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); setPgImage(null); setPgImagePreview(null); }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow-lg"
+                          onClick={() => removePGImage(index)}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg"
                         >
                           <X className="w-4 h-4" />
                         </button>
+                        {index === 0 && (
+                          <span className="absolute left-2 bottom-2 bg-white/90 text-accent px-2 py-1 rounded-full text-[9px] font-black uppercase">
+                            Main
+                          </span>
+                        )}
                       </div>
-                    ) : (
-                      <>
+                    ))}
+                    {pgImages.length < MAX_PG_IMAGES && (
+                      <label className="relative aspect-[4/3] border-2 border-dashed border-gray-200 rounded-2xl p-4 text-center hover:border-accent transition-colors group bg-gray-50 overflow-hidden flex flex-col items-center justify-center cursor-pointer">
                         <input 
                           type="file" 
                           accept="image/*"
+                          multiple
                           onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              setPgImage(file);
-                              setPgImagePreview(URL.createObjectURL(file));
-                            }
+                            handlePGImagesChange(e.target.files);
+                            e.target.value = '';
                           }}
                           className="absolute inset-0 opacity-0 cursor-pointer"
                         />
-                        <div>
-                          <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400 group-hover:text-accent" />
-                          <span className="text-sm font-medium text-gray-600">Select or drop image (Max 2MB)</span>
-                        </div>
-                      </>
+                        <Upload className="w-7 h-7 mb-2 text-gray-400 group-hover:text-accent" />
+                        <span className="text-xs font-bold text-gray-600">Add Images</span>
+                        <span className="text-[10px] text-gray-400 mt-1">Max 6, 2MB each</span>
+                      </label>
                     )}
                   </div>
                 </div>
