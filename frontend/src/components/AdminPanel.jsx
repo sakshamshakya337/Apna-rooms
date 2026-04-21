@@ -443,10 +443,6 @@ const AdminPanel = ({ section = 'admin' }) => {
         toast.error(`${file.name} is not an image`);
         return false;
       }
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error(`${file.name} must be under 2MB`);
-        return false;
-      }
       return true;
     });
 
@@ -1624,7 +1620,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                         />
                         <Upload className="w-7 h-7 mb-2 text-gray-400 group-hover:text-accent" />
                         <span className="text-xs font-bold text-gray-600">Add Images</span>
-                        <span className="text-[10px] text-gray-400 mt-1">Max 6, 2MB each</span>
+                        <span className="text-[10px] text-gray-400 mt-1">Max 6, auto-compressed</span>
                       </label>
                     )}
                   </div>
