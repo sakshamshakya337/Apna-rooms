@@ -14,6 +14,20 @@ const Payments = ({ booking }) => {
   const [offlineForm, setOfflineForm] = useState({ notes: '', payment_ref: '' });
   const [submittingOffline, setSubmittingOffline] = useState(false);
 
+  // New states for Online Payment UI
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentPlan, setPaymentPlan] = useState('monthly'); // 'monthly' | 'full'
+  
+  const successPayments = payments.filter((p) => p.status === 'success');
+  const isFirstPayment = successPayments.length === 0;
+  
+  const monthlyRent = Number(booking?.rooms?.price_per_seat) || 0;
+  const deposit = isFirstPayment ? monthlyRent : 0;
+  const contractMonths = booking?.contract_months || 6;
+  
+  const rentMultiplier = paymentPlan === 'monthly' ? 1 : contractMonths;
+  const finalAmount = (monthlyRent * rentMultiplier) + deposit;
+
   useEffect(() => {
     if (booking?.id) {
       fetchPayments();
@@ -59,23 +73,21 @@ const Payments = ({ booking }) => {
       toast.error('Razorpay SDK failed to load. Are you online?');
       return;
     }
-
-    const rentAmount = booking.amount * (booking.rooms?.total_seats || 1);
     
-    if (!rentAmount || isNaN(rentAmount) || rentAmount <= 0) {
+    if (!finalAmount || isNaN(finalAmount) || finalAmount <= 0) {
       toast.error('Invalid rent amount. Please check booking details.');
       return;
     }
     
     try {
-      const order = await createRazorpayOrder(rentAmount, 'INR', booking.id.slice(0, 30));
+      const order = await createRazorpayOrder(finalAmount, 'INR', booking.id.slice(0, 30));
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: order.amount,
         currency: 'INR',
         name: 'Apna Rooms',
-        description: `Full Room Rent Payment - Room ${booking.rooms?.room_number}`,
+        description: `${paymentPlan === 'monthly' ? 'Month-wise' : 'Full Duration'} Rent Payment - Room ${booking.rooms?.room_number}`,
         order_id: order.id,
         handler: async (response) => {
           try {
@@ -85,13 +97,14 @@ const Payments = ({ booking }) => {
               razorpay_signature: response.razorpay_signature,
               booking_details: {
                 booking_id: booking.id,
-                amount: rentAmount,
-                type: 'room_rent',
+                amount: finalAmount,
+                type: isFirstPayment ? 'initial_rent_and_deposit' : 'room_rent',
                 status: 'success'
               }
             });
             
-            toast.success('Room rent payment successful!');
+            toast.success('Rent payment successful!');
+            setShowPaymentModal(false);
             fetchPayments();
           } catch (error) {
             console.error('Verification Error:', error);
@@ -130,8 +143,7 @@ const Payments = ({ booking }) => {
       return;
     }
 
-    const rentAmount = booking.amount * (booking.rooms?.total_seats || 1);
-    if (!rentAmount || isNaN(rentAmount) || rentAmount <= 0) {
+    if (!finalAmount || isNaN(finalAmount) || finalAmount <= 0) {
       return toast.error('Invalid rent amount. Please check your booking details.');
     }
 
@@ -139,10 +151,10 @@ const Payments = ({ booking }) => {
     try {
       const paymentPayload = {
         booking_id: booking.id,
-        amount: rentAmount,
+        amount: finalAmount,
         status: 'pending',
         payment_id: `OFFLINE-${Date.now()}`,
-        type: 'room_rent',
+        type: isFirstPayment ? 'initial_rent_and_deposit' : 'room_rent',
         payment_method: 'offline',
         payment_notes: offlineForm.notes
           ? `${offlineForm.notes}${offlineForm.payment_ref ? ` | Ref: ${offlineForm.payment_ref}` : ''}`
@@ -206,7 +218,6 @@ const Payments = ({ booking }) => {
   if (loading) return <div className="p-8 text-center text-xs font-mono text-text-secondary">Loading payment records...</div>;
 
   const pendingPayments = payments.filter((p) => p.status === 'pending');
-  const successPayments = payments.filter((p) => p.status === 'success');
   const totalPaid = successPayments.reduce((acc, p) => acc + Number(p.amount), 0);
 
   return (
@@ -221,11 +232,11 @@ const Payments = ({ booking }) => {
         
         <div className="flex flex-col gap-2 w-full sm:w-auto items-end shrink-0">
           <button 
-            onClick={handlePayRent}
+            onClick={() => setShowPaymentModal(true)}
             className="w-full sm:w-auto px-5 py-2.5 bg-primary text-on-primary font-bold text-xs uppercase tracking-wider rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <CreditCard className="w-4 h-4 shrink-0" />
-            <span>Pay Online (Razorpay)</span>
+            <span>Make a Payment</span>
           </button>
           
           <button 
@@ -369,7 +380,7 @@ const Payments = ({ booking }) => {
                 <div>
                   <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider font-mono">Amount to Pay</p>
                   <p className="text-2xl font-extrabold text-text-primary mt-0.5">
-                    ₹{(booking.amount * (booking.rooms?.total_seats || 1)).toLocaleString()}
+                    ₹{finalAmount.toLocaleString()}
                   </p>
                   <p className="text-[10px] text-text-secondary mt-0.5">
                     Room #{booking.rooms?.room_number} • {booking.pgs?.name}
@@ -439,6 +450,93 @@ const Payments = ({ booking }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Online Payment UI Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-main border border-border-low rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-border-low flex justify-between items-center bg-surface-container/30">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-text-primary text-lg">Secure Payment</h3>
+                  <p className="text-xs text-text-secondary">Select your payment plan</p>
+                </div>
+              </div>
+              <button onClick={() => setShowPaymentModal(false)} className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              
+              {/* Payment Plan Options */}
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Payment Duration</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div 
+                    onClick={() => setPaymentPlan('monthly')}
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all text-center ${paymentPlan === 'monthly' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border-low hover:border-primary/40'}`}
+                  >
+                    <p className={`font-bold ${paymentPlan === 'monthly' ? 'text-primary' : 'text-text-primary'}`}>Month-wise</p>
+                    <p className="text-[10px] text-text-secondary mt-1">Pay 1 month rent</p>
+                  </div>
+                  <div 
+                    onClick={() => setPaymentPlan('full')}
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all text-center ${paymentPlan === 'full' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border-low hover:border-primary/40'}`}
+                  >
+                    <p className={`font-bold ${paymentPlan === 'full' ? 'text-primary' : 'text-text-primary'}`}>Full Term</p>
+                    <p className="text-[10px] text-text-secondary mt-1">Pay for {contractMonths} months</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cost Breakdown */}
+              <div className="bg-surface-container-low border border-border-low rounded-xl p-4 space-y-3">
+                <div className="flex justify-between items-center text-sm font-semibold text-text-secondary">
+                  <span>Room Rent ({paymentPlan === 'monthly' ? '1 Month' : `${contractMonths} Months`})</span>
+                  <span className="text-text-primary">₹{(monthlyRent * rentMultiplier).toLocaleString()}</span>
+                </div>
+                
+                {isFirstPayment && (
+                  <div className="flex justify-between items-center text-sm font-semibold text-text-secondary pb-3 border-b border-border-low/50">
+                    <span className="flex items-center gap-1.5">
+                      Security Deposit <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">1 Month</span>
+                    </span>
+                    <span className="text-text-primary">₹{deposit.toLocaleString()}</span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between items-center font-bold pt-1">
+                  <span className="text-text-primary">Total Amount</span>
+                  <span className="text-primary text-xl">₹{finalAmount.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div className="bg-primary/5 border border-primary/20 p-3 rounded-lg flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <p className="text-[10px] text-text-secondary font-semibold leading-relaxed">
+                  Payments are securely processed via Razorpay. A confirmed receipt will be available immediately after success.
+                </p>
+              </div>
+
+            </div>
+
+            <div className="p-6 pt-0">
+              <button
+                onClick={handlePayRent}
+                className="w-full py-3.5 bg-primary text-on-primary rounded-xl font-bold text-sm uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Pay ₹{finalAmount.toLocaleString()} Securely</span>
+                <CreditCard className="w-4 h-4" />
+              </button>
+            </div>
+            
           </div>
         </div>
       )}

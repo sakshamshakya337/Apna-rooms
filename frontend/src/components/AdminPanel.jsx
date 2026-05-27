@@ -225,19 +225,45 @@ const AdminPanel = ({ section = 'admin' }) => {
               const primaryBooking = (mappedBookings || []).find(b => b.id === request?.booking_id);
               
               if (request && primaryBooking) {
-                const { data: newRB } = await supabase.from('bookings').upsert([{
-                  user_id: rm.id,
-                  pg_id: primaryBooking.pg_id,
-                  room_id: request.room_id,
-                  status: 'confirmed',
-                  occupant_role: 'approved_roommate',
-                  amount: primaryBooking.amount
-                }], { onConflict: 'user_id, room_id' }).select(`
-                  *,
-                  users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
-                  rooms (room_number, total_seats),
-                  pgs (name)
-                `).single();
+                // Check if roommate booking already exists
+                let { data: newRB } = await supabase
+                  .from('bookings')
+                  .select('*')
+                  .eq('user_id', rm.id)
+                  .eq('room_id', request.room_id)
+                  .maybeSingle();
+                
+                if (!newRB) {
+                  const { data: createdRB } = await supabase.from('bookings').insert([{
+                    user_id: rm.id,
+                    pg_id: primaryBooking.pg_id,
+                    room_id: request.room_id,
+                    status: 'confirmed',
+                    occupant_role: 'approved_roommate',
+                    amount: primaryBooking.amount
+                  }]).select(`
+                    *,
+                    users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
+                    rooms (room_number, total_seats),
+                    pgs (name)
+                  `).single();
+                  
+                  newRB = createdRB;
+                } else {
+                  // Fetch with relations since the initial select was just *
+                  const { data: fetchedRB } = await supabase
+                    .from('bookings')
+                    .select(`
+                      *,
+                      users (id, full_name, email, phone_number, parent_phone_number, address, city, state, student_category),
+                      rooms (room_number, total_seats),
+                      pgs (name)
+                    `)
+                    .eq('id', newRB.id)
+                    .single();
+                  newRB = fetchedRB;
+                }
+                
                 if (newRB) roommateBookings.push(newRB);
               }
             }
@@ -372,7 +398,20 @@ const AdminPanel = ({ section = 'admin' }) => {
         `)
         .in('status', ACTIVE_BOOKING_STATUSES)
         .order('created_at', { ascending: false });
-      if (tenantData) setTenants(tenantData);
+      if (tenantData) {
+        const uniqueTenants = [];
+        const seenTenantKeys = new Set();
+        
+        tenantData.forEach(t => {
+          const key = `${t.user_id}-${t.room_id}`;
+          if (!seenTenantKeys.has(key)) {
+            seenTenantKeys.add(key);
+            uniqueTenants.push(t);
+          }
+        });
+        
+        setTenants(uniqueTenants);
+      }
 
       // 6. Fetch Team and Workers
       const { data: usersData } = await supabase
@@ -1527,7 +1566,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                 </div>
                 <div className="h-48 flex items-end justify-between gap-4 px-4">
                   {[60, 75, 65, 85, 92, 88].map((height, idx) => (
-                    <div key={idx} className="flex-1 flex flex-col items-center">
+                    <div key={idx} className="flex-1 flex flex-col justify-end items-center h-full">
                       <div className="w-full bg-primary/20 hover:bg-primary rounded-t-lg transition-all duration-300 relative group" style={{ height: `${height}%` }}>
                         <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-container-high border border-border-low text-[10px] font-bold text-text-primary px-1.5 py-0.5 rounded shadow opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">{height}%</span>
                       </div>
@@ -1875,7 +1914,7 @@ const AdminPanel = ({ section = 'admin' }) => {
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h4 className="text-lg font-bold">{roomDisplayName(viewingPG.name, room.room_number)}</h4>
-                        <p className="text-sm text-text-secondary">{room.available_seats} / {room.total_seats} Seats Available</p>
+                        <p className="text-sm text-text-secondary">{tenants.filter(t => t.room_id === room.id).length} / {room.total_seats} Occupied</p>
                       </div>
                       <div className="text-accent font-bold">₹{room.price_per_seat}</div>
                     </div>

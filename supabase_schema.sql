@@ -111,6 +111,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     vidu_doc_url TEXT,
     police_verification_url TEXT,
     is_kyc_verified BOOLEAN DEFAULT FALSE,
+    occupant_role TEXT DEFAULT 'primary', -- 'primary' or 'approved_roommate'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );

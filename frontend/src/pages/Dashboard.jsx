@@ -130,21 +130,25 @@ const Dashboard = () => {
 
       let bookingData = null;
 
-      const { data: primaryBooking, error: primaryBookingError } = await supabase
+      const { data: primaryBookings, error: primaryBookingError } = await supabase
         .from('bookings')
         .select('*')
         .eq('user_id', currentUser.uid)
         .in('status', ['confirmed', 'pending'])
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const primaryBooking = primaryBookings?.[0];
 
       if (primaryBookingError) {
+        console.error('primaryBookingError:', primaryBookingError);
         throw primaryBookingError;
       }
 
       if (primaryBooking) {
         bookingData = {
           ...(await enrichBookingRecord(primaryBooking)),
-          occupant_role: 'primary'
+          occupant_role: primaryBooking.occupant_role || 'primary'
         };
       } else if (currentUser?.email) {
         const { data: roommateMatches, error: roommateError } = await supabase
@@ -157,21 +161,50 @@ const Dashboard = () => {
 
         if (roommateError) throw roommateError;
 
-        if (roommateMatches?.[0]?.booking_id) {
-          const { data: roommateBooking, error: roommateBookingError } = await supabase
+        if (roommateMatches?.[0]) {
+          const request = roommateMatches[0];
+          
+          // Fetch the primary booking to get the amount, if needed
+          const { data: primaryUserBooking } = await supabase
             .from('bookings')
-            .select('*')
-            .eq('id', roommateMatches[0].booking_id)
+            .select('amount')
+            .eq('id', request.booking_id)
             .maybeSingle();
 
-          if (roommateBookingError) throw roommateBookingError;
-          if (!roommateBooking) throw new Error('Approved roommate booking could not be found.');
+          // Check if roommate booking already exists
+          let { data: roommateBookingsList } = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('user_id', currentUser.uid)
+            .eq('room_id', request.room_id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          let newRoommateBooking = roommateBookingsList?.[0];
+
+          if (!newRoommateBooking) {
+            const { data: createdBooking, error: createError } = await supabase
+              .from('bookings')
+              .insert([{
+                user_id: currentUser.uid,
+                pg_id: request.pg_id,
+                room_id: request.room_id,
+                status: 'confirmed',
+                occupant_role: 'approved_roommate',
+                amount: primaryUserBooking?.amount || 0
+              }])
+              .select('*')
+              .single();
+
+            if (createError) throw createError;
+            newRoommateBooking = createdBooking;
+          }
 
           bookingData = {
-            ...(await enrichBookingRecord(roommateBooking)),
+            ...(await enrichBookingRecord(newRoommateBooking)),
             occupant_role: 'approved_roommate',
-            occupant_record_id: roommateMatches[0].id,
-            occupant_display_name: roommateMatches[0].roommate_full_name
+            occupant_record_id: request.id,
+            occupant_display_name: request.roommate_full_name
           };
         }
       }
@@ -532,7 +565,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background text-on-background py-10 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="flex flex-col lg:flex-row gap-8">
           
@@ -669,7 +702,7 @@ const Dashboard = () => {
                               <h2 className="text-3xl font-extrabold text-text-primary">₹{(displayBooking.rooms?.price_per_seat || '—').toLocaleString()}</h2>
                               <p className="text-xs font-semibold text-text-secondary mt-1 flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping shrink-0"></span>
-                                <span>Monthly rent per seat</span>
+                                <span>Monthly Room Rent</span>
                               </p>
                             </div>
                           </div>

@@ -132,16 +132,23 @@ const BookingConfirmation = () => {
     
     // contractDuration is either 6 or 12
     const duration = contractDuration || 6;
-    const monthlyRent = Number(room.price_per_seat); 
+    const monthlyRent = Number(room.price_per_seat); // Full room rent
     const totalRentForContract = monthlyRent * duration;
-    const deposit = Number(pg?.security_deposit ?? 2000);
+    
+    // Security deposit is strictly 1 month rent
+    const deposit = monthlyRent;
+    
+    // Calculate payable amount based on payment plan
+    const payableNow = paymentPlan === 'monthly' 
+      ? monthlyRent + deposit 
+      : totalRentForContract + deposit;
     
     return {
       monthlyRent,
       rent: totalRentForContract,
       deposit,
       total: totalRentForContract + deposit,
-      payableNow: totalRentForContract + deposit // Always full payment now
+      payableNow
     };
   };
 
@@ -391,311 +398,209 @@ const BookingConfirmation = () => {
     }
   };
 
-  if (loading) return <div className="p-20 text-center font-['Sora'] text-white">Loading booking system...</div>;
+  if (loading) return <div className="p-20 text-center text-text-primary">Loading booking system...</div>;
 
   const isInternational = (userData?.studentCategory || userData?.student_category || 'National').toLowerCase() === 'international';
   const showInlineDocumentUpload = false;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-32 font-['Sora']">
-      <div className="bg-[#1a1435] rounded-[3rem] shadow-2xl overflow-hidden border border-white/10">
-        <div className="bg-accent p-10 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-32 translate-x-32" />
-          <h1 className="text-4xl font-black tracking-tight">Review & Pay</h1>
-          <p className="opacity-70 font-medium mt-2">Finalizing your stay at {pg.name}</p>
+    <div className="font-body-md text-text-primary antialiased bg-background min-h-screen">
+      <main className="pt-24 pb-xl max-w-[1280px] mx-auto px-margin-desktop min-h-screen">
+        
+        {/* Header Banner */}
+        <div className="mb-12">
+          <h1 className="font-headline-xl text-4xl font-bold mb-2 text-on-background tracking-tight">Review & Pay</h1>
+          <p className="text-on-surface-variant font-body-md max-w-xl">
+            Finalizing your stay at {pg.name}. Please review your stay summary and financial details before proceeding to checkout.
+          </p>
         </div>
 
-        <div className="p-10 space-y-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <div className="space-y-6">
-              <h3 className="font-black text-xl text-white flex items-center">
-                <div className="p-2 bg-accent/20 rounded-xl mr-3 text-accent"><Shield className="w-5 h-5" /></div>
-                Stay Summary
-              </h3>
-              <div className="bg-white/5 rounded-[2rem] p-8 border border-white/5 space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Room Profile</span>
-                  <span className="font-black text-white text-right">{pg.name} - Room {room.room_number}</span>
+        <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden border border-outline-variant/30 shadow-2xl">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-br from-primary to-primary-container px-10 py-10 text-white">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-on-primary-container text-on-primary text-xs font-medium mb-4">
+                  <Shield className="w-4 h-4" />
+                  RESERVATION PENDING
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Property Type</span>
-                  <span className="font-black text-accent uppercase">{pg.accommodation_type}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Location</span>
-                  <span className="font-black text-white text-right max-w-[200px] truncate">{pg.city}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Contract</span>
-                  <span className="font-black text-white">{contractDuration} Months</span>
+                <h2 className="text-3xl font-bold">{pg.name} - Room {room.room_number}</h2>
+                <div className="flex items-center gap-4 mt-2 text-primary-fixed/80">
+                  <span className="flex items-center gap-1 text-sm">
+                    {pg.city}, {pg.state}
+                  </span>
+                  <span className="flex items-center gap-1 text-sm uppercase">
+                    {pg.accommodation_type}
+                  </span>
                 </div>
               </div>
-            </div>
-
-            <div className="bg-accent/5 p-8 rounded-[2.5rem] border border-accent/20 space-y-6">
-              <h3 className="font-black text-xl text-white">Financial Statement</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm text-gray-400">
-                  <span>Monthly Subscription</span>
-                  <span className="text-white font-bold">₹{pricing.monthlyRent}</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-400">
-                  <span>Security Deposit</span>
-                  <span className="text-white font-bold">₹{pricing.deposit}</span>
-                </div>
-                <div className="pt-4 border-t border-white/10 flex justify-between items-center">
-                  <span className="text-white font-black text-xl">Total Payable</span>
-                  <div className="text-right">
-                    <span className="font-black text-3xl text-accent block tracking-tighter">₹{pricing.total}</span>
-                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Inclusive of all taxes</span>
-                  </div>
-                </div>
+              <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
+                <span className="block text-white/60 text-xs font-medium uppercase mb-1">Contract Duration</span>
+                <span className="text-white text-2xl font-bold">{contractDuration} Months</span>
               </div>
             </div>
           </div>
 
-          {!paymentSuccess ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                onClick={handlePayment}
-                disabled={processing}
-                className="bg-accent text-white py-5 rounded-2xl font-black text-lg hover:bg-accent/80 transition-all flex items-center justify-center space-x-3 shadow-xl shadow-accent/20 disabled:opacity-50"
-              >
-                {processing ? <Loader2 className="animate-spin" /> : <ArrowRight className="w-6 h-6" />}
-                <span>{processing ? 'Processing...' : 'Digital Checkout'}</span>
-              </button>
+          <div className="p-8 md:p-12 grid grid-cols-1 lg:grid-cols-2 gap-12 bg-surface-dim">
+            {/* Left Column: Stay Summary */}
+            <section>
+              <div className="flex items-center gap-3 mb-8">
+                <div className="p-2 bg-surface-container-highest rounded-lg">
+                  <Shield className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold text-on-surface">Stay Summary</h3>
+              </div>
               
-              <button
-                onClick={handleOfflinePayment}
-                disabled={processing}
-                className="bg-white/5 text-white border border-white/10 py-5 rounded-2xl font-black text-lg hover:bg-white/10 transition-all flex items-center justify-center space-x-3 disabled:opacity-50"
-              >
-                <span>{processing ? 'Processing...' : 'Offline Reserve'}</span>
-              </button>
+              <div className="space-y-1 bg-surface-container rounded-2xl border border-outline-variant/20 overflow-hidden">
+                <div className="flex justify-between items-center px-6 py-5 border-b border-outline-variant/10">
+                  <span className="text-on-surface-variant text-xs font-bold uppercase tracking-wider">Room Profile</span>
+                  <span className="text-on-surface font-semibold">Room {room.room_number}</span>
+                </div>
+                <div className="flex justify-between items-center px-6 py-5 border-b border-outline-variant/10">
+                  <span className="text-on-surface-variant text-xs font-bold uppercase tracking-wider">Property Type</span>
+                  <span className="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-md text-xs font-bold uppercase tracking-widest">{pg.accommodation_type}</span>
+                </div>
+                <div className="flex justify-between items-center px-6 py-5 border-b border-outline-variant/10">
+                  <span className="text-on-surface-variant text-xs font-bold uppercase tracking-wider">Location</span>
+                  <span className="text-on-surface font-semibold">{pg.city}</span>
+                </div>
+                <div className="flex justify-between items-center px-6 py-5">
+                  <span className="text-on-surface-variant text-xs font-bold uppercase tracking-wider">Contract Type</span>
+                  <span className="text-on-surface font-semibold">Fixed Term</span>
+                </div>
+              </div>
+              
+              <div className="mt-8 p-6 bg-surface-container-low rounded-2xl border-l-4 border-primary">
+                <p className="text-on-surface-variant text-sm italic">
+                  "By proceeding, you agree to the community guidelines and the property's maintenance policies as outlined in the digital lease."
+                </p>
+              </div>
+            </section>
+
+            {/* Right Column: Financial Statement */}
+            <section>
+              <div className="flex items-center gap-3 mb-8">
+                <div className="p-2 bg-surface-container-highest rounded-lg">
+                  <FileText className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold text-on-surface">Financial Statement</h3>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-on-surface-variant font-medium">Monthly Room Rent</span>
+                  <span className="font-bold text-on-surface">₹{pricing.monthlyRent.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-on-surface-variant font-medium">Security Deposit (Refundable)</span>
+                  <span className="font-bold text-on-surface">₹{pricing.deposit.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center border-t border-outline-variant/10 pt-4">
+                  <span className="text-on-surface-variant font-medium">Payment Option</span>
+                  <span className="font-bold text-on-surface">{paymentPlan === 'monthly' ? 'Month-wise' : 'Full Upfront'}</span>
+                </div>
+                <div className="pt-6 mt-6 border-t border-outline-variant border-dashed">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <span className="block text-2xl font-bold text-on-surface">Amount Due Now</span>
+                      <span className="text-xs text-primary font-bold uppercase tracking-[0.2em]">{paymentPlan === 'monthly' ? '1st Month Rent + Security' : 'Total Rent + Security'}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-4xl font-bold text-primary-container leading-none">₹{pricing.payableNow.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {/* Action Bar */}
+          {!paymentSuccess ? (
+            <div className="p-8 md:p-12 bg-surface-container-high border-t border-outline-variant/20">
+              <div className="flex flex-col sm:flex-row gap-6 justify-center max-w-2xl mx-auto">
+                <button 
+                  onClick={handlePayment}
+                  disabled={processing}
+                  className="flex-1 flex items-center justify-center gap-3 px-8 py-5 bg-gradient-to-br from-primary to-primary-container text-white rounded-2xl font-bold text-lg shadow-lg shadow-primary-container/20 hover:scale-[1.02] active:scale-[0.98] transition-all group disabled:opacity-50"
+                >
+                  {processing ? <Loader2 className="animate-spin" /> : <ArrowRight className="group-hover:translate-x-1 transition-transform" />}
+                  {processing ? 'Processing...' : 'Digital Checkout'}
+                </button>
+                <button 
+                  onClick={handleOfflinePayment}
+                  disabled={processing}
+                  className="flex-1 flex items-center justify-center gap-3 px-8 py-5 bg-transparent border-2 border-outline-variant text-on-surface rounded-2xl font-bold text-lg hover:bg-surface-container-highest transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  {processing ? 'Processing...' : 'Offline Reserve'}
+                </button>
+              </div>
+              <p className="text-center mt-6 text-on-surface-variant text-sm">
+                Secure 256-bit SSL encrypted payment gateway
+              </p>
             </div>
           ) : (
-            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+            <div className="p-8 md:p-12 bg-surface-container-high border-t border-outline-variant/20 space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
               <div className={`p-8 rounded-[2.5rem] flex items-center space-x-6 border-2 ${offlinePending ? 'bg-amber-500/10 border-amber-500/30' : 'bg-green-500/10 border-green-500/30'}`}>
                 <div className={`p-4 rounded-3xl ${offlinePending ? 'bg-amber-500' : 'bg-green-500'} shadow-lg shadow-black/20`}>
                   <CheckCircle className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h4 className={`text-2xl font-black ${offlinePending ? 'text-amber-400' : 'text-green-400'}`}>
+                  <h4 className={`text-2xl font-black ${offlinePending ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
                     {offlinePending ? 'Slot Reserved!' : 'Transaction Approved!'}
                   </h4>
-                  <p className="text-gray-400 font-medium mt-1">
+                  <p className="text-on-surface-variant font-medium mt-1">
                     Documents can be uploaded from your dashboard after admin confirmation.
                   </p>
                 </div>
               </div>
 
-              {!showInlineDocumentUpload ? (
-                <div className="bg-white/[0.04] border border-white/10 p-8 rounded-[2.5rem] text-center space-y-5">
-                  <Shield className="w-12 h-12 text-accent mx-auto" />
-                  <div>
-                    <h3 className="text-2xl font-black text-white">KYC will open in your dashboard</h3>
-                    <p className="text-gray-400 mt-2">
-                      Admin must confirm the booking first. After that, you will see the correct document list for your student type.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => navigate('/dashboard?tab=kyc')}
-                    className="px-8 py-4 bg-accent text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-accent/80 transition-all"
-                  >
-                    Open Dashboard
-                  </button>
+              <div className="bg-surface-container border border-outline-variant/30 p-8 rounded-[2.5rem] text-center space-y-5">
+                <Shield className="w-12 h-12 text-primary mx-auto" />
+                <div>
+                  <h3 className="text-2xl font-bold text-on-surface">KYC will open in your dashboard</h3>
+                  <p className="text-on-surface-variant mt-2">
+                    Admin must confirm the booking first. After that, you will see the correct document list for your student type.
+                  </p>
                 </div>
-              ) : (
-              <div className="space-y-8">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/5 pb-6">
-                  <div>
-                    <h3 className="text-3xl font-black text-white">Credential Vault</h3>
-                    <p className="text-gray-500 font-medium text-sm mt-1">Stictly protected & encrypted transmission.</p>
-                  </div>
-                  <div className="px-5 py-2 bg-red-500/10 rounded-full border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest">
-                    MAX 1MB PER FILE
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* Categorized Document List */}
-                  {[
-                    { label: 'Passport Size Photo', key: 'userPhoto', inst: 'Professional Background' },
-                    { label: 'University / College ID', key: 'universityId', inst: 'Face toward camera' },
-                    ...(isInternational ? [
-                      { label: 'Passport Photo / Bio Page', key: 'passport', inst: 'Passport details page' },
-                      { label: 'Vidu Form', key: 'viduDoc', inst: 'Completed Vidu form' }
-                    ] : [
-                      { label: 'Student Aadhaar Card', key: 'aadharPancard', inst: 'Student identity proof' },
-                      { label: "Parent / Guardian Aadhaar", key: 'parentAadhar', inst: "Guardian identity proof" }
-                    ]),
-                  ].map((doc) => (
-                    <div key={doc.key} className={`relative border-2 border-dashed rounded-[2.5rem] p-8 text-center transition-all duration-500 group overflow-hidden ${files[doc.key] ? 'border-accent bg-accent/5' : 'border-white/5 bg-white/2 hover:border-accent/40'}`}>
-                      <input 
-                        type="file" 
-                        accept="image/*,.pdf"
-                        onChange={(e) => handleFileUpload(e, doc.key)}
-                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                      />
-                      <div className={`w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center transition-colors ${files[doc.key] ? 'bg-accent text-white' : 'bg-white/5 text-gray-500 group-hover:text-accent'}`}>
-                        {files[doc.key] ? <CheckCircle className="w-7 h-7" /> : <Upload className="w-7 h-7" />}
-                      </div>
-                      <span className="text-sm font-black text-white block truncate">{files[doc.key]?.name || doc.label}</span>
-                      <span className="text-[10px] text-gray-500 mt-2 block uppercase font-black tracking-widest">{doc.inst}</span>
-                    </div>
-                  ))}
-
-                  {/* Vidu & Police Doc Section */}
-                  <div className="col-span-full space-y-6">
-                    {isInternational && (
-                      <div className="bg-white/[0.03] p-8 rounded-[3rem] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 group">
-                         <div className="flex items-center space-x-6">
-                           <div className="p-5 bg-accent/10 rounded-3xl text-accent transition-transform group-hover:scale-110">
-                             <FileText className="w-10 h-10" />
-                           </div>
-                           <div>
-                             <h4 className="text-xl font-black text-white">Vidu Authorization</h4>
-                             <p className="text-sm text-gray-500 font-medium mt-1">Download official template, fill, and sync back.</p>
-                           </div>
-                         </div>
-                         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                            {pg?.owner_doc_url ? (
-                              <a 
-                                href={pg.owner_doc_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="px-8 py-4 bg-white/10 text-white border border-accent/30 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:border-accent transition-all flex items-center justify-center shadow-lg shadow-accent/10 group"
-                              >
-                                <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get Blank Vidu Form
-                              </a>
-                            ) : (
-                              <div className="px-4 py-2 bg-red-500/10 text-red-400 text-[9px] font-black uppercase tracking-tighter border border-red-500/20 rounded-xl">
-                                Template Not Uploaded
-                              </div>
-                            )}
-                           <div className="relative">
-                              <input 
-                                type="file" 
-                                onChange={(e) => handleFileUpload(e, 'viduDoc')}
-                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                              />
-                              <button className={`w-full px-8 py-4 ${files.viduDoc ? 'bg-green-600' : 'bg-accent'} text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center shadow-xl shadow-accent/20`}>
-                                <Upload className="w-4 h-4 mr-2" /> Sync Document
-                              </button>
-                           </div>
-                         </div>
-                      </div>
-                    )}
-
-                    <div className="bg-white/[0.03] p-8 rounded-[3rem] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 group">
-                       <div className="flex items-center space-x-6">
-                         <div className="p-5 bg-purple-500/10 rounded-3xl text-purple-500 transition-transform group-hover:scale-110">
-                           <Shield className="w-10 h-10" />
-                         </div>
-                         <div>
-                           <h4 className="text-xl font-black text-white">Police Verification</h4>
-                           <p className="text-sm text-gray-500 font-medium mt-1">Mandatory verification document required by law.</p>
-                         </div>
-                       </div>
-                       <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                          {pg?.police_verification_template_url ? (
-                            <a 
-                              href={pg.police_verification_template_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="px-8 py-4 bg-white/10 text-white border border-purple-500/30 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-600 hover:border-purple-600 transition-all flex items-center justify-center shadow-lg shadow-purple-500/10 group"
-                            >
-                              <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get Police Template
-                            </a>
-                          ) : (
-                            <div className="px-4 py-2 bg-red-500/10 text-red-400 text-[9px] font-black uppercase tracking-tighter border border-red-500/20 rounded-xl">
-                              Template Not Uploaded
-                            </div>
-                          )}
-                         <div className="relative">
-                            <input 
-                              type="file" 
-                              onChange={(e) => handleFileUpload(e, 'policeVerification')}
-                              className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                            />
-                            <button className={`w-full px-8 py-4 ${files.policeVerification ? 'bg-green-600' : 'bg-purple-600'} text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center shadow-xl shadow-purple-500/20`}>
-                              <Upload className="w-4 h-4 mr-2" /> Sync Document
-                            </button>
-                         </div>
-                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* === NEW: Dynamic Document Requirements === */}
-                {docRequirements.length > 0 && (
-                  <div className="space-y-6 pt-6 border-t border-white/5">
-                    <div className="flex items-center space-x-3 mb-2">
-                       <Shield className="w-5 h-5 text-accent" />
-                       <h4 className="text-sm font-black text-white uppercase tracking-widest">Additional Property Requirements</h4>
-                    </div>
-                    {docRequirements.map((req) => (
-                      <div key={req.id} className="bg-white/[0.03] p-8 rounded-[3rem] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 group">
-                        <div className="flex items-center space-x-6">
-                          <div className="p-5 bg-accent/10 rounded-3xl text-accent transition-transform group-hover:scale-110">
-                            <FileText className="w-10 h-10" />
-                          </div>
-                          <div>
-                            <h4 className="text-xl font-black text-white">{req.document_name}</h4>
-                            <p className="text-sm text-gray-500 font-medium mt-1">Property specific requirement.</p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto text-center md:text-left">
-                          {req.template_url && (
-                            <a 
-                              href={req.template_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="px-8 py-4 bg-white/10 text-white border border-accent/30 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:border-accent transition-all flex items-center justify-center shadow-lg shadow-accent/10 group"
-                            >
-                              <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get Template
-                            </a>
-                          )}
-                          <div className="relative">
-                            <input 
-                              type="file" 
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  if (file.size > 1024 * 1024) return toast.error('Max 1MB');
-                                  setDynamicFiles({ ...dynamicFiles, [req.id]: file });
-                                }
-                              }}
-                              className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                            />
-                            <button className={`w-full px-8 py-4 ${dynamicFiles[req.id] ? 'bg-green-600' : 'bg-accent'} text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center shadow-xl shadow-accent/20`}>
-                              <Upload className="w-4 h-4 mr-2" /> {dynamicFiles[req.id] ? 'File Ready' : 'Sync Doc'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {/* ========================================= */}
-
                 <button
-                  onClick={finalizeBooking}
-                  disabled={processing}
-                  className="w-full bg-white text-[#1a1435] py-6 rounded-full font-black text-2xl shadow-2xl hover:scale-[1.01] transition-all flex items-center justify-center space-x-4 disabled:opacity-50"
+                  onClick={() => navigate('/dashboard?tab=kyc')}
+                  className="px-8 py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-primary/80 transition-all"
                 >
-                  {processing ? <Loader2 className="animate-spin w-8 h-8" /> : null}
-                  <span>{processing ? 'Transmitting Data...' : 'Confirm Residency'}</span>
+                  Open Dashboard
                 </button>
               </div>
-              )}
             </div>
           )}
         </div>
-      </div>
+        
+        {/* Trust Indicators Section */}
+        <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mx-auto border border-outline-variant/30">
+              <Shield className="text-3xl text-primary w-8 h-8" />
+            </div>
+            <h4 className="font-bold text-lg text-on-surface">Verified Properties</h4>
+            <p className="text-on-surface-variant text-sm">Every room in the Apna Rooms network undergoes a 50-point quality and safety inspection.</p>
+          </div>
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mx-auto border border-outline-variant/30">
+              <CheckCircle className="text-3xl text-primary w-8 h-8" />
+            </div>
+            <h4 className="font-bold text-lg text-on-surface">Deposit Protection</h4>
+            <p className="text-on-surface-variant text-sm">Your security deposit is held in a protected escrow account and is fully refundable per policy.</p>
+          </div>
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mx-auto border border-outline-variant/30">
+              <FileText className="text-3xl text-primary w-8 h-8" />
+            </div>
+            <h4 className="font-bold text-lg text-on-surface">24/7 Concierge</h4>
+            <p className="text-on-surface-variant text-sm">Dedicated property managers and support staff available round the clock for all residents.</p>
+          </div>
+        </div>
+
+      </main>
     </div>
   );
 };
-
 
 export default BookingConfirmation;

@@ -17,6 +17,7 @@ const PGDetail = () => {
   const [loading, setLoading] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [contractDuration, setContractDuration] = useState(6); // 6, 12 months
+  const [paymentPlan, setPaymentPlan] = useState('monthly'); // 'monthly', 'full'
 
   const MOCKUP_IMAGE = "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80";
   const ACTIVE_BOOKING_STATUSES = ['pending', 'confirmed'];
@@ -97,17 +98,24 @@ const PGDetail = () => {
   const getPricing = () => {
     if (!selectedRoom) return { rent: 0, deposit: 0, total: 0, payableNow: 0, monthlyRent: 0 };
     
-    const monthlyRent = Number(selectedRoom.price_per_seat);
+    const monthlyRent = Number(selectedRoom.price_per_seat); // Now treated as Monthly Room Rent
     const duration = contractDuration || 6;
     const totalRentForContract = monthlyRent * duration;
-    const deposit = Number(pg?.security_deposit ?? 2000);
+    
+    // Security deposit is strictly 1 month of the selected room's rent
+    const deposit = monthlyRent;
+    
+    // Calculate what is payable right now based on payment plan
+    const payableNow = paymentPlan === 'monthly' 
+      ? monthlyRent + deposit 
+      : totalRentForContract + deposit;
     
     return {
       monthlyRent,
       rent: totalRentForContract,
       deposit,
       total: totalRentForContract + deposit,
-      payableNow: totalRentForContract + deposit
+      payableNow
     };
   };
 
@@ -191,7 +199,7 @@ const PGDetail = () => {
       return toast.error('This room is already booked.');
     }
 
-    navigate(`/booking-confirmation/${id}?room=${selectedRoom.id}&type=complete&plan=full&duration=${contractDuration}`);
+    navigate(`/booking-confirmation/${id}?room=${selectedRoom.id}&type=complete&plan=${paymentPlan}&duration=${contractDuration}`);
   };
 
   if (loading) return <div className="p-12 text-center text-lg font-mono text-text-secondary">Loading details...</div>;
@@ -396,19 +404,57 @@ const PGDetail = () => {
                     </div>
                   </div>
 
+                  {/* Payment Option Selection */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-text-secondary block">Payment Schedule</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button 
+                        onClick={() => setPaymentPlan('monthly')}
+                        className={`py-2 px-3 text-center rounded-lg text-[10px] font-bold transition-all uppercase tracking-wider flex flex-col items-center justify-center gap-0.5 ${
+                          paymentPlan === 'monthly' 
+                          ? 'bg-primary text-on-primary shadow-sm' 
+                          : 'bg-surface-container-low text-text-secondary hover:bg-surface-container border border-border-low'
+                        }`}
+                      >
+                        <span>Month-wise</span>
+                        <span className="opacity-75 text-[8px]">1 Mo Rent + Security</span>
+                      </button>
+                      <button 
+                        onClick={() => setPaymentPlan('full')}
+                        className={`py-2 px-3 text-center rounded-lg text-[10px] font-bold transition-all uppercase tracking-wider flex flex-col items-center justify-center gap-0.5 ${
+                          paymentPlan === 'full' 
+                          ? 'bg-primary text-on-primary shadow-sm' 
+                          : 'bg-surface-container-low text-text-secondary hover:bg-surface-container border border-border-low'
+                        }`}
+                      >
+                        <span>Full Upfront</span>
+                        <span className="opacity-75 text-[8px]">{contractDuration} Mo Rent + Security</span>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Pricing Breakdown Sheet */}
                   <div className="bg-surface-container-low p-4 rounded-lg border border-border-low space-y-3">
                     <div className="flex justify-between text-xs font-semibold text-text-secondary uppercase tracking-wider">
                       <span>Refundable Security Deposit</span>
-                      <span className="text-text-primary font-bold">₹{pricing.deposit}</span>
+                      <span className="text-text-primary font-bold">₹{pricing.deposit.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between text-[10px] text-text-secondary/60 uppercase tracking-widest font-mono font-bold pb-2 border-b border-border-low">
+                    <div className="flex justify-between text-[10px] text-text-secondary/60 uppercase tracking-widest font-mono font-bold">
                       <span></span>
                       <span>~ ${toUSD(pricing.deposit)} USD</span>
                     </div>
                     
+                    <div className="flex justify-between text-xs font-semibold text-text-secondary uppercase tracking-wider pt-2 border-t border-border-low">
+                      <span>{paymentPlan === 'monthly' ? '1st Month Rent' : `${contractDuration} Months Rent`}</span>
+                      <span className="text-text-primary font-bold">₹{(paymentPlan === 'monthly' ? pricing.monthlyRent : pricing.rent).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] text-text-secondary/60 uppercase tracking-widest font-mono font-bold pb-2 border-b border-border-low">
+                      <span></span>
+                      <span>~ ${toUSD(paymentPlan === 'monthly' ? pricing.monthlyRent : pricing.rent)} USD</span>
+                    </div>
+                    
                     <div className="flex justify-between items-baseline font-bold text-xl pt-2 text-text-primary">
-                      <span className="text-sm uppercase tracking-wider text-text-secondary">Security Amount Due</span>
+                      <span className="text-sm uppercase tracking-wider text-text-secondary">Amount Due Now</span>
                       <div className="text-right">
                         <span className="text-primary font-extrabold flex items-center text-lg">
                           <IndianRupee className="w-4 h-4" />
