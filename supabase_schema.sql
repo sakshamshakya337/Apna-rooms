@@ -164,6 +164,7 @@ CREATE TABLE IF NOT EXISTS roommate_requests (
     pg_id UUID REFERENCES pgs(id) ON DELETE CASCADE,
     room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
     requested_by_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    roommate_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     roommate_full_name TEXT NOT NULL,
     roommate_email TEXT NOT NULL,
     roommate_phone TEXT,
@@ -261,6 +262,11 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='police_verification_url') THEN
         ALTER TABLE bookings ADD COLUMN police_verification_url TEXT;
+    END IF;
+
+    -- Roommate Requests Table Updates
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='roommate_requests' AND column_name='roommate_user_id') THEN
+        ALTER TABLE roommate_requests ADD COLUMN roommate_user_id UUID REFERENCES users(id) ON DELETE SET NULL;
     END IF;
 END $$;
 

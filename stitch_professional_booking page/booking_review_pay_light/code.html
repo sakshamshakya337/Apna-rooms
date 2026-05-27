@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Review &amp; Pay | Apna Rooms</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#bec6e0",
+                        "surface-container": "#e5efff",
+                        "surface-subtle": "#F8FAFC",
+                        "on-surface": "#0d1c2d",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#464555",
+                        "on-secondary-container": "#5c647a",
+                        "tertiary-fixed-dim": "#5cdcaf",
+                        "on-primary-container": "#dad7ff",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "text-primary": "#0F172A",
+                        "primary": "#3525cd",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#0d1c2d",
+                        "outline-variant": "#c7c4d8",
+                        "inverse-primary": "#c3c0ff",
+                        "on-tertiary-container": "#74f2c3",
+                        "inverse-surface": "#233143",
+                        "surface-main": "#FFFFFF",
+                        "error": "#EF4444",
+                        "surface-container-high": "#dbe9ff",
+                        "on-primary-fixed": "#0f0069",
+                        "surface-container-high": "#dbe9ff",
+                        "success": "#45C89C",
+                        "tertiary-fixed": "#7bf9ca",
+                        "on-tertiary-fixed": "#002116",
+                        "surface-dim": "#ccdbf2",
+                        "secondary-container": "#dae2fd",
+                        "text-secondary": "#475569",
+                        "on-secondary": "#ffffff",
+                        "background": "#f8f9ff",
+                        "inverse-on-surface": "#e9f1ff",
+                        "on-error-container": "#93000a",
+                        "border-low": "#E2E8F0",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#4f46e5",
+                        "surface-container-low": "#eef4ff",
+                        "surface-bright": "#f8f9ff",
+                        "on-tertiary-fixed-variant": "#00513b",
+                        "tertiary-container": "#006e51",
+                        "primary-fixed": "#e2dfff",
+                        "secondary": "#565e74",
+                        "outline": "#777587",
+                        "on-secondary-fixed": "#131b2e",
+                        "surface-tint": "#4d44e3",
+                        "secondary-fixed": "#dae2fd",
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#00533d",
+                        "surface-variant": "#d4e4fa",
+                        "error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "4px",
+                        "lg": "4px",
+                        "xl": "8px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "margin-desktop": "48px",
+                        "xl": "32px",
+                        "max-width": "1280px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "label-md": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-sm": ["JetBrains Mono"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "label-sm": ["10px", {"lineHeight": "12px", "fontWeight": "500"}],
+                        "headline-lg": ["30px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { background-color: #F8FAFC; }
+    </style>
+</head>
+<body class="font-body-md text-text-primary antialiased">
+<!-- TopAppBar -->
+<header class="bg-surface-main w-full border-b border-border-low fixed top-0 z-50">
+<div class="flex justify-between items-center w-full px-margin-desktop h-16 max-w-max-width mx-auto">
+<div class="flex items-center gap-xl">
+<img alt="Apna Rooms Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8gqHIDnH07Kkm7Nb7oHdlAdBS5FJKBp6-pXzMFx8tVEvGM_Uf7ap4RNO4mvcSyv5DM6C0LYWcVNRbiBe4EM2WV8oazYJ0NaKlhcRGBYva6bw70HMlSTpTh_I2jwzod28RAZlBEtGafMXWgtUWRoYtoA0hsFaJPxm5eiw8dTn-EnU2iRfn4-rhh-f25IH6pN9O5DGM6lkJ1eTpNxu5snHMzfGA1Q3KYxiHMmvcwVubG9H4FqgodT4dckKQqieKZMIZXfsopijRYmV-"/>
+<nav class="hidden md:flex gap-lg">
+<a class="text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-low transition-colors px-sm py-xs" href="#">Find PGs</a>
+<a class="text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-low transition-colors px-sm py-xs" href="#">Contact Us</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined p-sm rounded-full hover:bg-surface-container-low transition-colors">dark_mode</button>
+<div class="flex items-center gap-xs px-sm py-xs rounded hover:bg-surface-container-low transition-colors cursor-pointer bg-secondary-container">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+<span class="font-label-md text-label-md text-primary">Dashboard</span>
+</div>
+<button class="flex items-center gap-xs bg-primary px-md py-sm rounded-lg text-on-primary hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</button>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-xl max-w-max-width mx-auto px-margin-desktop min-h-screen">
+<div class="bg-[#1e1b4b] rounded-[32px] overflow-hidden shadow-xl border border-outline-variant/20">
+<!-- Hero Header Section -->
+<div class="bg-primary px-xl py-xl md:py-16 text-on-primary border-b border-white/10">
+<h1 class="font-headline-lg text-headline-lg tracking-tight">Review &amp; Pay</h1>
+<p class="font-body-lg text-body-lg text-primary-fixed-dim mt-xs opacity-90">Finalizing your stay at Ganga Apartment</p>
+</div>
+<!-- Content Grid -->
+<div class="p-xl grid grid-cols-1 md:grid-cols-2 gap-xl">
+<!-- Left Column: Stay Summary -->
+<div class="flex flex-col gap-lg">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-surface-main">Stay Summary</h2>
+</div>
+<div class="bg-surface-main/5 border border-white/10 p-lg rounded-xl flex flex-col gap-md">
+<div class="flex justify-between items-center py-sm border-b border-white/5">
+<span class="font-label-sm text-label-sm text-secondary-fixed-dim uppercase tracking-wider">Room Profile</span>
+<span class="font-body-md text-body-md text-surface-main font-semibold">Ganga Apartment - Room A104</span>
+</div>
+<div class="flex justify-between items-center py-sm border-b border-white/5">
+<span class="font-label-sm text-label-sm text-secondary-fixed-dim uppercase tracking-wider">Property Type</span>
+<span class="font-label-md text-label-md bg-primary-container px-sm py-xs rounded text-on-primary-container">BOTH</span>
+</div>
+<div class="flex justify-between items-center py-sm border-b border-white/5">
+<span class="font-label-sm text-label-sm text-secondary-fixed-dim uppercase tracking-wider">Location</span>
+<span class="font-body-md text-body-md text-surface-main">Maheru</span>
+</div>
+<div class="flex justify-between items-center py-sm">
+<span class="font-label-sm text-label-sm text-secondary-fixed-dim uppercase tracking-wider">Contract</span>
+<span class="font-body-md text-body-md text-surface-main">6 Months</span>
+</div>
+</div>
+</div>
+<!-- Right Column: Financial Statement -->
+<div class="flex flex-col gap-lg">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-fixed-dim">receipt_long</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-surface-main">Financial Statement</h2>
+</div>
+<div class="bg-surface-main/5 border border-white/10 p-lg rounded-xl flex flex-col gap-md h-full justify-between">
+<div class="space-y-sm">
+<div class="flex justify-between items-center py-sm">
+<span class="font-body-md text-body-md text-secondary-fixed-dim">Monthly Subscription</span>
+<span class="font-label-md text-label-md text-surface-main">₹5000</span>
+</div>
+<div class="flex justify-between items-center py-sm border-b border-white/10">
+<span class="font-body-md text-body-md text-secondary-fixed-dim">Security Deposit</span>
+<span class="font-label-md text-label-md text-surface-main">₹5000</span>
+</div>
+</div>
+<div class="pt-lg mt-auto flex flex-col items-end">
+<span class="font-headline-sm text-headline-sm text-secondary-fixed-dim mb-xs">Total Payable</span>
+<div class="text-right">
+<span class="font-headline-lg text-[42px] leading-tight text-primary-fixed-dim tracking-tighter">₹35,000</span>
+<p class="font-label-sm text-label-sm text-secondary-fixed-dim uppercase tracking-widest mt-xs">Inclusive of all taxes</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Bar -->
+<div class="p-xl bg-white/5 flex flex-col md:flex-row gap-md border-t border-white/10">
+<button class="flex-1 flex items-center justify-center gap-sm bg-primary-container text-surface-main py-lg rounded-xl font-headline-sm hover:opacity-90 transition-all active:scale-[0.98] shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">trending_flat</span>
+                    Digital Checkout
+                </button>
+<button class="flex-1 flex items-center justify-center gap-sm border border-white/20 text-surface-main py-lg rounded-xl font-headline-sm hover:bg-white/5 transition-all active:scale-[0.98]">
+                    Offline Reserve
+                </button>
+</div>
+</div>
+<!-- Quick Stats Section -->
+<div class="mt-xl grid grid-cols-2 md:grid-cols-4 gap-md">
+<div class="bg-surface-main border border-border-low p-md rounded-lg flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase">Availability</span>
+<span class="font-headline-sm text-headline-sm text-success">Immediate</span>
+</div>
+<div class="bg-surface-main border border-border-low p-md rounded-lg flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase">Occupancy</span>
+<span class="font-headline-sm text-headline-sm text-text-primary">94% Full</span>
+</div>
+<div class="bg-surface-main border border-border-low p-md rounded-lg flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase">Processing</span>
+<span class="font-headline-sm text-headline-sm text-text-primary">~15 Mins</span>
+</div>
+<div class="bg-surface-main border border-border-low p-md rounded-lg flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase">Maintenance</span>
+<span class="font-headline-sm text-headline-sm text-primary">24/7 Support</span>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest w-full border-t border-border-low mt-xl">
+<div class="flex flex-col md:flex-row justify-between items-center w-full px-margin-desktop py-xl max-w-max-width mx-auto gap-lg">
+<div class="flex flex-col gap-xs items-center md:items-start">
+<span class="font-label-md text-label-md font-bold text-text-primary">Apna Rooms</span>
+<p class="font-label-sm text-label-sm text-text-secondary">© 2024 Apna Rooms Precision Living. All Rights Reserved.</p>
+</div>
+<div class="flex gap-lg">
+<a class="font-label-sm text-label-sm text-text-secondary hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="font-label-sm text-label-sm text-text-secondary hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-label-sm text-label-sm text-text-secondary hover:text-primary transition-colors" href="#">System Status</a>
+<a class="font-label-sm text-label-sm text-text-secondary hover:text-primary transition-colors" href="#">Developer API</a>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interaction: Active button effect
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('mousedown', () => {
+                button.style.opacity = '0.8';
+            });
+            button.addEventListener('mouseup', () => {
+                button.style.opacity = '1';
+            });
+        });
+    </script>
+</body></html>

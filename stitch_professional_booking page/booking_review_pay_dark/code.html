@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Review &amp; Pay | Apna Rooms</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Hanken+Grotesk:wght@600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#31394d",
+                        "surface-container-low": "#131b2e",
+                        "inverse-primary": "#494bd6",
+                        "primary-container": "#8083ff",
+                        "outline-variant": "#464554",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "surface-container-lowest": "#060e20",
+                        "primary": "#c0c1ff",
+                        "inverse-on-surface": "#283044",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "on-primary": "#1000a9",
+                        "on-background": "#dae2fd",
+                        "on-error-container": "#ffdad6",
+                        "outline": "#908fa0",
+                        "on-secondary-fixed": "#001e2f",
+                        "secondary": "#89ceff",
+                        "surface-container-highest": "#2d3449",
+                        "primary-fixed": "#e1e0ff",
+                        "tertiary": "#ffb783",
+                        "surface-variant": "#2d3449",
+                        "error-container": "#93000a",
+                        "on-tertiary": "#4f2500",
+                        "surface-tint": "#c0c1ff",
+                        "secondary-fixed": "#c9e6ff",
+                        "inverse-surface": "#dae2fd",
+                        "on-tertiary-container": "#452000",
+                        "on-primary-fixed": "#07006c",
+                        "tertiary-fixed": "#ffdcc5",
+                        "secondary-container": "#00a2e6",
+                        "on-surface": "#dae2fd",
+                        "surface-dim": "#0b1326",
+                        "surface-container": "#171f33",
+                        "on-tertiary-fixed": "#301400",
+                        "surface": "#0b1326",
+                        "secondary-fixed-dim": "#89ceff",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "on-primary-container": "#0d0096",
+                        "on-secondary-container": "#00344e",
+                        "background": "#0b1326",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "on-secondary-fixed-variant": "#004c6e",
+                        "on-surface-variant": "#c7c4d7",
+                        "on-secondary": "#00344d",
+                        "on-error": "#690005"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "container-max": "1280px",
+                        "gutter": "24px",
+                        "margin-mobile": "20px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "body-sm": ["Inter"],
+                        "headline-xl": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .bg-gradient-indigo {
+            background: linear-gradient(135deg, #494bd6 0%, #0d0096 100%);
+        }
+        .active-nav-line::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #c0c1ff;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<nav class="bg-surface-main dark:bg-inverse-surface border-b border-border-low dark:border-outline-variant sticky top-0 z-50">
+<div class="flex justify-between items-center w-full px-margin-desktop h-16 max-w-container-max mx-auto">
+<div class="flex items-center gap-12">
+<img alt="Apna Rooms" class="h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDWvxJ4cyFFMkvAMNOYi0jFJi7ye0VQiVhsVOH_DrfU9Gy4EpA0aRXVJiNdyGFstDcXZo5ny2alOkLhWGVSwOVbnyKF3vwVBfD9RjV621Fdk1ybgMYaoRzm4RmrGw_ttH3ibg2giPTxHACULcYVpiTbzbdigzoU4n7-BcHp9bulSlttOC0bcQcY8J7Ix86MpuiQupEI-bCVu8YOf7JE1ELjgRH9GosJocEbo9R0Hq50e1UI2WnPeT9W8MfhkTg9awqUEvVlPsPnXsb"/>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-on-surface-variant dark:text-secondary-fixed-dim hover:bg-surface-container-low dark:hover:bg-on-secondary-fixed-variant transition-colors px-3 py-1 rounded-lg text-label-md font-label-md" href="#">Find PGs</a>
+<a class="text-on-surface-variant dark:text-secondary-fixed-dim hover:bg-surface-container-low dark:hover:bg-on-secondary-fixed-variant transition-colors px-3 py-1 rounded-lg text-label-md font-label-md" href="#">Contact Us</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center gap-2">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container-high dark:bg-surface-container-highest rounded-full text-primary font-semibold text-body-sm transition-all hover:scale-105">
+<span class="material-symbols-outlined text-base">dashboard</span>
+                        Dashboard
+                    </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-error-container text-on-error-container rounded-full text-body-sm font-semibold transition-all hover:opacity-90">
+<span class="material-symbols-outlined text-base">logout</span>
+                        Logout
+                    </button>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full">
+<span class="material-symbols-outlined">light_mode</span>
+</button>
+</div>
+</div>
+</nav>
+<main class="max-w-container-max mx-auto px-margin-desktop py-12 md:py-20">
+<!-- Hero Section -->
+<div class="mb-12">
+<h1 class="font-headline-xl text-headline-xl mb-2 text-on-background tracking-tight">Review &amp; Pay</h1>
+<p class="text-on-surface-variant font-body-md max-w-xl">Finalizing your stay at Ganga Apartment. Please review your stay summary and financial details before proceeding to checkout.</p>
+</div>
+<!-- Main Booking Container -->
+<div class="bg-surface-container-lowest rounded-[2rem] overflow-hidden border border-outline-variant/30 shadow-2xl">
+<!-- Header Banner -->
+<div class="bg-gradient-indigo px-10 py-10">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+<div>
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-on-primary-container text-on-primary text-label-caps font-label-caps mb-4">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
+                            RESERVATION PENDING
+                        </div>
+<h2 class="font-headline-lg text-headline-lg text-white">Ganga Apartment - Room A104</h2>
+<div class="flex items-center gap-4 mt-2 text-primary-fixed/80">
+<span class="flex items-center gap-1 font-body-sm">
+<span class="material-symbols-outlined text-base">location_on</span>
+                                Maheru, Punjab
+                            </span>
+<span class="flex items-center gap-1 font-body-sm">
+<span class="material-symbols-outlined text-base">hotel</span>
+                                Premium Suite
+                            </span>
+</div>
+</div>
+<div class="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
+<span class="block text-white/60 text-label-caps font-label-caps uppercase mb-1">Contract Duration</span>
+<span class="text-white font-headline-lg text-2xl">6 Months</span>
+</div>
+</div>
+</div>
+<!-- Content Grid -->
+<div class="p-8 md:p-12 grid grid-cols-1 lg:grid-cols-2 gap-12 bg-surface-dim">
+<!-- Left Column: Stay Summary -->
+<section>
+<div class="flex items-center gap-3 mb-8">
+<div class="p-2 bg-surface-container-highest rounded-lg">
+<span class="material-symbols-outlined text-primary">info</span>
+</div>
+<h3 class="text-headline-lg font-headline-lg text-on-surface">Stay Summary</h3>
+</div>
+<div class="space-y-1 bg-surface-container rounded-2xl border border-outline-variant/20 overflow-hidden">
+<div class="flex justify-between items-center px-6 py-5 border-b border-outline-variant/10">
+<span class="text-on-surface-variant text-label-caps font-label-caps uppercase tracking-wider">Room Profile</span>
+<span class="text-on-surface font-semibold">Room A104</span>
+</div>
+<div class="flex justify-between items-center px-6 py-5 border-b border-outline-variant/10">
+<span class="text-on-surface-variant text-label-caps font-label-caps uppercase tracking-wider">Property Type</span>
+<span class="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-md text-xs font-bold uppercase tracking-widest">Both</span>
+</div>
+<div class="flex justify-between items-center px-6 py-5 border-b border-outline-variant/10">
+<span class="text-on-surface-variant text-label-caps font-label-caps uppercase tracking-wider">Location</span>
+<span class="text-on-surface">Maheru</span>
+</div>
+<div class="flex justify-between items-center px-6 py-5">
+<span class="text-on-surface-variant text-label-caps font-label-caps uppercase tracking-wider">Contract Type</span>
+<span class="text-on-surface">Fixed Term</span>
+</div>
+</div>
+<div class="mt-8 p-6 bg-surface-container-low rounded-2xl border-l-4 border-primary">
+<p class="text-on-surface-variant text-body-sm italic">
+                            "By proceeding, you agree to the community guidelines and the property's maintenance policies as outlined in the digital lease."
+                        </p>
+</div>
+</section>
+<!-- Right Column: Financial Statement -->
+<section>
+<div class="flex items-center gap-3 mb-8">
+<div class="p-2 bg-surface-container-highest rounded-lg">
+<span class="material-symbols-outlined text-primary">receipt_long</span>
+</div>
+<h3 class="text-headline-lg font-headline-lg text-on-surface">Financial Statement</h3>
+</div>
+<div class="space-y-6">
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant">Monthly Subscription</span>
+<span class="font-label-caps text-on-surface">₹5,000</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant">Security Deposit (Refundable)</span>
+<span class="font-label-caps text-on-surface">₹5,000</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant">One-time Processing Fee</span>
+<span class="font-label-caps text-on-surface">₹1,500</span>
+</div>
+<div class="pt-6 mt-6 border-t border-outline-variant border-dashed">
+<div class="flex justify-between items-end">
+<div>
+<span class="block text-headline-lg font-headline-lg text-on-surface">Total Payable</span>
+<span class="text-label-caps text-primary/70 text-[10px] uppercase tracking-[0.2em]">Inclusive of all taxes &amp; fees</span>
+</div>
+<div class="text-right">
+<span class="block text-5xl font-headline-xl text-primary-container leading-none">₹35,000</span>
+</div>
+</div>
+</div>
+<!-- Payment Breakdown Message -->
+<div class="mt-8 grid grid-cols-2 gap-4">
+<div class="p-4 bg-surface-container rounded-xl text-center border border-outline-variant/10">
+<span class="block text-primary text-xl font-bold">₹11,500</span>
+<span class="text-xs text-on-surface-variant uppercase font-label-caps">Payable Now</span>
+</div>
+<div class="p-4 bg-surface-container rounded-xl text-center border border-outline-variant/10">
+<span class="block text-on-surface text-xl font-bold">₹23,500</span>
+<span class="text-xs text-on-surface-variant uppercase font-label-caps">Due on Check-in</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Action Bar -->
+<div class="p-8 md:p-12 bg-surface-container-high border-t border-outline-variant/20">
+<div class="flex flex-col sm:flex-row gap-6 justify-center max-w-2xl mx-auto">
+<button class="flex-1 flex items-center justify-center gap-3 px-8 py-5 bg-gradient-indigo text-white rounded-2xl font-bold text-lg shadow-lg shadow-primary-container/20 hover:scale-[1.02] active:scale-[0.98] transition-all group">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">rocket_launch</span>
+                        Digital Checkout
+                    </button>
+<button class="flex-1 flex items-center justify-center gap-3 px-8 py-5 bg-transparent border-2 border-outline-variant text-on-surface rounded-2xl font-bold text-lg hover:bg-surface-container-highest transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">event_available</span>
+                        Offline Reserve
+                    </button>
+</div>
+<p class="text-center mt-6 text-on-surface-variant text-body-sm">
+                    Secure 256-bit SSL encrypted payment gateway
+                </p>
+</div>
+</div>
+<!-- Trust Indicators Section -->
+<div class="mt-24 grid grid-cols-1 md:grid-cols-3 gap-12">
+<div class="text-center space-y-4">
+<div class="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mx-auto border border-outline-variant/30">
+<span class="material-symbols-outlined text-3xl text-primary">verified_user</span>
+</div>
+<h4 class="font-headline-lg text-lg">Verified Properties</h4>
+<p class="text-on-surface-variant text-body-sm">Every room in the Apna Rooms network undergoes a 50-point quality and safety inspection.</p>
+</div>
+<div class="text-center space-y-4">
+<div class="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mx-auto border border-outline-variant/30">
+<span class="material-symbols-outlined text-3xl text-primary">security</span>
+</div>
+<h4 class="font-headline-lg text-lg">Deposit Protection</h4>
+<p class="text-on-surface-variant text-body-sm">Your security deposit is held in a protected escrow account and is fully refundable per policy.</p>
+</div>
+<div class="text-center space-y-4">
+<div class="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mx-auto border border-outline-variant/30">
+<span class="material-symbols-outlined text-3xl text-primary">support_agent</span>
+</div>
+<h4 class="font-headline-lg text-lg">24/7 Concierge</h4>
+<p class="text-on-surface-variant text-body-sm">Dedicated property managers and support staff available round the clock for all residents.</p>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-on-background border-t border-border-low mt-24">
+<div class="flex flex-col md:flex-row justify-between items-center w-full px-margin-desktop py-12 max-w-container-max mx-auto gap-8">
+<div class="flex flex-col gap-4 items-center md:items-start">
+<div class="flex items-center gap-3">
+<img alt="Apna Rooms" class="h-6 opacity-70" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDWvxJ4cyFFMkvAMNOYi0jFJi7ye0VQiVhsVOH_DrfU9Gy4EpA0aRXVJiNdyGFstDcXZo5ny2alOkLhWGVSwOVbnyKF3vwVBfD9RjV621Fdk1ybgMYaoRzm4RmrGw_ttH3ibg2giPTxHACULcYVpiTbzbdigzoU4n7-BcHp9bulSlttOC0bcQcY8J7Ix86MpuiQupEI-bCVu8YOf7JE1ELjgRH9GosJocEbo9R0Hq50e1UI2WnPeT9W8MfhkTg9awqUEvVlPsPnXsb"/>
+<span class="text-on-surface text-label-md font-label-md font-bold">Apna Rooms Precision Living</span>
+</div>
+<p class="text-on-surface-variant text-label-sm font-label-sm max-w-xs text-center md:text-left">
+                    Redefining urban living with technology-driven housing solutions. Reliable, efficient, and sophisticated.
+                </p>
+<p class="text-text-secondary dark:text-secondary-fixed-dim text-label-sm font-label-sm mt-4">
+                    © 2024 Apna Rooms Precision Living. All Rights Reserved.
+                </p>
+</div>
+<div class="grid grid-cols-2 gap-x-16 gap-y-4">
+<div class="flex flex-col gap-3">
+<span class="text-primary font-bold text-label-caps mb-1">PLATFORM</span>
+<a class="text-text-secondary hover:text-primary transition-colors text-label-sm" href="#">Terms of Service</a>
+<a class="text-text-secondary hover:text-primary transition-colors text-label-sm" href="#">Privacy Policy</a>
+</div>
+<div class="flex flex-col gap-3">
+<span class="text-primary font-bold text-label-caps mb-1">RESOURCES</span>
+<a class="text-text-secondary hover:text-primary transition-colors text-label-sm" href="#">System Status</a>
+<a class="text-text-secondary hover:text-primary transition-colors text-label-sm" href="#">Developer API</a>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined">alternate_email</span>
+</div>
+<div class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined">hub</span>
+</div>
+</div>
+</div>
+</footer>
+<script>
+        // Simple interaction for the payment cards
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('mousedown', () => {
+                button.style.transform = 'scale(0.96)';
+            });
+            button.addEventListener('mouseup', () => {
+                button.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body></html>

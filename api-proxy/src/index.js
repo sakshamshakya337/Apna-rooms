@@ -5,8 +5,7 @@ const rateLimitMap = new Map();
 const ALLOWED_ORIGINS = [
   'http://localhost:5173', // Vite default local
   'http://localhost:3000', 
-  // ADD YOUR PRODUCTION FRONTEND URL HERE:
-  // 'https://your-apna-rooms-frontend.vercel.app' 
+  'https://apna-rooms.vercel.app' // Vercel production
 ];
 
 const RATE_LIMIT_MAX_REQUESTS = 100; // max requests per window

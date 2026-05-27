@@ -429,7 +429,7 @@ const Dashboard = () => {
         booking_id: booking.id,
         pg_id: booking.pg_id,
         room_id: booking.room_id,
-        requested_by_user_id: currentUser.uid,
+        requested_by_user_id: currentUser?.uid || currentUser?.id,
         roommate_full_name: roommateForm.full_name.trim(),
         roommate_email: roommateForm.email.trim().toLowerCase(),
         roommate_phone: roommateForm.phone_number.trim(),
@@ -453,11 +453,9 @@ const Dashboard = () => {
           continue;
         }
 
-        if (status === 401 || message.includes('JWT')) {
-          throw new Error('Database permission denied. Contact admin.');
+        if (error) {
+          throw error;
         }
-        
-        throw error;
       }
 
       toast.success('Roommate request sent for admin verification.');
@@ -465,7 +463,7 @@ const Dashboard = () => {
       fetchUserBooking();
     } catch (error) {
       console.error('Roommate Request Error:', error);
-      toast.error(error.message || 'Failed to send roommate request.');
+      toast.error(error.message || JSON.stringify(error) || 'Failed to send roommate request.');
     } finally {
       setRoommateSubmitting(false);
     }

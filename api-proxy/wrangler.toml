@@ -4,6 +4,6 @@ compatibility_date = "2023-12-01"
 
 [vars]
 # Change this to your production backend URL when deploying
-BACKEND_URL = "http://localhost:5000"
+BACKEND_URL = "https://apna-rooms.onrender.com"
 SUPABASE_URL = "https://dduzfqdmreaiwbexihdm.supabase.co"
 TURNSTILE_SECRET_KEY = "0x4AAAAAADXI3vdV1n5PNCqoIqCZyVeAfbE"
