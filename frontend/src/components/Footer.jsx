@@ -1,108 +1,95 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, Mail, Phone, MapPin, ShieldCheck, CreditCard, Facebook, Twitter, Instagram } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { ShieldCheck, Mail, MapPin, Phone } from 'lucide-react';
 
 const Footer = () => {
+  const { theme } = useTheme();
+
   return (
-    <footer className="bg-[#0a051d] text-white pt-20 pb-8">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-          {/* Brand Column */}
-          <div className="space-y-6">
-            <div className="flex items-center space-x-3 group cursor-pointer">
+    <footer className="w-full bg-surface-subtle border-t border-border-low transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-12">
+          {/* Brand Info */}
+          <div className="md:col-span-4 space-y-4">
+            <Link to="/" className="flex items-center space-x-3 group w-fit">
               <img 
-                src="/apna_light.jpg" 
-                alt="Apna Rooms Logo" 
-                className="h-10 w-auto object-contain rounded-lg group-hover:scale-105 transition-transform duration-300 shadow-sm"
+                src={theme === 'dark' ? '/apna_dark.jpg' : '/apna_light.jpg'} 
+                alt="Apna Rooms" 
+                className="h-8 w-auto object-contain rounded-lg"
               />
-              <span className="text-2xl font-bold tracking-tighter">Apna Rooms</span>
-            </div>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              India's most professional and secure PG management platform. Experience premium living with digital ease and transparent management.
+              <span className="text-lg font-bold text-primary tracking-tight">Apna Rooms</span>
+            </Link>
+            <p className="text-text-secondary text-sm max-w-sm leading-relaxed">
+              India's most trusted platform for professional PG rentals, managed coliving spaces, and seamless digital utility management.
             </p>
-            <div className="flex space-x-4">
-              <a href="#" className="p-2.5 bg-white/5 rounded-xl hover:bg-accent transition-all hover:-translate-y-1">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="#" className="p-2.5 bg-white/5 rounded-xl hover:bg-accent transition-all hover:-translate-y-1">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="p-2.5 bg-white/5 rounded-xl hover:bg-accent transition-all hover:-translate-y-1">
-                <Instagram className="w-5 h-5" />
-              </a>
+            <div className="flex items-center space-x-2 pt-2 text-xs text-text-secondary">
+              <ShieldCheck className="w-4 h-4 text-primary" />
+              <span>SSL Secured & Verified Platform</span>
             </div>
           </div>
 
           {/* Quick Links */}
-          <div>
-            <h4 className="text-lg font-bold mb-6">Quick Links</h4>
-            <ul className="space-y-4 text-gray-400 text-sm">
-              <li><Link to="/" className="hover:text-accent transition-colors">Home</Link></li>
-              <li><Link to="/pgs" className="hover:text-accent transition-colors">Browse PGs</Link></li>
-              <li><Link to="/login" className="hover:text-accent transition-colors">Member Login</Link></li>
-              <li><Link to="/contact" className="hover:text-accent transition-colors">Support Center</Link></li>
+          <div className="md:col-span-2">
+            <h4 className="font-semibold text-sm text-primary mb-4 uppercase tracking-wider">Company</h4>
+            <ul className="space-y-2">
+              <li><Link to="/" className="text-text-secondary text-sm hover:text-primary transition-colors">Home</Link></li>
+              <li><Link to="/pgs" className="text-text-secondary text-sm hover:text-primary transition-colors">Browse PGs</Link></li>
+              <li><Link to="/contact" className="text-text-secondary text-sm hover:text-primary transition-colors">Contact</Link></li>
             </ul>
           </div>
 
-          {/* Policy Links (Critical for Payment Gateway) */}
-          <div>
-            <h4 className="text-lg font-bold mb-6">Legal & Policies</h4>
-            <ul className="space-y-4 text-gray-400 text-sm">
-              <li><Link to="/privacy-policy" className="hover:text-accent transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms-conditions" className="hover:text-accent transition-colors">Terms & Conditions</Link></li>
-              <li><Link to="/refund-cancellation" className="hover:text-accent transition-colors">Refund & Cancellation</Link></li>
-              <li><Link to="/shipping-delivery" className="hover:text-accent transition-colors">Shipping & Delivery</Link></li>
+          {/* Legal / Policies */}
+          <div className="md:col-span-2">
+            <h4 className="font-semibold text-sm text-primary mb-4 uppercase tracking-wider">Legal</h4>
+            <ul className="space-y-2">
+              <li><Link to="/privacy-policy" className="text-text-secondary text-sm hover:text-primary transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms-conditions" className="text-text-secondary text-sm hover:text-primary transition-colors">Terms & Conditions</Link></li>
+              <li><Link to="/refund-cancellation" className="text-text-secondary text-sm hover:text-primary transition-colors">Refund Policy</Link></li>
+              
             </ul>
           </div>
 
-          {/* Contact Info */}
-          <div>
-            <h4 className="text-lg font-bold mb-6">Contact Us</h4>
-            <ul className="space-y-4 text-gray-400 text-sm">
-              <li className="flex items-start space-x-3">
-                <MapPin className="w-5 h-5 text-accent shrink-0" />
+          {/* Contact Details */}
+          <div className="md:col-span-4 space-y-3">
+            <h4 className="font-semibold text-sm text-primary mb-4 uppercase tracking-wider">Newsletter</h4>
+            <div className="flex gap-2">
+              <input 
+                type="email" 
+                placeholder="Email address" 
+                className="flex-1 bg-surface-main border border-border-low rounded-lg px-3 py-2 text-sm text-on-background focus:ring-1 focus:ring-primary focus:outline-none transition-colors placeholder:text-text-secondary/60"
+              />
+              <button className="bg-primary text-on-primary px-4 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 active:opacity-80">
+                Subscribe
+              </button>
+            </div>
+            <div className="space-y-2 pt-2 text-text-secondary text-xs">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span>Sector 62, Noida, Uttar Pradesh, India - 201301</span>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Mail className="w-5 h-5 text-accent shrink-0" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span>support@apnarooms.com</span>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Phone className="w-5 h-5 text-accent shrink-0" />
-                <span>+91 98765 43210</span>
-              </li>
-            </ul>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Payment & Security Trust Badges */}
-        <div className="border-t border-white/5 py-8 text-gray-500 text-xs">
-          <div className="flex flex-col md:flex-row justify-between items-center text-center md:text-left space-y-4 md:space-y-0">
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2">
-                <ShieldCheck className="w-4 h-4 text-green-500" />
-                <span>SSL Secured Connection</span>
-              </div>
-              {/* <div className="flex items-center space-x-2">
-                <CreditCard className="w-4 h-4 text-blue-500" />
-                <span>Razorpay Verified Merchant</span>
-              </div> */}
-            </div>
-            <p>© {new Date().getFullYear()} Apna Rooms. All Rights Reserved.</p>
-          </div>
-          <div className="text-center mt-6 pt-6 border-t border-white/5">
-            <p>
-              Maintained & Developed by{' '}
-              <a 
-                href="https://sakshamshakya.tech" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="font-bold text-accent hover:underline"
-              >
-                Saksham Shakya
-              </a>
-            </p>
-          </div>
+        {/* Bottom Banner */}
+        <div className="pt-8 border-t border-border-low flex flex-col md:flex-row justify-between items-center text-center gap-4 text-xs text-text-secondary">
+          <span>© {new Date().getFullYear()} Apna Rooms. Professional PG Rentals.</span>
+          <span>
+            Maintained & Developed by{' '}
+            <a 
+              href="https://sakshamshakya.tech" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="font-bold text-primary hover:underline"
+            >
+              Saksham Shakya
+            </a>
+          </span>
         </div>
       </div>
     </footer>

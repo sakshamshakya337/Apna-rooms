@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { supabase } from '../config/supabase';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
@@ -9,7 +10,6 @@ import {
   User,
   Users,
   LayoutDashboard,
-  Settings, 
   ChevronRight,
   PlusCircle,
   FileText,
@@ -22,11 +22,12 @@ import {
   Globe,
   Image as ImageIcon,
   FileCheck,
-  FileX,
+  FileSearch,
+  Shield,
   Clock,
   CheckCircle2,
-  FileSearch,
-  Shield
+  X,
+  Calendar
 } from 'lucide-react';
 import ElectricityBill from '../components/ElectricityBill';
 import Complaints from '../components/Complaints';
@@ -34,7 +35,8 @@ import Payments from '../components/Payments';
 import AdminPanel from '../components/AdminPanel';
 import Profile from '../components/Profile';
 import ServiceWorkerDashboard from './ServiceWorkerDashboard';
-import { motion } from 'framer-motion';
+import { slugifyPG } from '../utils/slugify';
+import { motion, AnimatePresence } from 'framer-motion';
 import { generateRentReceiptPDF } from '../utils/pdfUtils';
 import { toast } from 'react-hot-toast';
 import { compressImage } from '../utils/imageUtils';
@@ -42,6 +44,7 @@ import { compressPDF } from '../utils/pdfUtils';
 
 const Dashboard = () => {
   const { userData, currentUser } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isAdmin = userData?.role === 'admin' || userData?.role === 'super_admin' || userData?.role === 'sub_admin';
@@ -49,12 +52,16 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState(requestedTab || (isAdmin ? 'admin' : 'overview'));
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dbUserProfile, setDbUserProfile] = useState(null);
+  const [roommateProfile, setRoommateProfile] = useState(null);
   const [docRequirements, setDocRequirements] = useState([]);
   const [dynamicDocs, setDynamicDocs] = useState([]);
   const [roommateRequests, setRoommateRequests] = useState([]);
+  const [recentComplaints, setRecentComplaints] = useState([]);
+  const [recentPayments, setRecentPayments] = useState([]);
   const [roommateForm, setRoommateForm] = useState({ full_name: '', email: '', phone_number: '' });
   const [roommateSubmitting, setRoommateSubmitting] = useState(false);
-  const residentName = userData?.fullName || userData?.full_name || currentUser?.fullName || currentUser?.full_name || currentUser?.email || 'Resident';
+  const residentName = dbUserProfile?.full_name || dbUserProfile?.fullName || userData?.fullName || userData?.full_name || currentUser?.fullName || currentUser?.full_name || currentUser?.email || 'Resident';
   const residentFirstName = residentName.split(' ')[0];
 
   useEffect(() => {
@@ -107,6 +114,20 @@ const Dashboard = () => {
   const fetchUserBooking = async () => {
     setLoading(true);
     try {
+      // Fetch fresh profile details directly from the database to always guarantee real user names
+      try {
+        const { data: dbUser, error: dbUserError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', currentUser.uid)
+          .maybeSingle();
+        if (!dbUserError && dbUser) {
+          setDbUserProfile(dbUser);
+        }
+      } catch (profileError) {
+        console.warn('Error fetching fresh DB user profile:', profileError);
+      }
+
       let bookingData = null;
 
       const { data: primaryBooking, error: primaryBookingError } = await supabase
@@ -157,13 +178,17 @@ const Dashboard = () => {
 
       if (bookingData) {
         setBooking(bookingData);
-        // Fetch dynamic requirements and current uploads
-        const [reqsRes, docsRes] = await Promise.all([
+        // Fetch dynamic requirements, current uploads, recent complaints, and historical payments
+        const [reqsRes, docsRes, complaintsRes, paymentsRes] = await Promise.all([
           supabase.from('pg_document_requirements').select('*').eq('pg_id', bookingData.pg_id),
-          supabase.from('booking_documents').select('*').eq('booking_id', bookingData.id)
+          supabase.from('booking_documents').select('*').eq('booking_id', bookingData.id),
+          supabase.from('complaints').select('*').eq('booking_id', bookingData.id).order('created_at', { ascending: false }).limit(3),
+          supabase.from('payments').select('*').eq('booking_id', bookingData.id).order('created_at', { ascending: false }).limit(4)
         ]);
         setDocRequirements(reqsRes.error ? [] : (reqsRes.data || []));
         setDynamicDocs(docsRes.error ? [] : (docsRes.data || []));
+        setRecentComplaints(complaintsRes.error ? [] : (complaintsRes.data || []));
+        setRecentPayments(paymentsRes.error ? [] : (paymentsRes.data || []));
 
         const { data: roommateData, error: roommateListError } = await supabase
           .from('roommate_requests')
@@ -171,11 +196,83 @@ const Dashboard = () => {
           .eq('booking_id', bookingData.id)
           .order('created_at', { ascending: false });
         setRoommateRequests(roommateListError ? [] : (roommateData || []));
+
+        // Fetch Roommate or Primary Resident profile details for UI display
+        if (bookingData.occupant_role === 'approved_roommate') {
+          try {
+            const { data: primaryUser, error: primaryUserError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', bookingData.user_id)
+              .maybeSingle();
+
+            if (!primaryUserError && primaryUser) {
+              setRoommateProfile({
+                roommate_full_name: primaryUser.full_name || primaryUser.fullName,
+                roommate_email: primaryUser.email,
+                roommate_phone: primaryUser.phone_number || primaryUser.phoneNumber,
+                status: 'approved',
+                is_primary_holder: true,
+                user: primaryUser,
+                booking: bookingData
+              });
+            } else {
+              setRoommateProfile(null);
+            }
+          } catch (primaryFetchError) {
+            console.error('Error fetching primary resident details:', primaryFetchError);
+            setRoommateProfile(null);
+          }
+        } else {
+          const approved = (roommateData || []).filter(r => r.status === 'approved');
+          if (approved.length > 0) {
+            try {
+              const { data: rmUser, error: rmUserError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('email', approved[0].roommate_email.trim().toLowerCase())
+                .maybeSingle();
+
+              if (!rmUserError && rmUser) {
+                const { data: rmBooking } = await supabase
+                  .from('bookings')
+                  .select('*')
+                  .eq('user_id', rmUser.id)
+                  .maybeSingle();
+
+                setRoommateProfile({
+                  ...approved[0],
+                  user: rmUser,
+                  booking: rmBooking || null
+                });
+              } else {
+                setRoommateProfile({
+                  ...approved[0],
+                  user: null,
+                  booking: null
+                });
+              }
+            } catch (fetchError) {
+              console.error('Error fetching roommate details:', fetchError);
+              setRoommateProfile({
+                ...approved[0],
+                user: null,
+                booking: null
+              });
+            }
+          } else {
+            setRoommateProfile(null);
+          }
+        }
       } else {
+        // No active booking found — show empty state
         setBooking(null);
+        setRoommateProfile(null);
         setDocRequirements([]);
         setDynamicDocs([]);
         setRoommateRequests([]);
+        setRecentComplaints([]);
+        setRecentPayments([]);
       }
     } catch (error) {
       console.error('Error fetching booking:', error);
@@ -185,13 +282,11 @@ const Dashboard = () => {
   };
 
   const updateBookingRecord = async (bookingId, updatePayload) => {
-    // Robust update that handles missing columns in the database
     for (let attempt = 0; attempt < 6; attempt += 1) {
       const { error } = await supabase.from('bookings').update(updatePayload).eq('id', bookingId);
       if (!error) return;
 
       const message = error.message || '';
-      // Handle "column does not exist" or "Could not find the '...' column"
       const missingColumn = message.match(/'([^']+)' column/)?.[1] || message.match(/column "([^"]+)"/)?.[1];
       
       if (!missingColumn || !(missingColumn in updatePayload)) {
@@ -199,7 +294,7 @@ const Dashboard = () => {
       }
 
       console.warn(`Column '${missingColumn}' missing in database. Retrying update without it.`);
-      toast.error(`Warning: Database missing column '${missingColumn}'. Your document link was not saved to the record. Please contact the admin to update the database schema.`);
+      toast.error(`Warning: Database missing column '${missingColumn}'. Linking document failed. Contact admin to resolve.`);
       delete updatePayload[missingColumn];
     }
   };
@@ -212,23 +307,21 @@ const Dashboard = () => {
     try {
       let uploadFile = file;
       
-      // Compress images
       if (file.type.startsWith('image/')) {
         uploadFile = await compressImage(file, 0.9);
       }
       
-      // Compress PDFs
       if (file.type === 'application/pdf') {
         uploadFile = await compressPDF(file, 1);
       }
 
       if (uploadFile.size > 1 * 1024 * 1024) {
-        toast.error('File is still above 1MB after compression. Please upload a smaller file.', { id: toastId });
+        toast.error('File exceeds 1MB after compression. Please upload a smaller file.', { id: toastId });
         return;
       }
 
       const fileName = `${currentUser.uid}/${Date.now()}_${file.name}`;
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('kyc-documents')
         .upload(fileName, uploadFile, { upsert: true });
 
@@ -237,7 +330,7 @@ const Dashboard = () => {
       await updateBookingRecord(booking.id, { [column]: fileName });
 
       toast.success("Document uploaded successfully!", { id: toastId });
-      fetchUserBooking(); // Refresh to show new doc
+      fetchUserBooking();
     } catch (error) {
       console.error('Upload Error:', error);
       toast.error("Upload failed. Please try again.", { id: toastId });
@@ -251,18 +344,16 @@ const Dashboard = () => {
     try {
         let uploadFile = file;
         
-        // Compress images
         if (file.type.startsWith('image/')) {
           uploadFile = await compressImage(file, 0.9);
         }
         
-        // Compress PDFs
         if (file.type === 'application/pdf') {
           uploadFile = await compressPDF(file, 1);
         }
         
         if (uploadFile.size > 1024 * 1024) {
-          toast.error('File is still above 1MB after compression. Please upload a smaller file.', { id: toastId });
+          toast.error('File exceeds 1MB after compression.', { id: toastId });
           return;
         }
 
@@ -277,7 +368,6 @@ const Dashboard = () => {
 
         const { data: { publicUrl } } = supabase.storage.from('kyc-documents').getPublicUrl(fileName);
 
-        // Upsert the dynamic document record
         const existing = dynamicDocs.find(d => d.requirement_id === reqId);
         
         const docRecord = {
@@ -320,15 +410,13 @@ const Dashboard = () => {
 
     const approvedOccupants = roommateRequests.filter((request) => request.status === 'approved').length;
     if (approvedOccupants >= 1) {
-      return toast.error('A second occupant is already approved. Only admin can add a third student.');
+      return toast.error('A second occupant is already approved. Contact admin for additional space.');
     }
 
     setRoommateSubmitting(true);
     try {
-      // Robustly find existing user - trying common columns to find their ID
       let existingUserId = null;
       try {
-        // Just fetch everything and look for common ID fields in the result
         const { data: userByEmail } = await supabase.from('users').select().eq('email', roommateForm.email.trim().toLowerCase()).maybeSingle();
         if (userByEmail) {
           existingUserId = userByEmail.id || userByEmail.uid;
@@ -348,12 +436,10 @@ const Dashboard = () => {
         status: 'pending'
       };
 
-      // Add the user ID only if we found one
       if (existingUserId) {
         payload.roommate_user_id = existingUserId;
       }
 
-      // Robust insert loop to handle missing columns
       for (let attempt = 0; attempt < 2; attempt++) {
         const { error, status } = await supabase.from('roommate_requests').insert([payload]);
         
@@ -363,14 +449,12 @@ const Dashboard = () => {
         const missingColumn = message.match(/'([^']+)' column/)?.[1] || message.match(/column "([^"]+)"/)?.[1];
         
         if (missingColumn && missingColumn in payload) {
-          console.warn(`Column '${missingColumn}' missing in database. Retrying roommate request without it.`);
           delete payload[missingColumn];
           continue;
         }
 
-        // If we get here, it's a real error (like 401 or RLS)
         if (status === 401 || message.includes('JWT')) {
-          throw new Error('Database permission denied. Please run the SQL script I provided in your Supabase editor to allow adding roommates.');
+          throw new Error('Database permission denied. Contact admin.');
         }
         
         throw error;
@@ -389,17 +473,20 @@ const Dashboard = () => {
 
   const studentCategory = userData?.student_category || userData?.studentCategory || 'National';
   const isInternationalStudent = studentCategory.toLowerCase() === 'international';
+  
+  const displayBooking = booking;
+
   const approvedRoommates = roommateRequests.filter((request) => request.status === 'approved');
   const pendingRoommateRequest = roommateRequests.find((request) => request.status === 'pending');
-  const currentOccupancy = booking ? 1 + approvedRoommates.length : 0;
-  const roomCapacity = booking ? Math.min(3, Number(booking.rooms?.total_seats || 3)) : 0;
+  const currentOccupancy = displayBooking ? 1 + approvedRoommates.length : 0;
+  const roomCapacity = displayBooking ? Math.min(3, Number(displayBooking.rooms?.total_seats || 3)) : 0;
   const canPrimaryResidentAddRoommate = Boolean(
-    booking &&
-    booking.occupant_role !== 'approved_roommate' &&
+    displayBooking &&
+    displayBooking.occupant_role !== 'approved_roommate' &&
     !pendingRoommateRequest &&
-    approvedRoommates.length === 0 &&
-    currentOccupancy < Math.min(2, roomCapacity || 2)
+    currentOccupancy < roomCapacity
   );
+
   const kycDocuments = isInternationalStudent
     ? [
         { id: 'user_photo_url', label: 'Student Photo', icon: ImageIcon, req: true },
@@ -439,7 +526,6 @@ const Dashboard = () => {
   ];
 
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
-
   const isWorker = ['plumber', 'electrician', 'wifi', 'service_worker'].includes(userData?.role?.toLowerCase());
 
   if (isWorker) {
@@ -447,575 +533,806 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Sidebar */}
-        <div className="w-full lg:w-64 space-y-2">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 ${
-                activeTab === item.id 
-                  ? 'bg-accent text-white shadow-xl shadow-purple-200' 
-                  : 'bg-white/50 text-gray-500 hover:bg-white hover:text-accent border border-transparent hover:border-gray-100 shadow-sm'
-              }`}
+    <div className="min-h-screen bg-background text-on-background py-10 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* Sidebar Tabs */}
+          <div className="w-full lg:w-64 space-y-2 shrink-0">
+            <div className="bg-surface-main border border-border-low rounded-xl p-4 space-y-1.5">
+              {menuItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center justify-between p-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                    activeTab === item.id 
+                      ? 'bg-surface-container text-primary border border-border-low/20 shadow-sm' 
+                      : 'text-text-secondary hover:bg-surface-container-low hover:text-text-primary'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <item.icon className="w-4 h-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </div>
+                  <ChevronRight className={`w-3.5 h-3.5 shrink-0 opacity-70 ${activeTab === item.id ? 'rotate-90' : ''}`} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Core Content Box */}
+          <div className="flex-grow">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-surface-main border border-border-low rounded-xl p-6 lg:p-8 min-h-[500px]"
             >
-              <div className="flex items-center space-x-3">
-                <item.icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
-              </div>
-              <ChevronRight className={`w-4 h-4 transition-transform ${activeTab === item.id ? 'rotate-90' : ''}`} />
-            </button>
-          ))}
-        </div>
-
-        {/* Content Area */}
-        <div className="flex-grow">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="bg-white/70 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl shadow-purple-900/5 border border-white min-h-[600px]"
-          >
-            {activeTab === 'overview' && (
-              <div className="space-y-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <h2 className="text-4xl font-black tracking-tight">Howdy, {residentFirstName}!</h2>
-                  <div className="px-6 py-2 bg-accent/10 text-accent rounded-full text-xs font-black uppercase tracking-widest border border-accent/20">
-                    {userData?.role || 'Verified Resident'}
-                  </div>
-                </div>
-
-                {booking ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
-                       {booking.status === 'confirmed' ? (
-                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 p-10 rounded-[3rem] relative overflow-hidden group mb-8">
-                          <div className="absolute top-0 right-0 w-64 h-64 bg-green-200/20 rounded-full blur-3xl -z-0 translate-x-20 -translate-y-20"></div>
-                          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-                            <div className="space-y-4 text-center md:text-left">
-                              <div className="inline-flex items-center space-x-2 bg-green-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-green-200">
-                                <CheckCircle2 className="w-3 h-3" />
-                                <span>Official Confirmation</span>
-                              </div>
-                              <h3 className="text-4xl font-black text-green-900 tracking-tight leading-tight">Welcome Home, {residentFirstName}! 🏡</h3>
-                              <p className="text-green-700/80 font-medium max-w-md">Your residency at <span className="font-black underline decoration-green-300 decoration-2">{booking.pgs?.name}</span> has been officially approved. We're excited to have you!</p>
-                              <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-2">
-                                <div className="bg-white/60 backdrop-blur-sm px-6 py-3 rounded-2xl border border-green-200 shadow-sm">
-                                  <div className="text-[10px] font-black text-green-800 uppercase tracking-widest opacity-50 mb-1">Room Secure</div>
-                                  <div className="text-lg font-black text-green-900">Room #{booking.rooms?.room_number}</div>
-                                </div>
-                                <div className="bg-white/60 backdrop-blur-sm px-6 py-3 rounded-2xl border border-green-200 shadow-sm">
-                                  <div className="text-[10px] font-black text-green-800 uppercase tracking-widest opacity-50 mb-1">Move-in Date</div>
-                                  <div className="text-lg font-black text-green-900">{new Date(booking.created_at).toLocaleDateString()}</div>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex flex-col gap-3">
-                              <button 
-                                onClick={() => generateRentReceiptPDF(booking, userData, booking.pgs)}
-                                className="bg-white text-green-600 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-green-600 hover:text-white transition-all shadow-xl shadow-green-900/5 flex items-center justify-center space-x-2 border border-green-100"
-                              >
-                                <Download className="w-4 h-4" />
-                                <span>Download Receipt</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                       ) : (
-                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 p-10 rounded-[3rem] relative overflow-hidden group mb-8">
-                          <div className="relative z-10 space-y-4">
-                            <div className="inline-flex items-center space-x-2 bg-amber-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
-                              <Clock className="w-3 h-3" />
-                              <span>Approval Pending</span>
-                            </div>
-                            <h3 className="text-3xl font-black text-amber-900 tracking-tight">Hang Tight!</h3>
-                            <p className="text-amber-700/80 font-medium max-w-sm">Our admin is currently verifying your offline payment. You'll receive a confirmation here shortly.</p>
-                          </div>
-                        </div>
-                       )}
-                    </div>
-
-                    <div className="glass-card p-8 rounded-[2.5rem] border-white/50">
-                      <h3 className="text-xl font-black mb-6 flex items-center">
-                        <div className="p-2.5 bg-accent/10 rounded-2xl mr-3 text-accent">
-                           <FileText className="w-6 h-6" />
-                        </div>
-                        Residency Details
-                      </h3>
-                      <div className="space-y-4 text-gray-500 text-sm">
-                        <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                          <span className="font-semibold text-primary/60 uppercase text-[10px] tracking-widest">Property</span>
-                          <span className="font-black text-primary">{booking.pgs?.name}</span>
-                        </div>
-                        <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                          <span className="font-semibold text-primary/60 uppercase text-[10px] tracking-widest">Address</span>
-                          <span className="font-black text-primary text-right max-w-[150px] truncate">{booking.pgs?.address}</span>
-                        </div>
-                        <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                          <span className="font-semibold text-primary/60 uppercase text-[10px] tracking-widest">Room Number</span>
-                          <span className="font-black text-accent text-lg text-right">{booking.pgs?.name} - Room {booking.rooms?.room_number}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="font-semibold text-primary/60 uppercase text-[10px] tracking-widest">Booking Status</span>
-                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${booking.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                            {booking.status === 'pending' ? 'Verifying Payment' : 'Live & Verified'}
-                          </span>
-                        </div>
+              {/* Overview Subtab */}
+              {activeTab === 'overview' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  
+                  {/* No Booking Yet Banner */}
+                  {!booking && (
+                    <div className="flex flex-col items-center justify-center py-20 space-y-6 text-center">
+                      <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
+                        <Building2 className="w-10 h-10 text-primary" />
                       </div>
-                    </div>
-                    
-                    <div className="bg-white/50 p-8 rounded-[2.5rem] border border-white flex flex-col justify-center space-y-6">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600">
-                           <ShieldCheck className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Trust Store</div>
-                          <div className="text-sm font-black text-primary">
-                            {booking.occupant_role === 'approved_roommate' ? 'Approved Occupant' : 'KYC Verified'}
-                          </div>
-                        </div>
+                      <div>
+                        <h2 className="text-2xl font-extrabold text-text-primary">No Active Booking</h2>
+                        <p className="text-text-secondary text-sm mt-2 max-w-sm mx-auto">You don't have an active room booking yet. Browse available PGs and secure your stay to unlock your resident dashboard.</p>
                       </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600">
-                           <Zap className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Priority Support</div>
-                          <div className="text-sm font-black text-primary">24/7 Hotline</div>
-                        </div>
-                      </div>
+                      <button
+                        onClick={() => navigate('/pgs')}
+                        className="px-6 py-3 bg-primary text-on-primary rounded-xl text-sm font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/20 cursor-pointer"
+                      >
+                        Browse & Book a PG
+                      </button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-                    <PlusCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-gray-400">No active bookings found</h3>
-                    <p className="text-gray-500 mb-6">Start your journey by finding the perfect PG!</p>
-                    <button 
-                      onClick={() => navigate('/pgs')}
-                      className="bg-accent text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-600 transition-all"
-                    >
-                      Browse PGs
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
 
-            {activeTab === 'bills' && <ElectricityBill booking={booking} userData={userData} />}
-            {activeTab === 'complaints' && <Complaints booking={booking} userData={userData} />}
-            {activeTab === 'payments' && <Payments booking={booking} userData={userData} />}
-            {activeTab === 'roommates' && booking && (
-              <div className="space-y-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div>
-                    <h2 className="text-4xl font-black tracking-tight text-primary">Roommate Request</h2>
-                    <p className="text-gray-500 mt-2 font-medium">Primary resident can add one roommate. Admin can add the third occupant if the room supports three students.</p>
-                  </div>
-                  <div className="px-5 py-2 bg-accent/10 text-accent rounded-full border border-accent/20 text-[10px] font-black uppercase tracking-widest">
-                    {booking.pgs?.name} - Room {booking.rooms?.room_number}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Current Occupancy</div>
-                    <div className="mt-2 text-3xl font-black text-primary">{currentOccupancy}</div>
-                  </div>
-                  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Room Capacity</div>
-                    <div className="mt-2 text-3xl font-black text-primary">{roomCapacity || 1}</div>
-                  </div>
-                  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Your Access</div>
-                    <div className="mt-2 text-sm font-black text-primary">
-                      {booking.occupant_role === 'approved_roommate' ? 'Approved roommate' : 'Primary resident'}
+                  {/* Dynamic Header - only shown when booking exists */}
+                  {booking && (
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border-low pb-6">
+                    <div>
+                      <h1 className="text-3xl font-extrabold text-text-primary tracking-tight">Welcome back, {residentFirstName}</h1>
+                      <p className="text-text-secondary text-sm mt-1 font-semibold">
+                        {displayBooking.rooms?.room_number ? `Room #${displayBooking.rooms.room_number}` : 'Room Pending'} • {displayBooking.pgs?.name || 'Property'}
+                      </p>
                     </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                    <h3 className="text-xl font-black mb-6">Add Student Details</h3>
-                    {canPrimaryResidentAddRoommate ? (
-                      <form onSubmit={handleRoommateRequest} className="space-y-4">
-                        <input
-                          required
-                          placeholder="Roommate full name"
-                          value={roommateForm.full_name}
-                          onChange={(e) => setRoommateForm({ ...roommateForm, full_name: e.target.value })}
-                          className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent"
-                        />
-                        <input
-                          required
-                          type="email"
-                          placeholder="Roommate email"
-                          value={roommateForm.email}
-                          onChange={(e) => setRoommateForm({ ...roommateForm, email: e.target.value })}
-                          className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent"
-                        />
-                        <input
-                          placeholder="Roommate phone number"
-                          value={roommateForm.phone_number}
-                          onChange={(e) => setRoommateForm({ ...roommateForm, phone_number: e.target.value })}
-                          className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-accent"
-                        />
-                        <button
-                          type="submit"
-                          disabled={roommateSubmitting}
-                          className="w-full bg-accent text-white py-4 rounded-2xl font-black hover:bg-blue-600 transition-all disabled:opacity-50"
-                        >
-                          {roommateSubmitting ? 'Sending...' : 'Send For Admin Verification'}
-                        </button>
-                      </form>
-                    ) : (
-                      <div className="p-6 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200 text-sm text-gray-600 space-y-2">
-                        <p className="font-black text-primary">
-                          {booking.occupant_role === 'approved_roommate'
-                            ? 'Only the primary resident can send a roommate request.'
-                            : pendingRoommateRequest
-                              ? 'An approval request is already pending for this room.'
-                              : approvedRoommates.length > 0
-                                ? 'The second student is already approved. If the room supports 3 occupants, the admin can add the third student.'
-                                : 'This room cannot take another resident from the user side.'}
-                        </p>
-                        <p>The invited student should use the same email when creating their account so access opens automatically after approval.</p>
+                    {displayBooking && (
+                      <div className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-full border font-mono uppercase tracking-wider select-none ${
+                        displayBooking.status === 'confirmed'
+                          ? 'bg-success/15 text-success border-success/20 animate-pulse'
+                          : 'bg-primary/10 text-primary border-primary/20'
+                      }`}>
+                        {displayBooking.status === 'confirmed' ? (
+                          <ShieldCheck className="w-3.5 h-3.5 text-success shrink-0" />
+                        ) : (
+                          <Clock className="w-3.5 h-3.5 text-primary shrink-0 animate-spin" />
+                        )}
+                        <span>
+                          {displayBooking.status === 'confirmed' ? 'Residency: Verified Active' : 'Residency: Pending Approval'}
+                        </span>
                       </div>
                     )}
                   </div>
+                  )}
 
-                  <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                    <h3 className="text-xl font-black mb-6">Request Status</h3>
-                    {roommateRequests.length > 0 ? (
-                      <div className="space-y-4">
-                        {roommateRequests.map((request) => (
-                          <div key={request.id} className="p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                            <div className="flex justify-between gap-4">
+                  {displayBooking && (
+                    <div className="space-y-8">
+                      
+                      {/* Booking Approval Banner */}
+                      {displayBooking.status === 'confirmed' ? (
+                        <div className="bg-success/5 border border-success/30 p-6 rounded-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                          <div className="space-y-2">
+                            <div className="inline-flex items-center space-x-1.5 bg-success text-on-primary px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Official Confirmation</span>
+                            </div>
+                            <h3 className="text-xl font-bold text-text-primary">Welcome Home, {residentFirstName}! 🏡</h3>
+                            <p className="text-text-secondary text-sm font-medium">
+                              Your residency at <span className="font-bold text-text-primary">{displayBooking.pgs?.name}</span> has been officially approved.
+                            </p>
+                          </div>
+                          <button 
+                            onClick={() => generateRentReceiptPDF(displayBooking, userData, displayBooking.pgs)}
+                            className="px-4 py-2.5 bg-surface-main border border-border-low rounded-lg text-text-primary hover:bg-surface-container transition-colors text-xs font-bold flex items-center gap-2 cursor-pointer"
+                          >
+                            <Download className="w-4 h-4 text-primary" />
+                            <span>Download Receipt</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="bg-primary/5 border border-primary/20 p-6 rounded-xl space-y-2">
+                          <div className="inline-flex items-center space-x-1.5 bg-primary text-on-primary px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
+                            <Clock className="w-3 h-3 animate-spin" />
+                            <span>Verification Pending</span>
+                          </div>
+                          <h3 className="text-lg font-bold text-text-primary">Securing Residency Details</h3>
+                          <p className="text-text-secondary text-sm">
+                            Our admins are verifying your room payment. Your utility panel will open here as soon as verification completes.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Status Widgets Bento Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        
+                        {/* Next Rent Due */}
+                        <div className="bg-surface-main border border-border-low rounded-xl p-6 hover:border-outline transition-all duration-300 flex flex-col justify-between h-full shadow-sm">
+                          <div>
+                            <div className="flex items-center justify-between mb-4">
+                              <span className="font-mono text-[10px] font-bold text-text-secondary uppercase tracking-widest">Next Rent Due</span>
+                              <Calendar className="w-5 h-5 text-primary shrink-0" />
+                            </div>
+                            <div className="mb-6">
+                              <h2 className="text-3xl font-extrabold text-text-primary">₹{(displayBooking.rooms?.price_per_seat || '—').toLocaleString()}</h2>
+                              <p className="text-xs font-semibold text-text-secondary mt-1 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping shrink-0"></span>
+                                <span>Monthly rent per seat</span>
+                              </p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => setActiveTab('payments')}
+                            className="w-full py-3 bg-primary text-on-primary rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/10 cursor-pointer"
+                          >
+                            Pay Now
+                          </button>
+                        </div>
+
+                        {/* Electricity Usage */}
+                        <div className="bg-surface-main border border-border-low rounded-xl p-6 hover:border-outline transition-all duration-300 shadow-sm flex flex-col justify-between h-full">
+                          <div>
+                            <div className="flex items-center justify-between mb-4">
+                              <span className="font-mono text-[10px] font-bold text-text-secondary uppercase tracking-widest">Current Electricity</span>
+                              <Zap className="w-5 h-5 text-success shrink-0" />
+                            </div>
+                            <div className="mb-5">
+                              <h2 className="text-3xl font-extrabold text-text-primary">—</h2>
+                              <p className="text-[11px] font-semibold text-text-secondary mt-1">No bill generated yet this cycle</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+                              <div className="bg-success/40 h-full" style={{ width: '0%' }}></div>
+                            </div>
+                            <div className="flex justify-between font-mono text-[9px] font-bold text-text-secondary uppercase tracking-wider">
+                              <span>Current</span>
+                              <span>Awaiting data</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Recent Complaints */}
+                        <div className="bg-surface-main border border-border-low rounded-xl p-6 hover:border-outline transition-all duration-300 shadow-sm flex flex-col justify-between h-full">
+                          <div>
+                            <div className="flex items-center justify-between mb-4">
+                              <span className="font-mono text-[10px] font-bold text-text-secondary uppercase tracking-widest">Recent Complaints</span>
+                              <MessageSquare className="w-5 h-5 text-error shrink-0" />
+                            </div>
+                            <div className="space-y-4">
+                              {recentComplaints.length > 0 ? (
+                                recentComplaints.slice(0, 2).map((complaint) => (
+                                  <div key={complaint.id} className="flex items-start gap-3">
+                                    <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                                      complaint.status === 'resolved' 
+                                        ? 'bg-success' 
+                                        : complaint.status === 'in_progress' 
+                                          ? 'bg-amber-500' 
+                                          : 'bg-primary'
+                                    }`}></div>
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-bold text-text-primary leading-tight truncate">{complaint.title}</p>
+                                      <p className="font-mono text-[9px] font-bold text-text-secondary uppercase mt-0.5 tracking-wider">
+                                        {complaint.status} • {new Date(complaint.created_at).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="py-2 flex items-start gap-2.5 text-text-secondary">
+                                  <CheckCircle2 className="w-4 h-4 text-success mt-0.5 shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold text-text-primary leading-tight">All systems nominal</p>
+                                    <p className="font-mono text-[9px] font-bold uppercase mt-0.5 tracking-wider">No active tickets</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => setActiveTab('complaints')}
+                            className="w-full py-2 bg-surface-container border border-border-low text-text-primary rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-surface-container-high transition-colors cursor-pointer"
+                          >
+                            View All Tickets
+                          </button>
+                        </div>
+
+                      </div>
+
+                      {/* Transaction History Section */}
+                      <section className="bg-surface-main border border-border-low rounded-xl overflow-hidden shadow-sm">
+                        <div className="px-6 py-4 border-b border-border-low flex items-center justify-between bg-surface-container/20">
+                          <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">Recent Transactions</h3>
+                          <button 
+                            onClick={() => setActiveTab('payments')}
+                            className="text-primary font-bold text-xs flex items-center gap-1.5 hover:underline cursor-pointer"
+                          >
+                            <FileText className="w-4 h-4 text-primary shrink-0" />
+                            <span>Billing History</span>
+                          </button>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left">
+                            <thead className="bg-surface-container/10">
+                              <tr>
+                                <th className="px-6 py-3 font-mono text-[9px] font-bold text-text-secondary uppercase tracking-widest">Invoice ID</th>
+                                <th className="px-6 py-3 font-mono text-[9px] font-bold text-text-secondary uppercase tracking-widest">Category</th>
+                                <th className="px-6 py-3 font-mono text-[9px] font-bold text-text-secondary uppercase tracking-widest">Date</th>
+                                <th className="px-6 py-3 font-mono text-[9px] font-bold text-text-secondary uppercase tracking-widest">Amount</th>
+                                <th className="px-6 py-3 font-mono text-[9px] font-bold text-text-secondary uppercase tracking-widest">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border-low/60 font-semibold text-xs text-text-primary">
+                              {recentPayments.length > 0 ? (
+                                recentPayments.map((p) => (
+                                  <tr key={p.id} className="hover:bg-surface-container/10 transition-colors">
+                                    <td className="px-6 py-4 font-mono text-text-primary">#INV-{p.id.substring(0, 4).toUpperCase()}</td>
+                                    <td className="px-6 py-4 text-text-secondary">{p.type || 'Monthly Rent'}</td>
+                                    <td className="px-6 py-4 text-text-secondary">{new Date(p.created_at).toLocaleDateString()}</td>
+                                    <td className="px-6 py-4 text-text-primary font-bold">₹{p.amount.toLocaleString()}</td>
+                                    <td className="px-6 py-4">
+                                      <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold border ${
+                                        p.status === 'success' 
+                                          ? 'bg-success/15 text-success border-success/20' 
+                                          : 'bg-error/15 text-error border-error/20'
+                                      }`}>
+                                        {p.status === 'success' ? 'PAID' : 'FAILED'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td colSpan="5" className="px-6 py-12 text-center">
+                                    <div className="flex flex-col items-center gap-2 text-text-secondary/50">
+                                      <CreditCard className="w-8 h-8" />
+                                      <p className="text-xs font-semibold uppercase tracking-wider">No transactions yet</p>
+                                      <p className="text-[10px]">Your payment receipts will appear here once rent is paid.</p>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </section>
+
+                      {/* Quick Stats & Info */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        {/* Room Details Grid */}
+                        <div className="bg-surface-main border border-border-low rounded-xl p-6 shadow-sm">
+                          <h4 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-5 border-b border-border-low pb-3">Room Details</h4>
+                          <div className="grid grid-cols-2 gap-6 text-xs font-semibold text-text-secondary">
+                            <div>
+                              <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-text-secondary/60">Room Type</p>
+                              <p className="text-text-primary font-bold mt-0.5">
+                                {displayBooking.rooms?.total_seats == 1 ? 'Single Room' : displayBooking.rooms?.total_seats == 2 ? 'Twin Sharing' : 'Multi Sharing'} • AC
+                              </p>
+                            </div>
+                            <div>
+                              <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-text-secondary/60">Check-in Date</p>
+                              <p className="text-text-primary font-bold mt-0.5">
+                                {new Date(displayBooking.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-text-secondary/60">Notice Period</p>
+                              <p className="text-text-primary font-bold mt-0.5">30 Days</p>
+                            </div>
+                            <div>
+                              <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-text-secondary/60">Security Deposit</p>
+                              <p className="text-text-primary font-bold mt-0.5">₹{(displayBooking.pgs?.security_deposit || 29000).toLocaleString()}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* View Property Photos */}
+                        <div 
+                          onClick={() => {
+                            if (displayBooking.pgs) {
+                              navigate(`/pg/${slugifyPG(displayBooking.pgs.name, displayBooking.pgs.address, displayBooking.pgs.city)}--${displayBooking.pgs.id}`);
+                            }
+                          }}
+                          className="bg-surface-main border border-border-low rounded-xl p-6 relative overflow-hidden flex items-center justify-center group cursor-zoom-in shadow-sm min-h-[175px]"
+                        >
+                          <img 
+                            alt="Room Preview" 
+                            className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-35 group-hover:scale-105 transition-all duration-700" 
+                            src={displayBooking.pgs?.main_image || "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80"}
+                          />
+                          <div className="text-center relative z-10 p-5 rounded-xl bg-surface-main/60 backdrop-blur-sm border border-border-low/40 shadow-sm max-w-[85%] select-none">
+                            <ImageIcon className="w-8 h-8 text-primary mb-2 shrink-0 block mx-auto" />
+                            <h4 className="text-sm font-bold text-text-primary uppercase tracking-wider">Tour Property</h4>
+                            <p className="text-[10px] font-semibold text-text-secondary mt-0.5">View amenities, common spaces, and rooms</p>
+                          </div>
+                        </div>
+
+                      </div>
+
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Specific Subtab Widgets */}
+              {activeTab === 'bills' && <ElectricityBill booking={displayBooking} userData={userData} />}
+              {activeTab === 'complaints' && <Complaints booking={displayBooking} userData={userData} />}
+              {activeTab === 'payments' && <Payments booking={displayBooking} userData={userData} />}
+              {activeTab === 'profile' && <Profile />}
+
+              {/* Roommates request Subtab */}
+              {activeTab === 'roommates' && displayBooking && (
+                <div className="space-y-6">
+                  
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border-low pb-6">
+                    <div>
+                      <h2 className="text-2xl font-extrabold text-text-primary tracking-tight">Roommate Allocations</h2>
+                      <p className="text-text-secondary text-sm mt-0.5">Invite your roommates or verify pending invitations.</p>
+                    </div>
+                    <div className="px-3.5 py-1 bg-surface-container border border-border-low rounded-lg text-xs font-bold font-mono text-text-primary uppercase shrink-0">
+                      Room #{displayBooking.rooms?.room_number}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-surface-container-low border border-border-low p-4 rounded-xl">
+                      <span className="block text-[9px] font-bold text-text-secondary uppercase tracking-wider font-mono">Current Residents</span>
+                      <span className="block text-2xl font-bold text-primary mt-1">{currentOccupancy}</span>
+                    </div>
+                    <div className="bg-surface-container-low border border-border-low p-4 rounded-xl">
+                      <span className="block text-[9px] font-bold text-text-secondary uppercase tracking-wider font-mono">Capacity Max</span>
+                      <span className="block text-2xl font-bold text-primary mt-1">{roomCapacity || 1}</span>
+                    </div>
+                    <div className="bg-surface-container-low border border-border-low p-4 rounded-xl">
+                      <span className="block text-[9px] font-bold text-text-secondary uppercase tracking-wider font-mono">Occupant Role</span>
+                      <span className="block text-sm font-bold text-primary mt-2 truncate">
+                        {displayBooking.occupant_role === 'approved_roommate' ? 'Roommate' : 'Primary Holder'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
+                    {/* Add Roommate form */}
+                    <div className="bg-surface-main p-6 border border-border-low rounded-xl space-y-4 shadow-sm">
+                      <h3 className="text-lg font-bold text-text-primary tracking-tight">
+                        {roommateProfile ? 'Resident Occupant Details' : 'Invite Student Resident'}
+                      </h3>
+                      {roommateProfile ? (
+                        <div className="p-5 bg-success/5 border border-success/30 rounded-xl space-y-4 shadow-sm animate-in fade-in duration-300">
+                          <div className="flex items-center gap-3 border-b border-success/20 pb-3">
+                            <div className="p-2 bg-success/15 text-success rounded-lg">
+                              <ShieldCheck className="w-5 h-5 shrink-0" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-text-primary text-sm">
+                                {roommateProfile.is_primary_holder ? 'Primary Resident (Main Tenant)' : 'Linked Roommate Profile'}
+                              </h4>
+                              <p className="text-[9px] font-bold text-success uppercase tracking-wider font-mono">Verified Active Occupant</p>
+                            </div>
+                          </div>
+                          <div className="space-y-3 text-xs font-semibold text-text-secondary">
+                            <div>
+                              <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-text-secondary/60">Full Name</p>
+                              <p className="text-text-primary font-bold mt-0.5">{roommateProfile.roommate_full_name}</p>
+                            </div>
+                            <div>
+                              <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-text-secondary/60">Email Address</p>
+                              <p className="text-text-primary font-bold mt-0.5">{roommateProfile.roommate_email}</p>
+                            </div>
+                            {roommateProfile.roommate_phone && (
                               <div>
-                                <div className="font-black text-primary">{request.roommate_full_name}</div>
-                                <div className="text-xs text-gray-500">{request.roommate_email}</div>
-                                <div className="text-xs text-gray-400 mt-1">{request.roommate_phone || 'No phone added'}</div>
+                                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-text-secondary/60">Phone Number</p>
+                                <p className="text-text-primary font-bold mt-0.5">{roommateProfile.roommate_phone}</p>
                               </div>
-                              <span className={`h-fit px-3 py-1 rounded-full text-[10px] font-black uppercase ${
-                                request.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                request.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                'bg-yellow-100 text-yellow-700'
+                            )}
+                            <div className="pt-2 border-t border-border-low/60 flex justify-between items-center text-[10px] font-bold uppercase">
+                              <span className="text-text-secondary/60 font-mono">Resident Origin</span>
+                              <span className="text-primary">{roommateProfile.user?.student_category || roommateProfile.user?.studentCategory || 'National'}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] font-bold uppercase">
+                              <span className="text-text-secondary/60 font-mono">KYC Verification Status</span>
+                              {roommateProfile.booking?.is_kyc_verified || roommateProfile.is_primary_holder ? (
+                                <span className="text-success flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5" /> Verified Profile</span>
+                              ) : (
+                                <span className="text-amber-500 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Documents Auditing</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : canPrimaryResidentAddRoommate ? (
+                        <form onSubmit={handleRoommateRequest} className="space-y-4">
+                          <input
+                            required
+                            placeholder="Roommate Full Name"
+                            value={roommateForm.full_name}
+                            onChange={(e) => setRoommateForm({ ...roommateForm, full_name: e.target.value })}
+                            className="w-full px-4 py-3 bg-surface-container-low border border-border-low rounded-lg text-text-primary text-sm placeholder:text-text-secondary/50 focus:border-primary focus:outline-none transition-colors"
+                          />
+                          <input
+                            required
+                            type="email"
+                            placeholder="Roommate Email Address"
+                            value={roommateForm.email}
+                            onChange={(e) => setRoommateForm({ ...roommateForm, email: e.target.value })}
+                            className="w-full px-4 py-3 bg-surface-container-low border border-border-low rounded-lg text-text-primary text-sm placeholder:text-text-secondary/50 focus:border-primary focus:outline-none transition-colors"
+                          />
+                          <input
+                            placeholder="Roommate Phone Number (Optional)"
+                            value={roommateForm.phone_number}
+                            onChange={(e) => setRoommateForm({ ...roommateForm, phone_number: e.target.value })}
+                            className="w-full px-4 py-3 bg-surface-container-low border border-border-low rounded-lg text-text-primary text-sm placeholder:text-text-secondary/50 focus:border-primary focus:outline-none transition-colors"
+                          />
+                          <button
+                            type="submit"
+                            disabled={roommateSubmitting}
+                            className="w-full bg-primary text-on-primary py-3 rounded-lg font-bold text-xs uppercase tracking-wider hover:opacity-90 active:scale-98 transition-all disabled:opacity-50 cursor-pointer"
+                          >
+                            {roommateSubmitting ? 'Transmitting...' : 'Send Roommate Request'}
+                          </button>
+                        </form>
+                      ) : (
+                        <div className="p-5 bg-surface-container-low border border-border-low rounded-xl text-xs font-semibold text-text-secondary leading-relaxed space-y-2">
+                          <p className="text-primary font-bold">
+                            {displayBooking.occupant_role === 'approved_roommate'
+                              ? 'Only the primary resident holder can dispatch roommate invitations.'
+                              : pendingRoommateRequest
+                                ? 'An invitation request is currently pending admin verification.'
+                                : approvedRoommates.length > 0
+                                  ? 'A roommate is already approved. Contact admin for additional spots.'
+                                  : 'This room capacity does not support another resident.'}
+                          </p>
+                          <p className="opacity-70 font-normal">Invited students should register using the exact email address to link profiles cleanly.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Roommate invitations statuses */}
+                    <div className="bg-surface-main p-6 border border-border-low rounded-xl space-y-4 shadow-sm">
+                      <h3 className="text-lg font-bold text-text-primary tracking-tight">Request Status Directory</h3>
+                      {roommateRequests.length > 0 ? (
+                        <div className="space-y-3">
+                          {roommateRequests.map((request) => (
+                            <div key={request.id} className="p-4 bg-surface-container-low rounded-lg border border-border-low flex justify-between items-start gap-4">
+                              <div className="min-w-0">
+                                <div className="font-bold text-sm text-text-primary truncate">{request.roommate_full_name}</div>
+                                <div className="text-xs text-text-secondary truncate">{request.roommate_email}</div>
+                                <div className="text-[10px] text-text-secondary/70 mt-1 font-mono">{request.roommate_phone || 'No phone'}</div>
+                              </div>
+                              <span className={`px-2 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold shrink-0 ${
+                                request.status === 'approved' ? 'bg-success/15 text-success' :
+                                request.status === 'rejected' ? 'bg-error/15 text-error' :
+                                'bg-primary/20 text-primary'
                               }`}>
                                 {request.status}
                               </span>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-12 text-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
-                        <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                        <p className="font-medium">No roommate request yet.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            {activeTab === 'roommates' && !booking && (
-              <div className="text-center py-20">
-                <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-400">No Booking Active</h3>
-                <p className="text-gray-500">You can add a roommate after booking a room.</p>
-              </div>
-            )}
-            {activeTab === 'profile' && <Profile />}
-            {activeTab === 'kyc' && booking && (
-              <div className="space-y-12">
-                {/* KYC Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-gray-100 pb-8">
-                  <div>
-                    <h2 className="text-4xl font-black tracking-tight text-primary">Verification Hub</h2>
-                    <p className="text-gray-500 mt-2 font-medium">
-                      {studentCategory} student documents unlock after admin confirms your booking
-                    </p>
-                  </div>
-                  <div className={`flex items-center px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest ${
-                    booking.is_kyc_verified 
-                      ? 'bg-green-100 text-green-700 border border-green-200' 
-                      : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
-                  }`}>
-                    {booking.is_kyc_verified ? (
-                      <><ShieldCheck className="w-4 h-4 mr-2" /> Verified Profile</>
-                    ) : (
-                      <><Clock className="w-4 h-4 mr-2" /> Processing KYC</>
-                    )}
-                  </div>
-                </div>
-
-                {booking.status !== 'confirmed' ? (
-                  <div className="bg-amber-50 border border-amber-100 p-10 rounded-[3rem] text-center">
-                    <Clock className="w-14 h-14 text-amber-500 mx-auto mb-4" />
-                    <h3 className="text-2xl font-black text-primary">Admin confirmation pending</h3>
-                    <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
-                      Your room is reserved. Document upload will open here only after the admin confirms the booking.
-                    </p>
-                  </div>
-                ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Instructions Card */}
-                  <div className="lg:col-span-1 glass-card p-8 rounded-[2.5rem] border-white/50 space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-black flex items-center">
-                        <div className="p-2.5 bg-accent/10 rounded-2xl mr-3 text-accent text-lg">⚠️</div>
-                        Guidelines
-                      </h3>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-10 text-center text-text-secondary opacity-50 border border-dashed border-border-low rounded-lg bg-surface-container-low">
+                          <Users className="w-8 h-8 mx-auto mb-2" />
+                          <p className="text-xs font-semibold uppercase tracking-wider">No roommate invites found</p>
+                        </div>
+                      )}
                     </div>
-                    <ul className="space-y-4">
-                      {[
-                        "Clear, high-quality images only",
-                        "Images are compressed automatically during upload",
-                        "Max final file size: 1MB per document",
-                        "Self-attested copies preferred"
-                      ].map((item, i) => (
-                        <li key={i} className="flex items-start space-x-3 text-sm text-gray-500 font-medium">
-                          <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
 
-                    {/* Template Section */}
-                    {booking.pgs && (
-                    <div className="pt-6 border-t border-gray-100 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-black text-sm uppercase tracking-widest text-gray-400">Required Templates</h4>
-                        {!booking.pgs.police_verification_template_url && !isInternationalStudent && (
-                           <div className="text-[8px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase">Contact Admin</div>
-                        )}
-                      </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'roommates' && !displayBooking && (
+                <div className="text-center py-16 bg-surface-container-low border border-dashed border-border-low rounded-xl space-y-2">
+                  <Users className="w-10 h-10 text-outline mx-auto" />
+                  <h3 className="text-base font-bold text-text-primary">No Active Stays</h3>
+                  <p className="text-text-secondary text-xs">You can invite roommates once a stay booking is confirmed.</p>
+                </div>
+              )}
+
+              {/* KYC Verification Hub */}
+              {activeTab === 'kyc' && displayBooking && (
+                <div className="space-y-6">
+                  
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border-low pb-6">
+                    <div>
+                      <h2 className="text-2xl font-extrabold text-text-primary tracking-tight">Verification Center</h2>
+                      <p className="text-text-secondary text-sm mt-0.5">
+                        {studentCategory} documents unlock once the admin confirms booking payments.
+                      </p>
+                    </div>
+                    <div className={`flex items-center px-4.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border shrink-0 ${
+                      displayBooking.is_kyc_verified 
+                        ? 'bg-success/15 text-success border-success/30' 
+                        : 'bg-primary/20 text-primary border-primary/30'
+                    }`}>
+                      {displayBooking.is_kyc_verified ? (
+                        <><ShieldCheck className="w-4 h-4 mr-1.5" /> Verified Profile</>
+                      ) : (
+                        <><Clock className="w-4 h-4 mr-1.5" /> Auditing KYC</>
+                      )}
+                    </div>
+                  </div>
+
+                  {displayBooking.status !== 'confirmed' ? (
+                    <div className="bg-primary/5 border border-primary/20 p-8 rounded-xl text-center space-y-2">
+                      <Clock className="w-10 h-10 text-primary mx-auto mb-2 animate-pulse" />
+                      <h3 className="text-lg font-bold text-text-primary">Admin confirmation pending</h3>
+                      <p className="text-text-secondary text-sm max-w-md mx-auto leading-relaxed">
+                        Your room is reserved. Document uploads will open here as soon as the admin marks your booking verified.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       
-                      {/* Quick Templates */}
-                      <div className="grid grid-cols-1 gap-4">
-                        {isInternationalStudent && (
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Vidu Authorization</p>
-                          {booking.pgs?.owner_doc_url ? (
-                            <a 
-                              href={booking.pgs.owner_doc_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="w-full flex items-center justify-center p-4 bg-accent text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-transform shadow-xl group"
-                            >
-                              <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get Vidu Form
-                            </a>
-                          ) : (
-                            <div className="p-4 bg-red-50 text-red-500 rounded-2xl text-[10px] font-bold border border-red-100 italic">
-                              Vidu Template Not Uploaded
-                            </div>
-                          )}
-                        </div>
-                        )}
-
-                        {/* Police Verification Form - Available for All Student Types */}
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Police Verification Form</p>
-                          {booking.pgs?.police_verification_template_url ? (
-                            <a 
-                              href={booking.pgs.police_verification_template_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="w-full flex items-center justify-center p-4 bg-purple-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-transform shadow-xl group"
-                            >
-                              <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get Police Form
-                            </a>
-                          ) : (
-                            <div className="p-4 bg-gray-50 text-gray-500 rounded-2xl text-[10px] font-bold border border-gray-100 italic">
-                              Admin hasn't uploaded police form
-                            </div>
-                          )}
+                      {/* Guidelines Cards & Required templates download */}
+                      <div className="lg:col-span-1 bg-surface-container-low border border-border-low p-6 rounded-xl space-y-6">
+                        <div className="space-y-4">
+                          <h3 className="font-bold text-sm text-text-primary uppercase tracking-wider flex items-center gap-2">
+                            <span>⚠️</span>
+                            <span>Upload Guidelines</span>
+                          </h3>
+                          <ul className="space-y-2.5 text-xs text-text-secondary font-semibold">
+                            {[
+                              "Scan clear, high-contrast copies",
+                              "Files are optimized on upload",
+                              "Max file size: 1MB per document",
+                              "Self-attested copies preferred"
+                            ].map((item, idx) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
 
-                        {/* === NEW: Dynamic Custom Templates === */}
-                        {docRequirements.map((req) => (
-                          req.template_url && (
-                            <div key={req.id} className="space-y-2">
-                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{req.document_name}</p>
-                              <a 
-                                href={req.template_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="w-full flex items-center justify-center p-4 bg-gray-100 text-primary border border-gray-200 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-transform shadow-lg group"
-                              >
-                                <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get {req.document_name}
-                              </a>
-                            </div>
-                          )
-                        ))}
-                      </div>
-                    </div>
-                    )}
-                  </div>
+                        {/* Templates Center */}
+                        {displayBooking.pgs && (
+                          <div className="pt-6 border-t border-border-low space-y-4">
+                            <h4 className="font-bold text-[10px] uppercase tracking-wider text-text-secondary">Required Official Templates</h4>
+                            
+                            <div className="space-y-3">
+                              {/* Vidu Authorization (International only) */}
+                              {isInternationalStudent && (
+                                <div className="space-y-1.5">
+                                  <p className="text-[9px] font-bold text-text-secondary uppercase tracking-wider font-mono">Vidu Authorization</p>
+                                  {displayBooking.pgs?.owner_doc_url ? (
+                                    <a 
+                                      href={displayBooking.pgs.owner_doc_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="w-full flex items-center justify-center py-2.5 bg-primary text-on-primary rounded-lg font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-all gap-1.5 shrink-0"
+                                    >
+                                      <Download className="w-3.5 h-3.5" /> Get Vidu Form
+                                    </a>
+                                  ) : (
+                                    <div className="p-3 bg-error/10 text-error rounded-lg text-[10px] font-semibold border border-error/20 italic">
+                                      Vidu Form Not Loaded
+                                    </div>
+                                  )}
+                                </div>
+                              )}
 
-                  {/* Upload Center */}
-                  <div className="lg:col-span-2 space-y-6">
-                    <h3 className="text-xl font-black mb-6">Document Upload Center</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {kycDocuments.map((doc) => (
-                        <div key={doc.id} className={`group relative p-6 rounded-[2.2rem] border transition-all duration-300 ${
-                          booking[doc.id] 
-                            ? 'bg-green-50 border-green-200' 
-                            : 'bg-white border-gray-100 hover:border-accent shadow-sm'
-                        }`}>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className={`p-3 rounded-2xl ${booking[doc.id] ? 'bg-green-100 text-green-600' : 'bg-gray-50 text-gray-400 group-hover:bg-accent/10 group-hover:text-accent'}`}>
-                              <doc.icon className="w-6 h-6" />
-                            </div>
-                            {booking[doc.id] ? (
-                              <div className="flex space-x-2">
-                                <button 
-                                  onClick={async () => {
-                                    const { data } = await supabase.storage.from('kyc-documents').createSignedUrl(booking[doc.id], 60);
-                                    if (data?.signedUrl) window.open(data.signedUrl, '_blank');
-                                  }}
-                                  className="p-2 bg-white text-green-600 rounded-xl shadow-sm hover:bg-green-100"
-                                >
-                                  <FileSearch className="w-4 h-4" />
-                                </button>
-                                <div className="p-2 bg-green-500 text-white rounded-xl">
-                                  <FileCheck className="w-4 h-4" />
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex flex-col items-end space-y-2">
-                                <div className={`text-[10px] font-black uppercase tracking-widest ${doc.req ? 'text-red-400' : 'text-gray-300'} italic`}>
-                                  {doc.req ? 'Required' : 'Optional'}
-                                </div>
-                                {doc.templateKey && booking.pgs?.[doc.templateKey] && (
+                              {/* Police verification templates */}
+                              <div className="space-y-1.5">
+                                <p className="text-[9px] font-bold text-text-secondary uppercase tracking-wider font-mono">Police Verification</p>
+                                {displayBooking.pgs?.police_verification_template_url ? (
                                   <a 
-                                    href={booking.pgs[doc.templateKey]} 
+                                    href={displayBooking.pgs.police_verification_template_url} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="flex items-center text-[9px] font-black text-accent uppercase tracking-widest bg-accent/5 px-2 py-1 rounded-lg hover:bg-accent/10 transition-colors animate-pulse hover:animate-none"
+                                    className="w-full flex items-center justify-center py-2.5 bg-primary text-on-primary rounded-lg font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-all gap-1.5 shrink-0"
                                   >
-                                    <Download className="w-3 h-3 mr-1" /> Get Template
+                                    <Download className="w-3.5 h-3.5" /> Get Police Form
                                   </a>
+                                ) : (
+                                  <div className="p-3 bg-surface-container border border-border-low rounded-lg text-[10px] font-semibold text-text-secondary italic">
+                                    No police template loaded
+                                  </div>
                                 )}
                               </div>
-                            )}
-                          </div>
-                          
-                          <div className="mb-4">
-                            <h4 className="font-black text-primary text-sm">{doc.label}</h4>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-1">
-                              {booking[doc.id] ? 'Successfully Uploaded' : 'Waiting for upload'}
-                            </p>
-                          </div>
 
-                          <label className={`w-full flex items-center justify-center p-3 rounded-xl font-black text-[10px] uppercase tracking-widest cursor-pointer transition-all ${
-                            booking[doc.id] 
-                              ? 'bg-white/50 text-green-700 hover:bg-white' 
-                              : 'bg-accent text-white shadow-lg hover:bg-blue-600'
-                          }`}>
-                            <Upload className="w-3.5 h-3.5 mr-2" />
-                            {booking[doc.id] ? 'Update File' : 'Choose File'}
-                            <input 
-                              type="file" 
-                              className="hidden" 
-                              onChange={(e) => handleDocUpload(e.target.files[0], doc.id)}
-                            />
-                          </label>
-                        </div>
-                      ))}
-
-                      {/* === NEW: Dynamic Document Upload Slots === */}
-                      {docRequirements.map((req) => {
-                        const uploaded = dynamicDocs.find(d => d.requirement_id === req.id);
-                        return (
-                          <div key={req.id} className={`group relative p-6 rounded-[2.2rem] border transition-all duration-300 ${
-                            uploaded 
-                              ? (uploaded.status === 'verified' ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200') 
-                              : 'bg-white border-gray-100 hover:border-accent shadow-sm'
-                          }`}>
-                            <div className="flex items-center justify-between mb-4">
-                              <div className={`p-3 rounded-2xl ${uploaded ? 'bg-accent/10 text-accent' : 'bg-gray-50 text-gray-400 group-hover:bg-accent/10 group-hover:text-accent'}`}>
-                                <Shield className="w-6 h-6" />
-                              </div>
-                              {uploaded ? (
-                                <div className="flex space-x-2">
-                                  <button 
-                                    onClick={() => window.open(uploaded.uploaded_url, '_blank')}
-                                    className="p-2 bg-white text-accent rounded-xl shadow-sm hover:bg-accent/5"
-                                  >
-                                    <FileSearch className="w-4 h-4" />
-                                  </button>
-                                  <div className={`p-2 rounded-xl text-white ${uploaded.status === 'verified' ? 'bg-green-500' : 'bg-yellow-500'}`}>
-                                    {uploaded.status === 'verified' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex flex-col items-end space-y-2">
-                                  <div className="text-[10px] font-black uppercase tracking-widest text-red-400 italic">
-                                    Required
-                                  </div>
-                                  {req.template_url && (
+                              {/* Dynamic custom templates */}
+                              {docRequirements.map((req) => (
+                                req.template_url && (
+                                  <div key={req.id} className="space-y-1.5">
+                                    <p className="text-[9px] font-bold text-text-secondary uppercase tracking-wider font-mono">{req.document_name}</p>
                                     <a 
                                       href={req.template_url} 
                                       target="_blank" 
                                       rel="noopener noreferrer"
-                                      className="flex items-center text-[9px] font-black text-accent uppercase tracking-widest bg-accent/5 px-2 py-1 rounded-lg hover:bg-accent/10 transition-colors animate-pulse hover:animate-none"
+                                      className="w-full flex items-center justify-center py-2.5 bg-surface-container border border-border-low text-text-primary rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-surface-container-high transition-all gap-1.5 shrink-0"
                                     >
-                                      <Download className="w-3 h-3 mr-1" /> Get Template
+                                      <Download className="w-3.5 h-3.5" /> Get {req.document_name}
                                     </a>
+                                  </div>
+                                )
+                              ))}
+
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Upload Center */}
+                      <div className="lg:col-span-2 space-y-4">
+                        <h3 className="font-bold text-base text-text-primary">Official Upload Directory</h3>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {kycDocuments.map((doc) => {
+                            const isUploaded = Boolean(displayBooking[doc.id]);
+                            return (
+                              <div key={doc.id} className={`p-5 rounded-lg border transition-all duration-300 flex flex-col justify-between h-44 ${
+                                isUploaded 
+                                  ? 'bg-success/5 border-success/30' 
+                                  : 'bg-surface-main border-border-low hover:border-outline shadow-sm'
+                              }`}>
+                                <div className="flex items-start justify-between">
+                                  <div className={`p-2.5 rounded-lg ${isUploaded ? 'bg-success/10 text-success' : 'bg-surface-container-high text-outline'}`}>
+                                    <doc.icon className="w-5 h-5 shrink-0" />
+                                  </div>
+                                  
+                                  {isUploaded ? (
+                                    <div className="flex gap-1.5">
+                                      <button 
+                                        onClick={async () => {
+                                          const { data } = await supabase.storage.from('kyc-documents').createSignedUrl(displayBooking[doc.id], 60);
+                                          if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+                                        }}
+                                        className="p-1.5 bg-surface-main text-success rounded border border-success/20 hover:bg-success/10 shadow-sm shrink-0 cursor-pointer"
+                                        title="View File"
+                                      >
+                                        <FileSearch className="w-3.5 h-3.5" />
+                                      </button>
+                                      <div className="p-1.5 bg-success text-on-primary rounded shrink-0">
+                                        <FileCheck className="w-3.5 h-3.5" />
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className={`text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                                      doc.req ? 'bg-error/15 text-error' : 'bg-surface-container-high text-text-secondary/60'
+                                    }`}>
+                                      {doc.req ? 'Required' : 'Optional'}
+                                    </span>
                                   )}
                                 </div>
-                              )}
-                            </div>
-                            
-                            <div className="mb-4">
-                              <h4 className="font-black text-primary text-sm">{req.document_name}</h4>
-                              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-1">
-                                {uploaded ? (uploaded.status === 'rejected' ? `Rejected: ${uploaded.rejection_reason}` : uploaded.status.toUpperCase()) : 'Waiting for upload'}
-                              </p>
-                            </div>
 
-                            <label className={`w-full flex items-center justify-center p-3 rounded-xl font-black text-[10px] uppercase tracking-widest cursor-pointer transition-all ${
-                              uploaded 
-                                ? 'bg-white/50 text-accent hover:bg-white' 
-                                : 'bg-accent text-white shadow-lg hover:bg-blue-600'
-                            }`}>
-                              <Upload className="w-3.5 h-3.5 mr-2" />
-                              {uploaded ? 'Update File' : 'Choose File'}
-                              <input 
-                                type="file" 
-                                className="hidden" 
-                                onChange={(e) => handleDynamicDocUpload(e.target.files[0], req.id, req.document_name)}
-                              />
-                            </label>
-                          </div>
-                        );
-                      })}
+                                <div>
+                                  <h4 className="font-bold text-sm text-text-primary truncate">{doc.label}</h4>
+                                  <p className="text-[9px] text-text-secondary/80 font-mono tracking-wider uppercase mt-0.5">
+                                    {isUploaded ? 'SUCCESSFULLY AUDITED' : 'WAITING FOR FILE'}
+                                  </p>
+                                </div>
+
+                                {isUploaded ? (
+                                  <div className={`w-full py-2 rounded text-[10px] font-bold uppercase tracking-wider text-center ${displayBooking.is_kyc_verified ? 'bg-success/10 text-success border border-success/20' : 'bg-surface-main border border-success/20 text-success'}`}>
+                                    {displayBooking.is_kyc_verified ? 'KYC Verified' : 'Already Uploaded'}
+                                  </div>
+                                ) : (
+                                  <label className="w-full flex items-center justify-center py-2 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors bg-primary text-on-primary hover:opacity-90">
+                                    <Upload className="w-3 h-3 mr-1.5 shrink-0" />
+                                    <span>Choose File</span>
+                                    <input 
+                                      type="file" 
+                                      className="hidden" 
+                                      onChange={(e) => handleDocUpload(e.target.files[0], doc.id)}
+                                    />
+                                  </label>
+                                )}
+                              </div>
+                            );
+                          })}
+
+                          {/* Dynamic Custom Document Slots */}
+                          {docRequirements.map((req) => {
+                            const uploaded = dynamicDocs.find(d => d.requirement_id === req.id);
+                            const isUploaded = Boolean(uploaded);
+                            return (
+                              <div key={req.id} className={`p-5 rounded-lg border transition-all duration-300 flex flex-col justify-between h-44 ${
+                                isUploaded 
+                                  ? (uploaded.status === 'verified' ? 'bg-success/5 border-success/30' : 'bg-primary/5 border-primary/30') 
+                                  : 'bg-surface-main border-border-low hover:border-outline shadow-sm'
+                              }`}>
+                                <div className="flex items-start justify-between">
+                                  <div className={`p-2.5 rounded-lg ${isUploaded ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-outline'}`}>
+                                    <Shield className="w-5 h-5 shrink-0" />
+                                  </div>
+                                  
+                                  {isUploaded ? (
+                                    <div className="flex gap-1.5">
+                                      <button 
+                                        onClick={() => window.open(uploaded.uploaded_url, '_blank')}
+                                        className="p-1.5 bg-surface-main text-primary rounded border border-primary/20 hover:bg-primary/15 shadow-sm shrink-0 cursor-pointer"
+                                        title="View File"
+                                      >
+                                        <FileSearch className="w-3.5 h-3.5" />
+                                      </button>
+                                      <div className={`p-1.5 rounded text-on-primary shrink-0 ${uploaded.status === 'verified' ? 'bg-success' : 'bg-primary'}`}>
+                                        {uploaded.status === 'verified' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-error/15 text-error">
+                                      Required
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div>
+                                  <h4 className="font-bold text-sm text-text-primary truncate">{req.document_name}</h4>
+                                  <p className="text-[9px] text-text-secondary/80 font-mono tracking-wider uppercase mt-0.5">
+                                    {isUploaded ? (uploaded.status === 'rejected' ? `REJECTED: ${uploaded.rejection_reason}` : uploaded.status.toUpperCase()) : 'WAITING FOR FILE'}
+                                  </p>
+                                </div>
+
+                                {isUploaded && uploaded.status !== 'rejected' ? (
+                                  <div className={`w-full py-2 rounded text-[10px] font-bold uppercase tracking-wider text-center ${uploaded.status === 'verified' ? 'bg-success/10 text-success border border-success/20' : 'bg-surface-main border border-success/20 text-success'}`}>
+                                    {uploaded.status === 'verified' ? 'KYC Verified' : 'Already Uploaded'}
+                                  </div>
+                                ) : (
+                                  <label className={`w-full flex items-center justify-center py-2 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${
+                                    isUploaded 
+                                      ? 'bg-error/10 border border-error/20 text-error hover:bg-error/20 shadow-sm' 
+                                      : 'bg-primary text-on-primary hover:opacity-90'
+                                  }`}>
+                                    <Upload className="w-3 h-3 mr-1.5 shrink-0" />
+                                    <span>{isUploaded ? 'Re-upload File' : 'Choose File'}</span>
+                                    <input 
+                                      type="file" 
+                                      className="hidden" 
+                                      onChange={(e) => handleDynamicDocUpload(e.target.files[0], req.id, req.document_name)}
+                                    />
+                                  </label>
+                                )}
+                              </div>
+                            );
+                          })}
+
+                        </div>
+                      </div>
+
                     </div>
-                  </div>
+                  )}
+
                 </div>
-                )}
-              </div>
-            )}
-            {activeTab === 'kyc' && !booking && (
-              <div className="text-center py-20">
-                <ShieldCheck className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-400">No Booking Active</h3>
-                <p className="text-gray-500">Documents will be available once you book a room.</p>
-              </div>
-            )}
-            {isAdmin && (activeTab === 'admin' || activeTab === 'team' || activeTab === 'pgs' || activeTab === 'bills_admin' || activeTab === 'complaints_admin' || activeTab === 'queries_admin' || activeTab === 'revenue' || activeTab === 'users_admin' || activeTab === 'workers_admin') && (
-              <AdminPanel section={activeTab} />
-            )}
-          </motion.div>
+              )}
+
+              {activeTab === 'kyc' && !displayBooking && (
+                <div className="text-center py-16 bg-surface-container-low border border-dashed border-border-low rounded-xl space-y-2">
+                  <ShieldCheck className="w-10 h-10 text-outline mx-auto" />
+                  <h3 className="text-base font-bold text-text-primary">No Active Stays</h3>
+                  <p className="text-text-secondary text-xs">KYC portals open once your stay is confirmed.</p>
+                </div>
+              )}
+
+              {/* Admin Portal route links */}
+              {isAdmin && (activeTab === 'admin' || activeTab === 'team' || activeTab === 'pgs' || activeTab === 'bills_admin' || activeTab === 'complaints_admin' || activeTab === 'queries_admin' || activeTab === 'revenue' || activeTab === 'users_admin' || activeTab === 'workers_admin') && (
+                <AdminPanel section={activeTab} />
+              )}
+
+            </motion.div>
+          </div>
+
         </div>
+
       </div>
     </div>
   );
 };
 
 export default Dashboard;
-

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Dashboard | Apna Rooms</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#e5efff",
+                        "tertiary": "#00533d",
+                        "on-secondary-container": "#5c647a",
+                        "surface-dim": "#ccdbf2",
+                        "primary-container": "#4f46e5",
+                        "surface-variant": "#d4e4fa",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "on-primary-fixed": "#0f0069",
+                        "surface-container-low": "#eef4ff",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-subtle": "#F8FAFC",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "on-primary-container": "#dad7ff",
+                        "success": "#45C89C",
+                        "outline-variant": "#c7c4d8",
+                        "primary": "#3525cd",
+                        "on-tertiary-container": "#74f2c3",
+                        "tertiary-fixed-dim": "#5cdcaf",
+                        "on-tertiary-fixed-variant": "#00513b",
+                        "on-tertiary-fixed": "#002116",
+                        "surface-bright": "#f8f9ff",
+                        "on-secondary": "#ffffff",
+                        "border-low": "#E2E8F0",
+                        "background": "#f8f9ff",
+                        "secondary": "#565e74",
+                        "secondary-fixed": "#dae2fd",
+                        "surface": "#f8f9ff",
+                        "inverse-surface": "#233143",
+                        "error": "#EF4444",
+                        "outline": "#777587",
+                        "on-background": "#0d1c2d",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#006e51",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#464555",
+                        "on-secondary-fixed": "#131b2e",
+                        "primary-fixed": "#e2dfff",
+                        "text-primary": "#0F172A",
+                        "on-surface": "#0d1c2d",
+                        "text-secondary": "#475569",
+                        "surface-tint": "#4d44e3",
+                        "surface-main": "#FFFFFF",
+                        "surface-container-highest": "#d4e4fa",
+                        "inverse-on-surface": "#e9f1ff",
+                        "surface-container-high": "#dbe9ff",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#7bf9ca",
+                        "inverse-primary": "#c3c0ff",
+                        "secondary-container": "#dae2fd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-desktop": "48px",
+                        "lg": "24px",
+                        "max-width": "1280px",
+                        "unit": "4px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["JetBrains+Mono"],
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-sm": ["JetBrains+Mono"],
+                        "body-sm": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "label-sm": ["10px", {"lineHeight": "12px", "fontWeight": "500"}],
+                        "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg": ["30px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #F8FAFC;
+        }
+    </style>
+</head>
+<body class="bg-surface-subtle text-on-background font-body-md overflow-x-hidden">
+<!-- Top Navigation Bar (Shared Component) -->
+<header class="sticky top-0 w-full z-50 bg-surface-main border-b border-border-low h-16 flex items-center">
+<div class="flex justify-between items-center w-full max-w-max-width mx-auto px-margin-desktop">
+<div class="flex items-center gap-xl">
+<span class="text-headline-md font-headline-md font-bold text-primary">Apna Rooms</span>
+<nav class="hidden md:flex gap-lg items-center">
+<a class="text-primary border-b-2 border-primary pb-1 font-body-md" href="#">Find PGs</a>
+<a class="text-text-secondary hover:text-primary transition-colors duration-200 font-body-md" href="#">How it Works</a>
+<a class="text-text-secondary hover:text-primary transition-colors duration-200 font-body-md" href="#">About Us</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined p-sm text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors">notifications</button>
+<div class="h-8 w-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold text-label-md">JD</div>
+</div>
+</div>
+</header>
+<div class="max-w-max-width mx-auto flex min-h-[calc(100vh-64px)]">
+<!-- Sidebar Navigation -->
+<aside class="hidden md:flex flex-col w-64 border-r border-border-low bg-surface-main py-xl sticky top-16 h-[calc(100vh-64px)]">
+<nav class="flex flex-col gap-xs px-md">
+<a class="flex items-center gap-sm px-md py-sm bg-surface-container text-primary rounded-lg font-medium transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-body-md">Overview</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-text-secondary hover:bg-surface-subtle rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-body-md">Payments</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-text-secondary hover:bg-surface-subtle rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined">report_problem</span>
+<span class="font-body-md">Complaints</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-text-secondary hover:bg-surface-subtle rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-body-md">Documents</span>
+</a>
+<div class="my-md border-t border-border-low mx-md"></div>
+<a class="flex items-center gap-sm px-md py-sm text-text-secondary hover:bg-surface-subtle rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-md">
+<div class="p-md bg-surface-container-low rounded-xl border border-border-low">
+<p class="font-label-sm text-label-sm text-text-secondary uppercase mb-xs">Support</p>
+<p class="font-body-sm text-body-sm mb-sm text-on-surface">Need help with your stay? Contact your manager.</p>
+<button class="w-full py-sm bg-surface-main border border-border-low text-on-surface rounded-lg font-body-sm font-semibold hover:border-outline transition-colors">Contact Manager</button>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 p-lg md:p-xl space-y-xl">
+<!-- Dashboard Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-text-primary">Welcome back, John</h1>
+<p class="text-text-secondary font-body-md">Room 402 • Sterling Heights PG</p>
+</div>
+<div class="flex items-center gap-sm text-label-md font-label-md bg-success/10 text-success px-md py-sm rounded-full">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+                    Occupancy Status: Verified Active
+                </div>
+</div>
+<!-- Status Widgets Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<!-- Next Rent Due -->
+<div class="bg-surface-main border border-border-low rounded-xl p-lg hover:border-outline transition-colors flex flex-col justify-between h-full">
+<div>
+<div class="flex items-center justify-between mb-md">
+<span class="font-label-md text-label-md text-text-secondary uppercase tracking-wider">Next Rent Due</span>
+<span class="material-symbols-outlined text-primary-container">calendar_today</span>
+</div>
+<div class="mb-md">
+<h2 class="font-headline-md text-headline-md text-text-primary">₹14,500</h2>
+<p class="text-body-sm font-body-sm text-error">Due in 4 days (Sep 1st)</p>
+</div>
+</div>
+<button class="w-full py-md bg-primary-container text-on-primary rounded-lg font-body-md font-semibold hover:opacity-90 active:opacity-80 transition-all">Pay Now</button>
+</div>
+<!-- Electricity Usage -->
+<div class="bg-surface-main border border-border-low rounded-xl p-lg hover:border-outline transition-colors">
+<div class="flex items-center justify-between mb-md">
+<span class="font-label-md text-label-md text-text-secondary uppercase tracking-wider">Current Electricity</span>
+<span class="material-symbols-outlined text-success">bolt</span>
+</div>
+<div class="mb-lg">
+<h2 class="font-headline-md text-headline-md text-text-primary">124.5 kWh</h2>
+<p class="text-body-sm font-body-sm text-text-secondary">Current cycle: Aug 1 - Aug 28</p>
+</div>
+<div class="w-full bg-surface-container-low h-2 rounded-full overflow-hidden mb-xs">
+<div class="bg-success h-full" style="width: 65%;"></div>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-text-secondary">
+<span>Current</span>
+<span>Cap: 200 kWh</span>
+</div>
+</div>
+<!-- Recent Complaints -->
+<div class="bg-surface-main border border-border-low rounded-xl p-lg hover:border-outline transition-colors">
+<div class="flex items-center justify-between mb-md">
+<span class="font-label-md text-label-md text-text-secondary uppercase tracking-wider">Recent Complaints</span>
+<span class="material-symbols-outlined text-error">forum</span>
+</div>
+<div class="space-y-md">
+<div class="flex items-start gap-md">
+<div class="w-2 h-2 rounded-full bg-success mt-1.5 shrink-0"></div>
+<div>
+<p class="font-body-md font-semibold text-text-primary leading-tight">AC Servicing</p>
+<p class="font-label-sm text-label-sm text-text-secondary">Resolved • 2 days ago</p>
+</div>
+</div>
+<div class="flex items-start gap-md">
+<div class="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div>
+<div>
+<p class="font-body-md font-semibold text-text-primary leading-tight">Tap leakage in washroom</p>
+<p class="font-label-sm text-label-sm text-text-secondary">In Progress • 4h ago</p>
+</div>
+</div>
+</div>
+<button class="mt-lg w-full py-sm text-primary font-body-sm font-semibold hover:underline">View All Tickets</button>
+</div>
+</div>
+<!-- Transaction History Section -->
+<section class="bg-surface-main border border-border-low rounded-xl overflow-hidden">
+<div class="px-lg py-md border-b border-border-low flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-text-primary">Transaction History</h3>
+<button class="text-primary font-body-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">download</span> Export PDF
+                    </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-surface-subtle">
+<tr>
+<th class="px-lg py-sm font-label-md text-label-md text-text-secondary uppercase tracking-wider">Invoice ID</th>
+<th class="px-lg py-sm font-label-md text-label-md text-text-secondary uppercase tracking-wider">Category</th>
+<th class="px-lg py-sm font-label-md text-label-md text-text-secondary uppercase tracking-wider">Date</th>
+<th class="px-lg py-sm font-label-md text-label-md text-text-secondary uppercase tracking-wider">Amount</th>
+<th class="px-lg py-sm font-label-md text-label-md text-text-secondary uppercase tracking-wider">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-low font-label-md text-label-md">
+<tr class="hover:bg-surface-subtle transition-colors">
+<td class="px-lg py-md text-text-primary">#INV-9821</td>
+<td class="px-lg py-md text-text-secondary">Monthly Rent</td>
+<td class="px-lg py-md text-text-secondary">Aug 01, 2024</td>
+<td class="px-lg py-md text-text-primary font-bold">₹14,500</td>
+<td class="px-lg py-md">
+<span class="bg-success/10 text-success px-sm py-1 rounded-sm border border-success/20">PAID</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-subtle transition-colors">
+<td class="px-lg py-md text-text-primary">#INV-9740</td>
+<td class="px-lg py-md text-text-secondary">Electricity</td>
+<td class="px-lg py-md text-text-secondary">Aug 05, 2024</td>
+<td class="px-lg py-md text-text-primary font-bold">₹1,240</td>
+<td class="px-lg py-md">
+<span class="bg-success/10 text-success px-sm py-1 rounded-sm border border-success/20">PAID</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-subtle transition-colors">
+<td class="px-lg py-md text-text-primary">#INV-9611</td>
+<td class="px-lg py-md text-text-secondary">Monthly Rent</td>
+<td class="px-lg py-md text-text-secondary">Jul 01, 2024</td>
+<td class="px-lg py-md text-text-primary font-bold">₹14,500</td>
+<td class="px-lg py-md">
+<span class="bg-success/10 text-success px-sm py-1 rounded-sm border border-success/20">PAID</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-subtle transition-colors">
+<td class="px-lg py-md text-text-primary">#INV-9520</td>
+<td class="px-lg py-md text-text-secondary">Maintenance Fee</td>
+<td class="px-lg py-md text-text-secondary">Jun 15, 2024</td>
+<td class="px-lg py-md text-text-primary font-bold">₹500</td>
+<td class="px-lg py-md">
+<span class="bg-error/10 text-error px-sm py-1 rounded-sm border border-error/20">FAILED</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Quick Stats & Info -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<div class="bg-surface-main border border-border-low rounded-xl p-lg">
+<h4 class="font-headline-sm text-headline-sm text-text-primary mb-md">Room Details</h4>
+<div class="grid grid-cols-2 gap-lg">
+<div>
+<p class="font-label-sm text-label-sm text-text-secondary uppercase">Room Type</p>
+<p class="font-body-md text-body-md text-text-primary font-semibold">Twin Sharing • AC</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-text-secondary uppercase">Check-in Date</p>
+<p class="font-body-md text-body-md text-text-primary font-semibold">Jan 12, 2024</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-text-secondary uppercase">Notice Period</p>
+<p class="font-body-md text-body-md text-text-primary font-semibold">30 Days</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-text-secondary uppercase">Security Deposit</p>
+<p class="font-body-md text-body-md text-text-primary font-semibold">₹29,000</p>
+</div>
+</div>
+</div>
+<div class="bg-surface-main border border-border-low rounded-xl p-lg relative overflow-hidden flex items-center justify-center group cursor-pointer">
+<img alt="Room Preview" class="absolute inset-0 w-full h-full object-cover opacity-10 group-hover:opacity-20 transition-opacity" data-alt="A clean and modern PG room interior with neutral tones, high-quality wooden furniture, and warm ambient lighting. The atmosphere is professional and cozy, emphasizing a premium living experience with organized spaces and minimalist design. The lighting is soft, creating a calm and inviting environment for professional tenants." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3hmfdEYQetUJaknoBjfFGsNASufS9HZITP3fI69ChUpz7NuKN5z07D8q3_XvcejK_-HbI6E83LxZw-BgG6CaI5x0g3XsPkFNSWWQdFr6W0DxfD37M5p2iKp_PpnHQ0CqV503Y3-MdIhoRmyXxwd7bGD4TmB6bZBVw5mMwtBgrnwwDMs1Hl8DrkRqqIR3xWa5iankoPavxei9tdKW-IJ4-BVi8gEcqliG9bL4IVO0xRbAtz2zHa-l4SeCHOKMDErkagux33iDA63wD"/>
+<div class="text-center relative z-10">
+<span class="material-symbols-outlined text-primary text-4xl mb-sm">photo_library</span>
+<h4 class="font-headline-sm text-headline-sm text-text-primary">View Property Photos</h4>
+<p class="text-body-sm text-text-secondary">Tour the amenities and common areas</p>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer (Shared Component) -->
+<footer class="w-full mt-xl bg-surface-subtle border-t border-border-low">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter max-w-max-width mx-auto px-margin-desktop py-xl">
+<div class="md:col-span-4">
+<span class="text-headline-sm font-headline-sm font-bold text-primary">Apna Rooms</span>
+<p class="mt-md font-body-sm text-body-sm text-on-surface-variant max-w-xs">
+                    Professional PG rentals for the modern workforce. Quality living made simple and transparent.
+                </p>
+</div>
+<div class="md:col-span-2 space-y-sm">
+<h5 class="font-label-md text-label-md text-text-primary uppercase">Portal</h5>
+<nav class="flex flex-col gap-xs font-body-sm text-body-sm text-on-surface-variant">
+<a class="hover:text-primary transition-colors" href="#">Help Center</a>
+<a class="hover:text-primary transition-colors" href="#">Booking Policy</a>
+<a class="hover:text-primary transition-colors" href="#">House Rules</a>
+</nav>
+</div>
+<div class="md:col-span-2 space-y-sm">
+<h5 class="font-label-md text-label-md text-text-primary uppercase">Company</h5>
+<nav class="flex flex-col gap-xs font-body-sm text-body-sm text-on-surface-variant">
+<a class="hover:text-primary transition-colors" href="#">About Us</a>
+<a class="hover:text-primary transition-colors" href="#">Careers</a>
+<a class="hover:text-primary transition-colors" href="#">Contact</a>
+</nav>
+</div>
+<div class="md:col-span-4 space-y-sm">
+<h5 class="font-label-md text-label-md text-text-primary uppercase">Download App</h5>
+<div class="flex gap-md">
+<div class="h-10 w-32 bg-on-background rounded-lg flex items-center justify-center gap-xs text-white cursor-pointer hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[20px]">play_arrow</span>
+<span class="text-[10px] leading-tight font-bold">GET IT ON<br/><span class="text-[14px]">Google Play</span></span>
+</div>
+<div class="h-10 w-32 bg-on-background rounded-lg flex items-center justify-center gap-xs text-white cursor-pointer hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[20px]">ios</span>
+<span class="text-[10px] leading-tight font-bold">Download on the<br/><span class="text-[14px]">App Store</span></span>
+</div>
+</div>
+</div>
+</div>
+<div class="max-w-max-width mx-auto px-margin-desktop py-lg border-t border-border-low flex justify-between items-center font-body-sm text-body-sm text-on-surface-variant">
+<span>© 2024 Apna Rooms. Professional PG Rentals.</span>
+<div class="flex gap-lg">
+<a class="hover:text-primary transition-colors" href="#">Terms</a>
+<a class="hover:text-primary transition-colors" href="#">Privacy</a>
+</div>
+</div>
+</footer>
+<script>
+        // Simple interactivity for the cards
+        document.querySelectorAll('aside nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                document.querySelectorAll('aside nav a').forEach(l => {
+                    l.classList.remove('bg-surface-container', 'text-primary');
+                    l.classList.add('text-text-secondary');
+                    const icon = l.querySelector('.material-symbols-outlined');
+                    if(icon) icon.style.fontVariationSettings = "'FILL' 0";
+                });
+                link.classList.add('bg-surface-container', 'text-primary');
+                link.classList.remove('text-text-secondary');
+                const activeIcon = link.querySelector('.material-symbols-outlined');
+                if(activeIcon) activeIcon.style.fontVariationSettings = "'FILL' 1";
+            });
+        });
+    </script>
+</body></html>

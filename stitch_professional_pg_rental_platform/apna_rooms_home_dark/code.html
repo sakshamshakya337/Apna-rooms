@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Apna Rooms - Premium PG Rentals</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;family=Hanken+Grotesk:wght@600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#0b1326",
+                        "surface-container-lowest": "#060e20",
+                        "secondary-fixed-dim": "#89ceff",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "error": "#ffb4ab",
+                        "primary": "#c0c1ff",
+                        "surface-container-low": "#131b2e",
+                        "surface-tint": "#c0c1ff",
+                        "primary-fixed": "#e1e0ff",
+                        "on-error": "#690005",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-high": "#222a3d",
+                        "on-secondary-fixed-variant": "#004c6e",
+                        "on-surface": "#dae2fd",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "on-secondary": "#00344d",
+                        "secondary": "#89ceff",
+                        "on-tertiary-container": "#452000",
+                        "on-secondary-fixed": "#001e2f",
+                        "surface-container": "#171f33",
+                        "secondary-container": "#00a2e6",
+                        "surface-container-highest": "#2d3449",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "outline": "#908fa0",
+                        "on-tertiary-fixed": "#301400",
+                        "on-primary": "#1000a9",
+                        "on-background": "#dae2fd",
+                        "surface-bright": "#31394d",
+                        "secondary-fixed": "#c9e6ff",
+                        "outline-variant": "#464554",
+                        "inverse-primary": "#494bd6",
+                        "on-tertiary": "#4f2500",
+                        "tertiary": "#ffb783",
+                        "surface-variant": "#2d3449",
+                        "on-secondary-container": "#00344e",
+                        "on-primary-fixed": "#07006c",
+                        "primary-container": "#8083ff",
+                        "on-surface-variant": "#c7c4d7",
+                        "background": "#0b1326",
+                        "inverse-on-surface": "#283044",
+                        "surface-dim": "#0b1326",
+                        "inverse-surface": "#dae2fd",
+                        "tertiary-container": "#d97721",
+                        "on-primary-container": "#0d0096",
+                        "tertiary-fixed": "#ffdcc5"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "margin-mobile": "20px",
+                        "container-max": "1280px",
+                        "margin-desktop": "64px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-sm": ["Inter"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-xl": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+        }
+        .data-grid-divider {
+            border-right: 1px solid #464554;
+        }
+        .data-grid-divider:last-child {
+            border-right: none;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md bg-background text-on-background">
+<!-- TopAppBar -->
+<header class="sticky top-0 w-full z-50 bg-surface border-b border-outline-variant">
+<div class="flex justify-between items-center max-w-container-max mx-auto px-margin-mobile lg:px-margin-desktop h-16">
+<div class="flex items-center gap-unit lg:gap-gutter">
+<img alt="Apna Rooms" class="h-10 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtzkTUTcGFrBn5vvY0g0uGIFVMZsBuQMjTIWhS5bjcPdbuU9Xh6WCH5oQJusvPo872At1nIq9WDWThbQKVOYzT6Y0C7Im2htZ1Sp0nqLYJEwHzVFx42u25UonDMk2_wJaj39cF1Oy_pnOIMrFS1Hw767vGeZp7a5OqtMbgO61ac2whqDW0vKsYnOs9lbmrpgaWKn-TQGa_Uey6pHC-xaa9kGETrmmpoG-ex5zX0F8Kt_UsgA2vKW-i9AVUW2QH_TSK3On9DFj6Df9d"/>
+<nav class="hidden md:flex items-center gap-unit ml-gutter">
+<a class="text-primary border-b-2 border-primary pb-1 font-body-md" href="#">Find PGs</a>
+<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors duration-200" href="#">How it Works</a>
+<a class="text-on-surface-variant font-body-md hover:text-primary transition-colors duration-200" href="#">About Us</a>
+</nav>
+</div>
+<div class="flex items-center gap-unit">
+<button class="p-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface">
+<span class="material-symbols-outlined">light_mode</span>
+</button>
+<button class="px-gutter py-2 bg-primary-container text-on-primary-container font-body-md rounded-lg transition-opacity active:opacity-80">Login/Signup</button>
+</div>
+</div>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="bg-surface py-gutter lg:py-margin-desktop border-b border-outline-variant">
+<div class="max-w-container-max mx-auto px-margin-mobile lg:px-margin-desktop">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter items-center">
+<div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface mb-unit">Professional PG Rentals for Modern Professionals.</h1>
+<p class="text-body-md text-on-surface-variant mb-gutter max-w-xl">Streamlined living spaces curated for efficiency. High-density urban locations with verified amenities and transparent billing.</p>
+<!-- High-Density Search Bar -->
+<div class="bg-surface-container-low border border-outline-variant p-2 rounded-xl shadow-lg flex flex-col md:flex-row items-stretch gap-2">
+<div class="flex-1 flex items-center px-2 border-r border-outline-variant">
+<span class="material-symbols-outlined text-outline mr-2">location_on</span>
+<input class="w-full border-none focus:ring-0 text-body-md bg-transparent py-2 text-on-surface placeholder-on-surface-variant" placeholder="Location (e.g. Koramangala)" type="text"/>
+</div>
+<div class="flex-1 flex items-center px-2 border-r border-outline-variant">
+<span class="material-symbols-outlined text-outline mr-2">payments</span>
+<select class="w-full border-none focus:ring-0 text-body-md bg-transparent py-2 text-on-surface">
+<option class="bg-surface-container">Budget Range</option>
+<option class="bg-surface-container">₹5,000 - ₹10,000</option>
+<option class="bg-surface-container">₹10,000 - ₹20,000</option>
+<option class="bg-surface-container">₹20,000+</option>
+</select>
+</div>
+<div class="flex-1 flex items-center px-2">
+<span class="material-symbols-outlined text-outline mr-2">home_work</span>
+<select class="w-full border-none focus:ring-0 text-body-md bg-transparent py-2 text-on-surface">
+<option class="bg-surface-container">PG Type</option>
+<option class="bg-surface-container">Single Room</option>
+<option class="bg-surface-container">Double Sharing</option>
+<option class="bg-surface-container">Triple Sharing</option>
+</select>
+</div>
+<button class="bg-primary text-on-primary px-gutter py-2 font-body-md rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined">search</span>
+                                Search
+                            </button>
+</div>
+</div>
+<div class="hidden lg:block relative aspect-video overflow-hidden rounded-xl border border-outline-variant">
+<img alt="Professional apartment interior" class="w-full h-full object-cover opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuAsMfptj0dPJIw-MEufA8zE7jgQzh9QuX8mRzwHQfXKZrpT27RvLX6gaFpkfrpISZhpY2DIoEMY0CcA0Ai9yURf8iQz5qAO-ClK49ATq3QFdPeNsDPI56RMxJUvpM4ENQlqAiQHqTkQ-VlVUECHtz7xUvrGSS6A_NCMhgWJundb1sP5lyFRtjUQzIpBrK-b8vN7Wteaj7u0zufvSlyA-B5-6JKtXtAOwIjyCefm1zZCrlXwfUFoY0niAeVjLty7b1q7QIzUQ87kFg"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Stats -->
+<section class="max-w-container-max mx-auto px-margin-mobile lg:px-margin-desktop py-gutter">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-unit">
+<div class="p-gutter border border-outline-variant bg-surface-container rounded-xl">
+<span class="block text-label-caps font-label-caps text-on-surface-variant uppercase">Market Occupancy</span>
+<span class="block text-headline-lg font-headline-lg text-primary">94.2%</span>
+</div>
+<div class="p-gutter border border-outline-variant bg-surface-container rounded-xl">
+<span class="block text-label-caps font-label-caps text-on-surface-variant uppercase">Verified Listings</span>
+<span class="block text-headline-lg font-headline-lg text-primary">1,240+</span>
+</div>
+<div class="p-gutter border border-outline-variant bg-surface-container rounded-xl">
+<span class="block text-label-caps font-label-caps text-on-surface-variant uppercase">Active Users</span>
+<span class="block text-headline-lg font-headline-lg text-primary">12.5k</span>
+</div>
+<div class="p-gutter border border-outline-variant bg-surface-container rounded-xl">
+<span class="block text-label-caps font-label-caps text-on-surface-variant uppercase">Avg. Rating</span>
+<span class="block text-headline-lg font-headline-lg text-secondary">4.8/5.0</span>
+</div>
+</div>
+</section>
+<!-- Featured Listings -->
+<section class="max-w-container-max mx-auto px-margin-mobile lg:px-margin-desktop py-margin-desktop">
+<div class="flex justify-between items-end mb-gutter">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Featured PGs</h2>
+<p class="text-body-md text-on-surface-variant">Highly rated accommodations near major tech hubs.</p>
+</div>
+<a class="text-primary font-body-md font-semibold flex items-center gap-1" href="#">
+                    View all listings <span class="material-symbols-outlined">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Card 1 -->
+<div class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden hover:border-primary transition-colors group">
+<div class="relative h-48">
+<img alt="Single sharing PG" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYoV4M3a97789sCSlCru6duF3aBvuCX0U91LG9AwFSpLsXRYGCUnHpq4icJY02HIqWJ2TXHzscdvwSj4iwL_AFhcwD8x0qEx6ZZ4_wIBLepK8CQ2k3psEHDtka2bvcJ8M01lMXNaNf8wwVU73fIQ7LwVXOD_hdogGrn5-WvXXAy3Co2YWeQXt-yV6qlzQjoThNhppxvmJqfIE52RadXPklLuvQTi4JcgwZhXy0K-Q5hcXvI6xrH2r_lHfHMOSZYcYvl1zW2X_g-kEh"/>
+<div class="absolute top-2 left-2 px-2 py-1 bg-surface-container-highest text-on-surface text-label-caps rounded border border-outline-variant">AVAILABLE</div>
+</div>
+<div class="p-gutter">
+<h3 class="font-headline-lg text-[20px] text-on-surface mb-1">Skyline Premium PG</h3>
+<p class="text-body-sm text-on-surface-variant flex items-center gap-1 mb-4">
+<span class="material-symbols-outlined text-[16px]">location_on</span> Koramangala 4th Block, Phagwara
+                        </p>
+<div class="grid grid-cols-3 border-t border-outline-variant pt-gutter text-center">
+<div class="data-grid-divider">
+<span class="block text-label-caps text-on-surface-variant opacity-70">RENT</span>
+<span class="block font-bold text-on-surface">₹12,500</span>
+</div>
+<div class="data-grid-divider">
+<span class="block text-label-caps text-on-surface-variant opacity-70">DEPOSIT</span>
+<span class="block font-bold text-on-surface">2 MO</span>
+</div>
+<div>
+<span class="block text-label-caps text-on-surface-variant opacity-70">TYPE</span>
+<span class="block font-bold text-on-surface">SINGLE</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden hover:border-primary transition-colors group">
+<div class="relative h-48">
+<img alt="Double sharing room" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5_pnRLN1bOOiU3XCh476x3bU8_gphG7GpmCAL_fUiGxnFY8A125Y0hHo2gYs6Mc0LayKbhJw1-JvM4RzGKUz9wIBwP7KmB7H6I5UQxgFkdbY5ywo7TV7v0ZQEALNGdXIirKie76nnBpbpq5Qpi6-5xl9bO6WKSpiTKO88JRfXc4X69TYCE3ggTy2sZjfiChgrA-a8KggSvPRc3l9_c2pgjpt-E8Ew1ML2MurF8K170gBt-3-7FxC-D_1aiV8x-9W7GFFB6WzVYqOA"/>
+<div class="absolute top-2 left-2 px-2 py-1 bg-primary text-on-primary text-label-caps rounded">FILLING FAST</div>
+</div>
+<div class="p-gutter">
+<h3 class="font-headline-lg text-[20px] text-on-surface mb-1">Urban Nest Coliving</h3>
+<p class="text-body-sm text-on-surface-variant flex items-center gap-1 mb-4">
+<span class="material-symbols-outlined text-[16px]">location_on</span> Sector 7, HSR Layout, Phagwara
+                        </p>
+<div class="grid grid-cols-3 border-t border-outline-variant pt-gutter text-center">
+<div class="data-grid-divider">
+<span class="block text-label-caps text-on-surface-variant opacity-70">RENT</span>
+<span class="block font-bold text-on-surface">₹8,500</span>
+</div>
+<div class="data-grid-divider">
+<span class="block text-label-caps text-on-surface-variant opacity-70">DEPOSIT</span>
+<span class="block font-bold text-on-surface">₹15k</span>
+</div>
+<div>
+<span class="block text-label-caps text-on-surface-variant opacity-70">TYPE</span>
+<span class="block font-bold text-on-surface">DOUBLE</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden hover:border-primary transition-colors group">
+<div class="relative h-48">
+<img alt="Studio PG room" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPjtXo_L9f0yNBdSaEA2s1LqxyoPW6joEDCyOt6XN0oOOnez8J1E1ykosvLqbboB3EDCoARFEmNLbLQ7YpeadjrjCj-6ca6z6RBAOcvc6Eu4Odmod-pltjkAcA0uydl9glr5FbO6PS4pB4KtGrtMj7f3nHzOQB7m8JTU6KeZ4096jNVP-URyYtvW4HjoKwqfWIZuZTzxUqIOln2P4AMZTg5N18Tdb0Vwi1GsFdqTNkBtLxDfUOCPAW3vVgcMRD0aQCa_DREqEQ2JF3"/>
+<div class="absolute top-2 left-2 px-2 py-1 bg-surface-container-highest text-on-surface text-label-caps rounded border border-outline-variant">AVAILABLE</div>
+</div>
+<div class="p-gutter">
+<h3 class="font-headline-lg text-[20px] text-on-surface mb-1">Elite Suites</h3>
+<p class="text-body-sm text-on-surface-variant flex items-center gap-1 mb-4">
+<span class="material-symbols-outlined text-[16px]">location_on</span> 100ft Road, Indiranagar, Phagwara
+                        </p>
+<div class="grid grid-cols-3 border-t border-outline-variant pt-gutter text-center">
+<div class="data-grid-divider">
+<span class="block text-label-caps text-on-surface-variant opacity-70">RENT</span>
+<span class="block font-bold text-on-surface">₹15,000</span>
+</div>
+<div class="data-grid-divider">
+<span class="block text-label-caps text-on-surface-variant opacity-70">DEPOSIT</span>
+<span class="block font-bold text-on-surface">1 MO</span>
+</div>
+<div>
+<span class="block text-label-caps text-on-surface-variant opacity-70">TYPE</span>
+<span class="block font-bold text-on-surface">STUDIO</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Why Choose Us -->
+<section class="bg-surface-container-lowest py-margin-desktop border-y border-outline-variant">
+<div class="max-w-container-max mx-auto px-margin-mobile lg:px-margin-desktop">
+<div class="text-center mb-margin-desktop">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Systematic Living Experience</h2>
+<p class="text-body-md text-on-surface-variant">Our platform is engineered for clarity and reliability.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<div class="bg-surface-container p-gutter border border-outline-variant rounded-xl">
+<div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-gutter">
+<span class="material-symbols-outlined text-primary">verified</span>
+</div>
+<h3 class="font-headline-lg text-[20px] text-on-surface mb-2">Verified Listings</h3>
+<p class="text-body-sm text-on-surface-variant">Every room on our platform is physically verified by our audit team to ensure data integrity.</p>
+</div>
+<div class="bg-surface-container p-gutter border border-outline-variant rounded-xl">
+<div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-gutter">
+<span class="material-symbols-outlined text-primary">receipt_long</span>
+</div>
+<h3 class="font-headline-lg text-[20px] text-on-surface mb-2">Transparent Billing</h3>
+<p class="text-body-sm text-on-surface-variant">No hidden charges. Manage your rent, deposits, and electricity bills through our unified dashboard.</p>
+</div>
+<div class="bg-surface-container p-gutter border border-outline-variant rounded-xl">
+<div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-gutter">
+<span class="material-symbols-outlined text-primary">support_agent</span>
+</div>
+<h3 class="font-headline-lg text-[20px] text-on-surface mb-2">24/7 Management</h3>
+<p class="text-body-sm text-on-surface-variant">Dedicated facility managers available to resolve maintenance tickets within a 4-hour SLA.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Testimonial -->
+<section class="max-w-container-max mx-auto px-margin-mobile lg:px-margin-desktop py-margin-desktop">
+<div class="bg-surface-container-high text-on-surface p-margin-desktop rounded-2xl border border-outline-variant">
+<div class="flex flex-col md:flex-row items-center gap-gutter">
+<div class="w-24 h-24 rounded-full overflow-hidden flex-shrink-0 border-2 border-primary">
+<img alt="Anirudh Sharma" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAf1i4fF0L-EuZ8G9NtR0aV-FdTBMxQiJYDECVJ1MrLiO1LA9xZgeIhbwX5t8H8dwEAkZ36b1H2o_oJFjFbLKDIobQU-uYmWl0_0LkF_PlOeafbIIo5mfbNnuw-tfX8m1Ip338vRrg5o58B8BgCaIifz2fjVIIQD7YaGo5sE1KLuV6_8nulOeYDGGGXIMiqRLKH47-OxyzwHiz7IFQz0rJakGYfqbpXOvoTNB9KRcDd-y7elYcpW_OWjwVPHWv0C9aDtlJI8QPnJ2at"/>
+</div>
+<div class="text-center md:text-left">
+<p class="text-headline-lg text-[20px] italic mb-gutter">"The high-density data on Apna Rooms made it easy to compare PGs without having to visit 20 different places. The billing is exactly as promised—no surprises."</p>
+<div>
+<span class="block font-bold text-primary">Anirudh Sharma</span>
+<span class="text-label-caps text-on-surface-variant uppercase">Lead Developer, Tech Solutions</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full bg-surface-container-lowest border-t border-outline-variant">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter max-w-container-max mx-auto px-margin-mobile lg:px-margin-desktop py-margin-desktop">
+<div class="md:col-span-4">
+<img alt="Apna Rooms" class="h-8 w-auto mb-gutter" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtzkTUTcGFrBn5vvY0g0uGIFVMZsBuQMjTIWhS5bjcPdbuU9Xh6WCH5oQJusvPo872At1nIq9WDWThbQKVOYzT6Y0C7Im2htZ1Sp0nqLYJEwHzVFx42u25UonDMk2_wJaj39cF1Oy_pnOIMrFS1Hw767vGeZp7a5OqtMbgO61ac2whqDW0vKsYnOs9lbmrpgaWKn-TQGa_Uey6pHC-xaa9kGETrmmpoG-ex5zX0F8Kt_UsgA2vKW-i9AVUW2QH_TSK3On9DFj6Df9d"/>
+<p class="text-body-sm text-on-surface-variant max-w-xs">India's most trusted platform for professional PG rentals and managed coliving spaces.</p>
+</div>
+<div class="md:col-span-2">
+<h4 class="font-label-caps text-on-surface mb-gutter uppercase">Company</h4>
+<ul class="space-y-2">
+<li><a class="text-on-surface-variant text-body-sm hover:text-primary transition-colors" href="#">About Us</a></li>
+<li><a class="text-on-surface-variant text-body-sm hover:text-primary transition-colors" href="#">Careers</a></li>
+<li><a class="text-on-surface-variant text-body-sm hover:text-primary transition-colors" href="#">Contact</a></li>
+</ul>
+</div>
+<div class="md:col-span-2">
+<h4 class="font-label-caps text-on-surface mb-gutter uppercase">Support</h4>
+<ul class="space-y-2">
+<li><a class="text-on-surface-variant text-body-sm hover:text-primary transition-colors" href="#">Help</a></li>
+<li><a class="text-on-surface-variant text-body-sm hover:text-primary transition-colors" href="#">Terms</a></li>
+<li><a class="text-on-surface-variant text-body-sm hover:text-primary transition-colors" href="#">Privacy</a></li>
+</ul>
+</div>
+<div class="md:col-span-4">
+<h4 class="font-label-caps text-on-surface mb-gutter uppercase">Newsletter</h4>
+<div class="flex gap-2">
+<input class="flex-1 bg-surface border border-outline-variant rounded-lg px-gutter py-2 text-body-sm focus:ring-1 focus:ring-primary text-on-surface placeholder-on-surface-variant" placeholder="Email address" type="email"/>
+<button class="bg-primary text-on-primary px-gutter py-2 rounded-lg text-body-sm font-semibold transition-opacity active:opacity-80">Subscribe</button>
+</div>
+</div>
+</div>
+<div class="max-w-container-max mx-auto px-margin-mobile lg:px-margin-desktop py-gutter border-t border-outline-variant text-center">
+<span class="text-body-sm text-on-surface-variant">© 2024 Apna Rooms. Professional PG Rentals.</span>
+</div>
+</footer>
+<script>
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                const parent = input.closest('div');
+                if (parent) parent.classList.add('bg-primary/10');
+            });
+            input.addEventListener('blur', () => {
+                const parent = input.closest('div');
+                if (parent) parent.classList.remove('bg-primary/10');
+            });
+        });
+    </script>
+</body></html>

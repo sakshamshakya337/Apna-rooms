@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Contact Queries | ProRent Manager</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .active-nav-item {
+            background-color: #4f46e5; /* primary-container */
+            color: #dad7ff; /* on-primary-container */
+            font-weight: 600;
+            border-radius: 0.75rem; /* rounded-xl */
+        }
+        /* Custom Scrollbar for Inbox */
+        .inbox-scroll::-webkit-scrollbar { width: 6px; }
+        .inbox-scroll::-webkit-scrollbar-track { background: transparent; }
+        .inbox-scroll::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+        .inbox-scroll::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#e2dfff",
+                    "on-tertiary-fixed": "#002116",
+                    "surface-container-highest": "#d4e4fa",
+                    "tertiary-fixed-dim": "#5cdcaf",
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#233143",
+                    "surface-bright": "#f8f9ff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface": "#0d1c2d",
+                    "primary-fixed-dim": "#c3c0ff",
+                    "secondary-fixed-dim": "#bec6e0",
+                    "text-primary": "#0F172A",
+                    "tertiary": "#00533d",
+                    "surface-variant": "#d4e4fa",
+                    "primary": "#3525cd",
+                    "on-error-container": "#93000a",
+                    "secondary-container": "#dae2fd",
+                    "outline": "#777587",
+                    "inverse-primary": "#c3c0ff",
+                    "surface-subtle": "#F8FAFC",
+                    "surface-container": "#e5efff",
+                    "surface-dim": "#ccdbf2",
+                    "on-surface-variant": "#464555",
+                    "outline-variant": "#c7c4d8",
+                    "surface-container-low": "#eef4ff",
+                    "surface-container-high": "#dbe9ff",
+                    "primary-container": "#4f46e5",
+                    "secondary": "#565e74",
+                    "on-tertiary-container": "#74f2c3",
+                    "on-secondary-fixed-variant": "#3f465c",
+                    "on-secondary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "surface-main": "#FFFFFF",
+                    "border-low": "#E2E8F0",
+                    "background": "#f8f9ff",
+                    "on-secondary-container": "#5c647a",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-container": "#006e51",
+                    "on-primary-fixed-variant": "#3323cc",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-fixed-variant": "#00513b",
+                    "on-background": "#0d1c2d",
+                    "success": "#45C89C",
+                    "on-primary-container": "#dad7ff",
+                    "error": "#EF4444",
+                    "text-secondary": "#475569",
+                    "on-primary-fixed": "#0f0069",
+                    "inverse-on-surface": "#e9f1ff",
+                    "surface": "#f8f9ff",
+                    "on-secondary-fixed": "#131b2e",
+                    "secondary-fixed": "#dae2fd",
+                    "tertiary-fixed": "#7bf9ca",
+                    "surface-tint": "#4d44e3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "max-width": "1280px",
+                    "md": "16px",
+                    "margin-desktop": "48px",
+                    "unit": "4px",
+                    "lg": "24px",
+                    "sm": "8px",
+                    "gutter": "16px",
+                    "xl": "32px",
+                    "margin-mobile": "16px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "label-sm": ["JetBrains Mono"],
+                    "label-md": ["JetBrains Mono"],
+                    "body-sm": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-sm": ["10px", {"lineHeight": "12px", "fontWeight": "500"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                    "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "headline-lg": ["30px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-surface-subtle font-body-md text-on-surface antialiased overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- Sidebar Navigation -->
+<aside class="flex flex-col h-full p-md gap-sm border-r border-border-low bg-surface-main w-64 shrink-0 hidden md:flex">
+<div class="mb-xl px-sm">
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">ProRent Manager</h1>
+<p class="font-label-md text-label-md text-text-secondary">Admin Dashboard</p>
+</div>
+<nav class="flex-grow space-y-1">
+<a class="flex items-center gap-md p-md text-on-secondary-container hover:bg-surface-container-low transition-all duration-200 cursor-pointer scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md">Users</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-secondary-container hover:bg-surface-container-low transition-all duration-200 cursor-pointer scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">domain</span>
+<span class="font-label-md">PGs</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-secondary-container hover:bg-surface-container-low transition-all duration-200 cursor-pointer scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label-md">Bills</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-secondary-container hover:bg-surface-container-low transition-all duration-200 cursor-pointer scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">report_problem</span>
+<span class="font-label-md">Complaints</span>
+</a>
+<!-- Active Item: Queries -->
+<a class="flex items-center gap-md p-md bg-primary-container text-on-primary-container font-semibold rounded-xl transition-all duration-200 cursor-pointer scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+<span class="font-label-md">Queries</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-secondary-container hover:bg-surface-container-low transition-all duration-200 cursor-pointer scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">engineering</span>
+<span class="font-label-md">Workers</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-secondary-container hover:bg-surface-container-low transition-all duration-200 cursor-pointer scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="font-label-md">Team</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-border-low pt-md space-y-1">
+<a class="flex items-center gap-md p-md text-on-secondary-container hover:bg-surface-container-low transition-all duration-200 cursor-pointer scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-secondary-container hover:bg-surface-container-low transition-all duration-200 cursor-pointer scale-98 active:scale-95" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-grow flex flex-col h-full bg-surface-subtle overflow-hidden">
+<!-- Top App Bar -->
+<header class="sticky top-0 z-50 flex justify-between items-center px-lg py-sm w-full bg-surface-main border-b border-border-low">
+<div class="flex items-center gap-md">
+<button class="md:hidden p-xs text-primary">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h2 class="font-headline-sm text-headline-sm font-bold text-primary">Contact Queries</h2>
+</div>
+<div class="flex items-center gap-lg">
+<div class="hidden sm:flex items-center bg-surface-container-low px-md py-xs rounded-full border border-border-low">
+<span class="material-symbols-outlined text-outline">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm w-48" placeholder="Search queries..." type="text"/>
+</div>
+<div class="flex items-center gap-md text-on-secondary-container">
+<span class="material-symbols-outlined cursor-pointer hover:bg-surface-subtle p-xs rounded-full transition-colors">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:bg-surface-subtle p-xs rounded-full transition-colors">help_outline</span>
+<div class="h-8 w-8 rounded-full bg-primary-fixed overflow-hidden border border-primary/20">
+<img alt="Admin Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a young business administrator with a friendly yet focused expression, set against a neutral, brightly lit corporate office background. The lighting is soft and high-key, emphasizing a clean and modern professional aesthetic that aligns with a high-end management software interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCI3xeuROTyC-VhWTXfoxIhRjnrrL2O04dDcmH_r95BzAIgXl-BoEXh5YGHeXNSBVWCTL__cdsCoT6QrmuoiGJ9t2zT_LuyLaxGNS-ckdkeJE-OwPK8HVptS2O3aC8BjpcYtH32CM9V6MUXPUWwNhH3M4-YLqI9xtvNnOmcH4ZiYLs3rV_mBrCrCD5Vlzp7A86NQzN3cyckwdLbIs81wY1deUrBeolSKaVR3YbuoFRUzv_g04P9KzUm1jTLRhHKFGAKepYu5bBMuUds"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Quick Stats Bar -->
+<div class="px-lg py-md flex gap-md overflow-x-auto whitespace-nowrap scrollbar-hide">
+<div class="bg-surface-main border border-border-low p-md rounded-lg flex flex-col min-w-[160px]">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Total Queries</span>
+<span class="font-headline-md text-headline-md text-primary mt-xs">1,284</span>
+</div>
+<div class="bg-surface-main border border-border-low p-md rounded-lg flex flex-col min-w-[160px]">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Pending</span>
+<span class="font-headline-md text-headline-md text-error mt-xs">24</span>
+</div>
+<div class="bg-surface-main border border-border-low p-md rounded-lg flex flex-col min-w-[160px]">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Avg. Response</span>
+<span class="font-headline-md text-headline-md text-success mt-xs">4.2h</span>
+</div>
+<div class="bg-surface-main border border-border-low p-md rounded-lg flex flex-col min-w-[160px]">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Satisfaction</span>
+<span class="font-headline-md text-headline-md text-on-secondary-fixed-variant mt-xs">98%</span>
+</div>
+</div>
+<!-- Inbox Layout -->
+<div class="flex flex-grow overflow-hidden border-t border-border-low">
+<!-- Message List -->
+<div class="w-full lg:w-2/5 flex flex-col bg-surface-main border-r border-border-low inbox-scroll overflow-y-auto">
+<!-- Filters -->
+<div class="p-md border-b border-border-low flex justify-between items-center bg-surface-subtle/50">
+<span class="font-label-md text-label-md font-bold text-text-primary">ALL SUBMISSIONS</span>
+<div class="flex gap-xs">
+<button class="p-xs hover:bg-white rounded transition-colors"><span class="material-symbols-outlined text-sm">filter_list</span></button>
+<button class="p-xs hover:bg-white rounded transition-colors"><span class="material-symbols-outlined text-sm">sort</span></button>
+</div>
+</div>
+<!-- Inbox Items -->
+<div class="flex flex-col">
+<!-- Active Item -->
+<div class="p-md border-b border-border-low bg-primary-fixed/30 border-l-4 border-l-primary cursor-pointer hover:bg-primary-fixed/40 transition-colors" onclick="selectMessage(this)">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-headline-sm text-body-lg font-bold text-text-primary">Arjun Mehta</span>
+<span class="font-label-sm text-label-sm text-text-secondary">10:42 AM</span>
+</div>
+<div class="font-label-md text-label-md text-primary font-semibold mb-xs truncate">Maintenance Request: Water Leak</div>
+<p class="text-body-sm text-text-secondary line-clamp-2">The kitchen sink in unit 402 is leaking quite badly. I've tried tightening the valve but it hasn't helped much...</p>
+<div class="mt-md flex justify-between items-center">
+<span class="px-sm py-0.5 bg-error-container text-on-error-container text-[10px] font-bold rounded uppercase">Pending</span>
+<span class="material-symbols-outlined text-outline text-sm">attach_file</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="p-md border-b border-border-low cursor-pointer hover:bg-surface-container-low transition-colors border-l-4 border-l-transparent" onclick="selectMessage(this)">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-headline-sm text-body-lg font-bold text-text-primary">Sarah Jenkins</span>
+<span class="font-label-sm text-label-sm text-text-secondary">09:15 AM</span>
+</div>
+<div class="font-label-md text-label-md text-text-primary font-semibold mb-xs truncate">Interested in Pro-Luxury PG</div>
+<p class="text-body-sm text-text-secondary line-clamp-2">Hello, I saw the listing for the luxury PG on MG Road. Is there a double occupancy room available from next month?</p>
+<div class="mt-md flex justify-between items-center">
+<span class="px-sm py-0.5 bg-success/20 text-tertiary text-[10px] font-bold rounded uppercase">Replied</span>
+<span class="font-label-sm text-label-sm text-outline">sarah.j@email.com</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="p-md border-b border-border-low cursor-pointer hover:bg-surface-container-low transition-colors border-l-4 border-l-transparent" onclick="selectMessage(this)">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-headline-sm text-body-lg font-bold text-text-primary">Vikram Singh</span>
+<span class="font-label-sm text-label-sm text-text-secondary">Yesterday</span>
+</div>
+<div class="font-label-md text-label-md text-text-primary font-semibold mb-xs truncate">Payment Gateway Issues</div>
+<p class="text-body-sm text-text-secondary line-clamp-2">I tried paying the monthly bill through the app but it keeps showing a 404 error. Please check my transaction ID: TXN9283...</p>
+<div class="mt-md flex justify-between items-center">
+<span class="px-sm py-0.5 bg-success/20 text-tertiary text-[10px] font-bold rounded uppercase">Replied</span>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="p-md border-b border-border-low cursor-pointer hover:bg-surface-container-low transition-colors border-l-4 border-l-transparent" onclick="selectMessage(this)">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-headline-sm text-body-lg font-bold text-text-primary">Elena Rodriguez</span>
+<span class="font-label-sm text-label-sm text-text-secondary">Yesterday</span>
+</div>
+<div class="font-label-md text-label-md text-text-primary font-semibold mb-xs truncate">Security Deposit Refund Status</div>
+<p class="text-body-sm text-text-secondary line-clamp-2">I moved out on the 15th and was told the deposit would be credited in 7 days. It's been 10 days now.</p>
+<div class="mt-md flex justify-between items-center">
+<span class="px-sm py-0.5 bg-error-container text-on-error-container text-[10px] font-bold rounded uppercase">Pending</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Message Detail -->
+<div class="hidden lg:flex lg:w-3/5 flex-col bg-surface-main relative">
+<!-- Detail Header -->
+<div class="p-lg border-b border-border-low flex justify-between items-center bg-white shadow-sm z-10">
+<div class="flex items-center gap-md">
+<div class="h-12 w-12 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-lg">AM</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-text-primary">Arjun Mehta</h3>
+<p class="font-label-md text-label-md text-text-secondary">arjun.mehta92@outlook.com • +91 98765 43210</p>
+</div>
+</div>
+<div class="flex gap-sm">
+<button class="flex items-center gap-xs px-md py-sm bg-white border border-border-low rounded text-body-sm font-semibold hover:bg-surface-subtle transition-colors">
+<span class="material-symbols-outlined text-lg">archive</span> Archive
+                            </button>
+<button class="flex items-center gap-xs px-md py-sm bg-primary text-white rounded text-body-sm font-semibold hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-lg">reply</span> Reply
+                            </button>
+</div>
+</div>
+<!-- Message Body -->
+<div class="flex-grow p-xl inbox-scroll overflow-y-auto bg-surface-subtle/30">
+<div class="max-w-2xl mx-auto space-y-xl">
+<div class="bg-white border border-border-low p-lg rounded-xl">
+<div class="flex justify-between items-center mb-md">
+<h4 class="font-headline-sm text-body-lg font-bold text-text-primary">Maintenance Request: Water Leak</h4>
+<span class="font-label-md text-label-md text-text-secondary">Today, 10:42 AM</span>
+</div>
+<div class="space-y-md text-body-md text-text-primary leading-relaxed">
+<p>Dear Support Team,</p>
+<p>The kitchen sink in unit 402 is leaking quite badly. I've tried tightening the valve but it hasn't helped much. The water is pooling on the floor and I'm worried it might damage the cabinets.</p>
+<p>Could you please send a plumber as soon as possible? I will be at home until 2:00 PM today, or you can use the master key if I'm away.</p>
+<p>Best regards,<br/>Arjun Mehta</p>
+</div>
+<!-- Attachment Placeholder -->
+<div class="mt-xl pt-lg border-t border-border-low">
+<p class="font-label-sm text-label-sm text-text-secondary mb-md uppercase font-bold">Attachments (1)</p>
+<div class="flex items-center gap-md p-md border border-border-low rounded-lg bg-surface-subtle w-fit cursor-pointer hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-primary">image</span>
+<div class="pr-md">
+<p class="font-label-md text-label-md text-text-primary">leak_photo_402.jpg</p>
+<p class="font-label-sm text-label-sm text-text-secondary">2.4 MB</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Reply Composer Preview -->
+<div class="bg-white border-2 border-dashed border-border-low p-lg rounded-xl text-center cursor-text hover:border-primary hover:bg-primary-fixed/5 transition-all">
+<p class="text-text-secondary font-body-md">Click here to start typing your reply...</p>
+</div>
+</div>
+</div>
+<!-- Bottom Action Bar -->
+<div class="p-md border-t border-border-low bg-white flex justify-between items-center">
+<div class="flex gap-md">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors">attachment</span>
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors">link</span>
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors">sentiment_satisfied</span>
+</div>
+<div class="flex items-center gap-md">
+<span class="font-label-sm text-label-sm text-text-secondary">Auto-saved 2m ago</span>
+<button class="bg-primary-container text-on-primary-container font-bold px-lg py-sm rounded-lg hover:opacity-90 active:scale-95 transition-all">
+                                Send Message
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Mobile Navigation (Bottom) -->
+<nav class="fixed bottom-0 left-0 right-0 bg-surface-main md:hidden flex justify-around p-sm border-t border-border-low z-[100]">
+<button class="flex flex-col items-center gap-xs p-xs text-on-secondary-container">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px]">Home</span>
+</button>
+<button class="flex flex-col items-center gap-xs p-xs text-on-secondary-container">
+<span class="material-symbols-outlined">domain</span>
+<span class="text-[10px]">PGs</span>
+</button>
+<button class="flex flex-col items-center gap-xs p-xs text-primary font-bold">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">contact_support</span>
+<span class="text-[10px]">Queries</span>
+</button>
+<button class="flex flex-col items-center gap-xs p-xs text-on-secondary-container">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px]">Settings</span>
+</button>
+</nav>
+<script>
+        function selectMessage(element) {
+            // Remove active styles from all
+            document.querySelectorAll('[onclick="selectMessage(this)"]').forEach(item => {
+                item.classList.remove('bg-primary-fixed/30', 'border-l-primary');
+                item.classList.add('border-l-transparent');
+                const subject = item.querySelector('.text-primary');
+                if (subject) subject.classList.remove('font-semibold');
+            });
+            
+            // Add active styles to clicked
+            element.classList.add('bg-primary-fixed/30', 'border-l-primary');
+            element.classList.remove('border-l-transparent');
+        }
+
+        // Atmospheric micro-interaction
+        document.addEventListener('DOMContentLoaded', () => {
+            const items = document.querySelectorAll('.inbox-scroll > div > div');
+            items.forEach((item, index) => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(10px)';
+                setTimeout(() => {
+                    item.style.transition = 'all 0.3s ease-out';
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, index * 50);
+            });
+        });
+    </script>
+</body></html>

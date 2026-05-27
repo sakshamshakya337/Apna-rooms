@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { supabase } from '../config/supabase';
 import { LogOut, Wrench, Clock, CheckCircle2, AlertCircle, Droplets, Zap, Wifi } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -7,17 +8,16 @@ import { toast } from 'react-hot-toast';
 
 const ServiceWorkerDashboard = () => {
   const { userData, logout } = useAuth();
+  const { theme } = useTheme();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Derive worker's specialty from their role (e.g. 'plumber', 'electrician', 'wifi' or 'service_worker' with metadata)
-  // For simplicity, if their role is strictly 'plumber', we map it to 'Plumbing'
   const getCategoryFromRole = (role) => {
     switch (role?.toLowerCase()) {
       case 'plumber': return 'Plumbing';
       case 'electrician': return 'Electrical';
       case 'wifi': return 'Internet/WiFi';
-      default: return null; // Can view all if not strictly categorized
+      default: return null; 
     }
   };
 
@@ -74,19 +74,19 @@ const ServiceWorkerDashboard = () => {
 
   const getUrgencySettings = (urgency) => {
     switch (urgency) {
-      case 'high': return { color: 'text-red-700', bg: 'bg-red-100', border: 'border-red-200' };
-      case 'medium': return { color: 'text-yellow-700', bg: 'bg-yellow-100', border: 'border-yellow-200' };
-      case 'low': return { color: 'text-green-700', bg: 'bg-green-100', border: 'border-green-200' };
-      default: return { color: 'text-gray-700', bg: 'bg-gray-100', border: 'border-gray-200' };
+      case 'high': return { color: 'text-error', bg: 'bg-error/10 border-error/20' };
+      case 'medium': return { color: 'text-primary', bg: 'bg-primary/10 border-primary/20' };
+      case 'low': return { color: 'text-success', bg: 'bg-success/15 border-success/35' };
+      default: return { color: 'text-text-secondary', bg: 'bg-surface-container border-border-low' };
     }
   };
 
   const getCategoryIcon = (cat) => {
     switch(cat) {
-      case 'Plumbing': return <Droplets className="w-5 h-5" />;
-      case 'Electrical': return <Zap className="w-5 h-5" />;
-      case 'Internet/WiFi': return <Wifi className="w-5 h-5" />;
-      default: return <Wrench className="w-5 h-5" />;
+      case 'Plumbing': return <Droplets className="w-4 h-4 shrink-0" />;
+      case 'Electrical': return <Zap className="w-4 h-4 shrink-0" />;
+      case 'Internet/WiFi': return <Wifi className="w-4 h-4 shrink-0" />;
+      default: return <Wrench className="w-4 h-4 shrink-0" />;
     }
   };
 
@@ -95,127 +95,149 @@ const ServiceWorkerDashboard = () => {
   const resolvedCount = complaints.filter(c => c.status === 'resolved').length;
 
   return (
-    <div className="min-h-screen bg-[#fdf8ff] font-['Manrope'] text-[#342d55] relative overflow-hidden">
-      {/* Background Ambience */}
-      <div className="absolute top-[-10%] right-[-5%] w-[800px] h-[800px] bg-[#e7c9ff] rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-[#61c2ff] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
+    <div className="min-h-screen bg-background text-on-background py-10 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         
-        {/* Header */}
-        <div className="flex justify-between items-center bg-[#ffffff]/60 backdrop-blur-3xl p-6 rounded-[2rem] border border-[#ffffff]/50 shadow-[0_20px_40px_rgba(52,45,85,0.06)] mb-8">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#4a4bd7] to-[#842cd3] flex items-center justify-center text-white font-bold text-xl">
-              {userData?.full_name?.charAt(0)}
+        {/* Header Panel */}
+        <div className="flex justify-between items-center bg-surface-main border border-border-low p-5 rounded-xl shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-lg bg-primary text-on-primary flex items-center justify-center font-bold text-lg shrink-0 uppercase">
+              {userData?.full_name?.charAt(0) || 'W'}
             </div>
             <div>
-              <h1 className="text-2xl font-bold font-['Plus_Jakarta_Sans'] text-[#342d55]">Worker Dashboard</h1>
-              <p className="text-[#615985] text-sm">{userData?.full_name} • {workerCategory || 'General Support'}</p>
+              <h1 className="text-xl font-bold text-text-primary tracking-tight">Service Worker Portal</h1>
+              <p className="text-text-secondary text-xs font-semibold mt-0.5">{userData?.full_name} • {workerCategory || 'General Support Specialist'}</p>
             </div>
           </div>
-          <button onClick={logout} className="flex items-center text-[#ac3149] bg-[#fff7f7] hover:bg-[#f76a80] hover:text-white px-4 py-2 rounded-xl transition-all font-bold text-sm">
-            <LogOut className="w-4 h-4 mr-2" /> Logout
+          <button 
+            onClick={logout} 
+            className="flex items-center gap-1.5 px-4 py-2 bg-error-container text-on-error-container font-bold text-xs uppercase tracking-wider rounded-lg hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+          >
+            <LogOut className="w-4 h-4 shrink-0" /> 
+            <span>Logout</span>
           </button>
         </div>
 
         {/* Overview Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          {[
-            { label: 'Pending Assignments', value: pendingCount, icon: AlertCircle, color: 'text-yellow-600', bg: 'bg-[#fffaeb]', border: 'border-yellow-100' },
-            { label: 'In Progress', value: inProgressCount, icon: Clock, color: 'text-[#4a4bd7]', bg: 'bg-[#f1ebff]', border: 'border-[#ded4ff]' },
-            { label: 'Completed Tasks', value: resolvedCount, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' }
-          ].map((stat, i) => (
-            <div key={i} className={`p-6 rounded-[2rem] border ${stat.bg} ${stat.border} shadow-sm`}>
-              <div className="flex justify-between items-start mb-4">
-                <div className={`p-3 rounded-xl ${stat.color} bg-white/50 backdrop-blur-sm`}>
-                  <stat.icon className="w-6 h-6" />
-                </div>
-                <span className="text-4xl font-bold font-['Plus_Jakarta_Sans'] text-[#342d55]">{stat.value}</span>
-              </div>
-              <h3 className="font-bold text-[#615985]">{stat.label}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-surface-main border border-border-low p-5 rounded-xl flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="block text-[9px] font-bold text-text-secondary uppercase tracking-wider font-mono">Pending Jobs</span>
+              <span className="block text-2xl font-bold text-primary">{pendingCount}</span>
             </div>
-          ))}
+            <div className="p-2.5 bg-primary/10 rounded-lg text-primary">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+            </div>
+          </div>
+          
+          <div className="bg-surface-main border border-border-low p-5 rounded-xl flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="block text-[9px] font-bold text-text-secondary uppercase tracking-wider font-mono">In Progress</span>
+              <span className="block text-2xl font-bold text-primary">{inProgressCount}</span>
+            </div>
+            <div className="p-2.5 bg-primary/10 rounded-lg text-primary">
+              <Clock className="w-5 h-5 shrink-0" />
+            </div>
+          </div>
+
+          <div className="bg-surface-main border border-border-low p-5 rounded-xl flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="block text-[9px] font-bold text-text-secondary uppercase tracking-wider font-mono">Completed Tasks</span>
+              <span className="block text-2xl font-bold text-success">{resolvedCount}</span>
+            </div>
+            <div className="p-2.5 bg-success/15 rounded-lg text-success border border-success/20">
+              <CheckCircle2 className="w-5 h-5 shrink-0" />
+            </div>
+          </div>
         </div>
 
-        {/* Task List */}
-        <div>
-          <h2 className="text-2xl font-bold font-['Plus_Jakarta_Sans'] mb-6 flex items-center">
-            <Wrench className="w-6 h-6 mr-3 text-[#4a4bd7]" />
-            Active Tasks
+        {/* Active Tasks Queue */}
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
+            <Wrench className="w-5 h-5 text-primary shrink-0" />
+            <span>Active Assignments Queue</span>
           </h2>
 
           {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <div className="w-12 h-12 border-4 border-[#e6deff] border-t-[#4a4bd7] rounded-full animate-spin"></div>
-            </div>
+            <div className="p-8 text-center text-xs font-mono text-text-secondary">Syncing active queue tasks...</div>
           ) : complaints.length === 0 ? (
-            <div className="text-center py-20 bg-white/40 backdrop-blur-xl rounded-[3rem] border border-white/50 shadow-sm">
-              <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-[#615985]">All caught up!</h3>
-              <p className="text-[#a099b4]">There are no pending service requests for you at this moment.</p>
+            <div className="text-center py-16 bg-surface-container-low border border-dashed border-border-low rounded-xl space-y-2">
+              <CheckCircle2 className="w-10 h-10 text-success mx-auto" />
+              <h3 className="text-base font-bold text-text-primary">All Caught Up!</h3>
+              <p className="text-text-secondary text-xs">There are no pending service tickets in your specialty at this time.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {complaints.map((task) => (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  key={task.id} 
-                  className={`bg-white/70 backdrop-blur-2xl p-6 rounded-[2rem] border border-white/50 shadow-[0_20px_40px_rgba(52,45,85,0.04)] hover:shadow-[0_20px_40px_rgba(52,45,85,0.08)] transition-all flex flex-col ${task.status === 'resolved' ? 'opacity-60' : ''}`}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <span className={`flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getUrgencySettings(task.urgency).bg} ${getUrgencySettings(task.urgency).color}`}>
-                      {getCategoryIcon(task.category)}
-                      <span className="ml-2">{task.urgency} Priority</span>
-                    </span>
-                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase ${
-                      task.status === 'pending' ? 'bg-[#fffaeb] text-yellow-700' :
-                      task.status === 'in_progress' ? 'bg-[#f1ebff] text-[#4a4bd7]' : 'bg-green-50 text-green-700'
-                    }`}>
-                      {task.status.replace('_', ' ')}
-                    </span>
-                  </div>
+              {complaints.map((task) => {
+                const isResolved = task.status === 'resolved';
+                const urgency = getUrgencySettings(task.urgency);
+                return (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    key={task.id} 
+                    className={`bg-surface-main border border-border-low p-5 rounded-xl flex flex-col justify-between h-72 shadow-sm ${
+                      isResolved ? 'opacity-65' : ''
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${urgency.bg} ${urgency.color}`}>
+                        {getCategoryIcon(task.category)}
+                        <span>{task.urgency} Urgency</span>
+                      </span>
+                      
+                      <span className={`px-2 py-0.5 rounded text-[9px] uppercase tracking-wider font-bold border ${
+                        task.status === 'pending' ? 'bg-primary/20 text-primary border-primary/30' :
+                        task.status === 'in_progress' ? 'bg-primary/10 text-primary border-primary/20' :
+                        'bg-success/15 text-success border-success/35'
+                      }`}>
+                        {task.status?.replace('_', ' ')}
+                      </span>
+                    </div>
 
-                  <div className="mb-4">
-                    <h3 className="text-xl font-bold font-['Plus_Jakarta_Sans'] text-[#4a4bd7] mb-1">
-                      {task.rooms?.room_number ? `Room ${task.rooms.room_number}` : 'Unknown Room'}
-                    </h3>
-                    <p className="text-sm font-medium text-[#7d75a2]">{task.pgs?.name}</p>
-                  </div>
+                    <div className="my-3">
+                      <h3 className="font-bold text-lg text-text-primary">
+                        {task.rooms?.room_number ? `Room #${task.rooms.room_number}` : 'Common Area'}
+                      </h3>
+                      <p className="text-text-secondary text-xs font-semibold mt-0.5">{task.pgs?.name || 'Apna Rooms Stay'}</p>
+                    </div>
 
-                  <div className="bg-[#fcfaff] p-4 rounded-xl border border-[#f1ebff] flex-grow mb-6 relative">
-                    <span className="absolute -top-3 left-4 text-3xl text-[#e6deff] font-serif">"</span>
-                    <p className="text-[#615985] text-sm relative z-10 pt-2">{task.description}</p>
-                  </div>
+                    <div className="bg-surface-container-low border border-border-low p-3.5 rounded-lg flex-grow overflow-y-auto mb-4 min-h-[70px]">
+                      <p className="text-text-secondary text-xs font-semibold leading-relaxed">
+                        "{task.description}"
+                      </p>
+                    </div>
 
-                  <div className="flex space-x-2 mt-auto">
-                    {task.status === 'pending' && (
-                      <button 
-                        onClick={() => updateComplaintStatus(task.id, 'in_progress')}
-                        className="flex-grow bg-[#f1ebff] text-[#4a4bd7] hover:bg-[#e6deff] py-3 rounded-xl font-bold text-sm transition-colors"
-                      >
-                        Start Work
-                      </button>
-                    )}
-                    {task.status !== 'resolved' && (
-                      <button 
-                         onClick={() => updateComplaintStatus(task.id, 'resolved')}
-                         className="flex-grow bg-gradient-to-r from-[#4a4bd7] to-[#842cd3] text-white shadow-lg shadow-[#4a4bd7]/30 hover:shadow-[#4a4bd7]/50 py-3 rounded-xl font-bold text-sm transition-all"
-                      >
-                        Mark Resolved
-                      </button>
-                    )}
-                    {task.status === 'resolved' && (
-                      <div className="flex-grow text-center text-green-600 font-bold bg-green-50 py-3 rounded-xl cursor-default">
-                        Completed
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="flex gap-2">
+                      {task.status === 'pending' && (
+                        <button 
+                          onClick={() => updateComplaintStatus(task.id, 'in_progress')}
+                          className="flex-1 bg-surface-container border border-border-low hover:bg-surface-container-high py-2 rounded-lg text-xs font-bold text-text-primary uppercase tracking-wider cursor-pointer"
+                        >
+                          Start Job
+                        </button>
+                      )}
+                      {task.status !== 'resolved' && (
+                        <button 
+                          onClick={() => updateComplaintStatus(task.id, 'resolved')}
+                          className="flex-1 bg-primary text-on-primary py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                        >
+                          Mark Complete
+                        </button>
+                      )}
+                      {isResolved && (
+                        <div className="flex-1 text-center text-success font-bold bg-success/10 py-2 rounded-lg text-xs cursor-default">
+                          Task Complete
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>
+
       </div>
     </div>
   );

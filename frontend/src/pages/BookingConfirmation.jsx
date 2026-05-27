@@ -51,14 +51,18 @@ const BookingConfirmation = () => {
   };
 
   const getMissingProfileFields = () => {
-    const category = userData?.studentCategory || 'National';
+    const category = userData?.student_category || userData?.studentCategory || 'National';
     const missing = [];
 
-    if (!userData?.studentCategory) missing.push('student type');
-    if (!userData?.phoneNumber) missing.push('student phone number');
-    if (category !== 'International' && !userData?.parentPhoneNumber) {
+    if (!userData?.fullName?.trim()) missing.push('full name');
+    if (!userData?.student_category && !userData?.studentCategory) missing.push('student origin classification');
+    if (!userData?.phoneNumber?.trim()) missing.push('resident phone number');
+    if (category.toLowerCase() !== 'international' && !userData?.parentPhoneNumber?.trim()) {
       missing.push('parent/guardian phone number');
     }
+    if (!userData?.address?.trim()) missing.push('home address');
+    if (!userData?.city?.trim()) missing.push('city');
+    if (!userData?.state?.trim()) missing.push('state');
 
     return missing;
   };
@@ -72,6 +76,12 @@ const BookingConfirmation = () => {
     }
     return true;
   };
+
+  useEffect(() => {
+    if (userData) {
+      ensureProfileComplete();
+    }
+  }, [userData]);
 
   useEffect(() => {
     fetchDetails();
@@ -275,7 +285,7 @@ const BookingConfirmation = () => {
       return toast.error('Please complete the booking step before uploading documents.');
     }
 
-    const isInternational = userData?.studentCategory === 'International';
+    const isInternational = (userData?.studentCategory || userData?.student_category || 'National').toLowerCase() === 'international';
     
     const requiredFiles = isInternational
       ? ['userPhoto', 'passport', 'viduDoc', 'universityId']
@@ -383,7 +393,7 @@ const BookingConfirmation = () => {
 
   if (loading) return <div className="p-20 text-center font-['Sora'] text-white">Loading booking system...</div>;
 
-  const isInternational = userData?.studentCategory === 'International';
+  const isInternational = (userData?.studentCategory || userData?.student_category || 'National').toLowerCase() === 'international';
   const showInlineDocumentUpload = false;
 
   return (
@@ -537,43 +547,45 @@ const BookingConfirmation = () => {
 
                   {/* Vidu & Police Doc Section */}
                   <div className="col-span-full space-y-6">
-                    <div className="bg-white/[0.03] p-8 rounded-[3rem] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 group">
-                       <div className="flex items-center space-x-6">
-                         <div className="p-5 bg-accent/10 rounded-3xl text-accent transition-transform group-hover:scale-110">
-                           <FileText className="w-10 h-10" />
+                    {isInternational && (
+                      <div className="bg-white/[0.03] p-8 rounded-[3rem] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 group">
+                         <div className="flex items-center space-x-6">
+                           <div className="p-5 bg-accent/10 rounded-3xl text-accent transition-transform group-hover:scale-110">
+                             <FileText className="w-10 h-10" />
+                           </div>
+                           <div>
+                             <h4 className="text-xl font-black text-white">Vidu Authorization</h4>
+                             <p className="text-sm text-gray-500 font-medium mt-1">Download official template, fill, and sync back.</p>
+                           </div>
                          </div>
-                         <div>
-                           <h4 className="text-xl font-black text-white">Vidu Authorization</h4>
-                           <p className="text-sm text-gray-500 font-medium mt-1">Download official template, fill, and sync back.</p>
+                         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                            {pg?.owner_doc_url ? (
+                              <a 
+                                href={pg.owner_doc_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="px-8 py-4 bg-white/10 text-white border border-accent/30 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:border-accent transition-all flex items-center justify-center shadow-lg shadow-accent/10 group"
+                              >
+                                <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get Blank Vidu Form
+                              </a>
+                            ) : (
+                              <div className="px-4 py-2 bg-red-500/10 text-red-400 text-[9px] font-black uppercase tracking-tighter border border-red-500/20 rounded-xl">
+                                Template Not Uploaded
+                              </div>
+                            )}
+                           <div className="relative">
+                              <input 
+                                type="file" 
+                                onChange={(e) => handleFileUpload(e, 'viduDoc')}
+                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                              />
+                              <button className={`w-full px-8 py-4 ${files.viduDoc ? 'bg-green-600' : 'bg-accent'} text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center shadow-xl shadow-accent/20`}>
+                                <Upload className="w-4 h-4 mr-2" /> Sync Document
+                              </button>
+                           </div>
                          </div>
-                       </div>
-                       <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                          {pg?.owner_doc_url ? (
-                            <a 
-                              href={pg.owner_doc_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="px-8 py-4 bg-white/10 text-white border border-accent/30 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-accent hover:border-accent transition-all flex items-center justify-center shadow-lg shadow-accent/10 group"
-                            >
-                              <Download className="w-4 h-4 mr-2 group-hover:animate-bounce" /> Get Blank Vidu Form
-                            </a>
-                          ) : (
-                            <div className="px-4 py-2 bg-red-500/10 text-red-400 text-[9px] font-black uppercase tracking-tighter border border-red-500/20 rounded-xl">
-                              Template Not Uploaded
-                            </div>
-                          )}
-                         <div className="relative">
-                            <input 
-                              type="file" 
-                              onChange={(e) => handleFileUpload(e, 'viduDoc')}
-                              className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                            />
-                            <button className={`w-full px-8 py-4 ${files.viduDoc ? 'bg-green-600' : 'bg-accent'} text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center shadow-xl shadow-accent/20`}>
-                              <Upload className="w-4 h-4 mr-2" /> Sync Document
-                            </button>
-                         </div>
-                       </div>
-                    </div>
+                      </div>
+                    )}
 
                     <div className="bg-white/[0.03] p-8 rounded-[3rem] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 group">
                        <div className="flex items-center space-x-6">

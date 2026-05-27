@@ -125,6 +125,9 @@ CREATE TABLE IF NOT EXISTS payments (
     signature TEXT, 
     status payment_status DEFAULT 'pending',
     type TEXT, 
+    payment_method TEXT DEFAULT 'online', -- 'online' or 'offline'
+    payment_notes TEXT,                   -- admin notes or user-provided reference
+    approved_at TIMESTAMP WITH TIME ZONE, -- when admin approved offline payment
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 

@@ -1,70 +1,244 @@
 @import "tailwindcss";
 
 :root {
-  --primary: #100a2a;      /* Deep Space Violet */
-  --secondary: #fdf8ff;    /* Soft Lavender Cream */
-  --accent: #6d28d9;       /* Electric Purple */
-  --accent-light: #8b5cf6; /* Vibrant Violet */
-  --bg-gradient: linear-gradient(135deg, #fdf8ff 0%, #f4ebff 100%);
+  /* Font Family Defaults */
+  --font-body: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-headline: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* STITCH LIGHT MODE THEME TOKENS */
+  --primary: #3525cd;
+  --accent: #3525cd;
+  --primary-container: #4f46e5;
+  --on-primary: #ffffff;
+  --on-primary-container: #dad7ff;
+
+  --secondary: #565e74;
+  --secondary-container: #dae2fd;
+  --on-secondary: #ffffff;
+  --on-secondary-container: #5c647a;
+
+  --tertiary: #00533d;
+  --tertiary-container: #006e51;
+  --on-tertiary: #ffffff;
+  --on-tertiary-container: #74f2c3;
+
+  --background: #f8f9ff;
+  --on-background: #0d1c2d;
+
+  --surface: #f8f9ff;
+  --on-surface: #0d1c2d;
+  --surface-main: #FFFFFF;
+  --surface-dim: #ccdbf2;
+  --surface-bright: #f8f9ff;
+  
+  --surface-container: #e5efff;
+  --surface-container-low: #eef4ff;
+  --surface-container-lowest: #ffffff;
+  --surface-container-high: #dbe9ff;
+  --surface-container-highest: #d4e4fa;
+  --surface-variant: #d4e4fa;
+  --on-surface-variant: #464555;
+  --surface-subtle: #F8FAFC;
+  --surface-tint: #4d44e3;
+
+  --border-low: #E2E8F0;
+  --outline: #777587;
+  --outline-variant: #c7c4d8;
+
+  --success: #45C89C;
+  --error: #EF4444;
+  --error-container: #ffdad6;
+  --on-error: #ffffff;
+  --on-error-container: #93000a;
+
+  /* FIXED & DIMS */
+  --primary-fixed: #e2dfff;
+  --primary-fixed-dim: #c3c0ff;
+  --on-primary-fixed: #0f0069;
+  --on-primary-fixed-variant: #3323cc;
+  --secondary-fixed: #dae2fd;
+  --secondary-fixed-dim: #bec6e0;
+  --on-secondary-fixed: #131b2e;
+  --on-secondary-fixed-variant: #3f465c;
+  --tertiary-fixed: #7bf9ca;
+  --tertiary-fixed-dim: #5cdcaf;
+  --on-tertiary-fixed: #002116;
+  --on-tertiary-fixed-variant: #00513b;
+
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+
   --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-border: rgba(226, 232, 240, 0.8);
+}
+
+.dark {
+  /* STITCH DARK MODE THEME TOKENS */
+  --primary: #c0c1ff;
+  --accent: #c0c1ff;
+  --primary-container: #8083ff;
+  --on-primary: #1000a9;
+  --on-primary-container: #0d0096;
+
+  --secondary: #89ceff;
+  --secondary-container: #00a2e6;
+  --on-secondary: #00344d;
+  --on-secondary-container: #00344e;
+
+  --tertiary: #ffb783;
+  --tertiary-container: #d97721;
+  --on-tertiary: #4f2500;
+  --on-tertiary-container: #452000;
+
+  --background: #0b1326;
+  --on-background: #dae2fd;
+
+  --surface: #0b1326;
+  --on-surface: #dae2fd;
+  --surface-main: #0b1326;
+  --surface-dim: #0b1326;
+  --surface-bright: #31394d;
+  
+  --surface-container: #171f33;
+  --surface-container-low: #131b2e;
+  --surface-container-lowest: #060e20;
+  --surface-container-high: #222a3d;
+  --surface-container-highest: #2d3449;
+  --surface-variant: #2d3449;
+  --on-surface-variant: #c7c4d7;
+  --surface-subtle: #131b2e;
+  --surface-tint: #c0c1ff;
+
+  --border-low: #464554;
+  --outline: #908fa0;
+  --outline-variant: #464554;
+
+  --success: #ffb783;
+  --error: #ffb4ab;
+  --error-container: #93000a;
+  --on-error: #690005;
+  --on-error-container: #ffdad6;
+
+  /* FIXED & DIMS */
+  --primary-fixed: #e1e0ff;
+  --primary-fixed-dim: #c0c1ff;
+  --on-primary-fixed: #07006c;
+  --on-primary-fixed-variant: #2f2ebe;
+  --secondary-fixed: #c9e6ff;
+  --secondary-fixed-dim: #89ceff;
+  --on-secondary-fixed: #001e2f;
+  --on-secondary-fixed-variant: #004c6e;
+  --tertiary-fixed: #ffdcc5;
+  --tertiary-fixed-dim: #ffb783;
+  --on-tertiary-fixed: #301400;
+  --on-tertiary-fixed-variant: #703700;
+
+  --text-primary: #dae2fd;
+  --text-secondary: #c7c4d7;
+
+  --glass-bg: rgba(11, 19, 38, 0.7);
+  --glass-border: rgba(70, 69, 84, 0.8);
 }
 
 @theme {
   --color-primary: var(--primary);
-  --color-secondary: var(--secondary);
   --color-accent: var(--accent);
-  --color-accent-light: var(--accent-light);
-  --font-sora: "Sora", system-ui, sans-serif;
+  --color-primary-container: var(--primary-container);
+  --color-on-primary: var(--on-primary);
+  --color-on-primary-container: var(--on-primary-container);
+  
+  --color-secondary: var(--secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary: var(--on-secondary);
+  --color-on-secondary-container: var(--on-secondary-container);
+
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+  --color-on-tertiary: var(--on-tertiary);
+  --color-on-tertiary-container: var(--on-tertiary-container);
+
+  --color-background: var(--background);
+  --color-on-background: var(--on-background);
+
+  --color-surface: var(--surface);
+  --color-on-surface: var(--on-surface);
+  --color-surface-main: var(--surface-main);
+  --color-surface-dim: var(--surface-dim);
+  --color-surface-bright: var(--surface-bright);
+  
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-surface-variant: var(--surface-variant);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-tint: var(--surface-tint);
+
+  --color-border-low: var(--border-low);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-error-container: var(--error-container);
+  --color-on-error: var(--on-error);
+  --color-on-error-container: var(--on-error-container);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+
+  --font-body: var(--font-body);
+  --font-headline: var(--font-headline);
+  --font-mono: var(--font-mono);
 }
 
 body {
   margin: 0;
-  font-family: var(--font-sora);
-  background: var(--bg-gradient);
-  color: var(--primary);
+  font-family: var(--font-body);
+  background-color: var(--background);
+  color: var(--on-background);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Custom Scrollbar - Minimalist/Modern */
+/* Custom Scrollbar - Minimalist & Modern */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--surface-container-low);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--accent);
+  background: var(--outline-variant);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-light);
+  background: var(--outline);
 }
 
+/* Glassmorphism helpers matching modern aesthetics */
 .glass-morphism {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+.data-grid-divider {
+  border-right: 1px solid var(--outline-variant);
 }
 
-.text-gradient {
-  background: linear-gradient(to right, var(--accent), var(--accent-light));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.data-grid-divider:last-child {
+  border-right: none;
 }
 
 .animate-float {
@@ -73,13 +247,13 @@ body {
 
 @keyframes float {
   0% { transform: translateY(0px); }
-  50% { transform: translateY(-15px); }
+  50% { transform: translateY(-10px); }
   100% { transform: translateY(0px); }
 }
 
 .loader {
-  border: 3px solid rgba(109, 40, 217, 0.1);
-  border-top: 3px solid var(--accent);
+  border: 3px solid var(--surface-container);
+  border-top: 3px solid var(--primary);
   border-radius: 50%;
   width: 32px;
   height: 32px;

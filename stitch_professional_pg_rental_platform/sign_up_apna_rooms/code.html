@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sign Up | Apna Rooms</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#e2dfff",
+                        "on-tertiary-fixed": "#002116",
+                        "surface-container-highest": "#d4e4fa",
+                        "tertiary-fixed-dim": "#5cdcaf",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#233143",
+                        "surface-bright": "#f8f9ff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#0d1c2d",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "text-primary": "#0F172A",
+                        "tertiary": "#00533d",
+                        "surface-variant": "#d4e4fa",
+                        "primary": "#3525cd",
+                        "on-error-container": "#93000a",
+                        "secondary-container": "#dae2fd",
+                        "outline": "#777587",
+                        "inverse-primary": "#c3c0ff",
+                        "surface-subtle": "#F8FAFC",
+                        "surface-container": "#e5efff",
+                        "surface-dim": "#ccdbf2",
+                        "on-surface-variant": "#464555",
+                        "outline-variant": "#c7c4d8",
+                        "surface-container-low": "#eef4ff",
+                        "surface-container-high": "#dbe9ff",
+                        "primary-container": "#4f46e5",
+                        "secondary": "#565e74",
+                        "on-tertiary-container": "#74f2c3",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "surface-main": "#FFFFFF",
+                        "border-low": "#E2E8F0",
+                        "background": "#f8f9ff",
+                        "on-secondary-container": "#5c647a",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#006e51",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#00513b",
+                        "on-background": "#0d1c2d",
+                        "success": "#45C89C",
+                        "on-primary-container": "#dad7ff",
+                        "error": "#EF4444",
+                        "text-secondary": "#475569",
+                        "on-primary-fixed": "#0f0069",
+                        "inverse-on-surface": "#e9f1ff",
+                        "surface": "#f8f9ff",
+                        "on-secondary-fixed": "#131b2e",
+                        "secondary-fixed": "#dae2fd",
+                        "tertiary-fixed": "#7bf9ca",
+                        "surface-tint": "#4d44e3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "max-width": "1280px",
+                        "md": "16px",
+                        "margin-desktop": "48px",
+                        "unit": "4px",
+                        "lg": "24px",
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "margin-mobile": "16px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "label-sm": ["JetBrains Mono"],
+                        "label-md": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-sm": ["10px", {"lineHeight": "12px", "fontWeight": "500"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "headline-lg": ["30px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            vertical-align: middle;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4F46E5 !important;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-surface-subtle font-body-md text-text-primary antialiased min-h-screen flex flex-col">
+<!-- TopAppBar Fragment (Structural Shell Only - Simplified for Auth) -->
+<header class="sticky top-0 w-full z-50 bg-surface-main border-b border-border-low h-16">
+<div class="flex justify-between items-center max-w-max-width mx-auto px-margin-desktop h-full">
+<div class="flex items-center gap-sm">
+<span class="text-headline-md font-headline-md font-bold text-primary">Apna Rooms</span>
+</div>
+<div class="hidden md:flex items-center gap-lg">
+<a class="text-text-secondary font-body-md hover:text-primary transition-colors duration-200" href="#">About Us</a>
+<a class="text-text-secondary font-body-md hover:text-primary transition-colors duration-200" href="#">How it Works</a>
+</div>
+</div>
+</header>
+<main class="flex-grow flex items-center justify-center py-xl px-margin-mobile">
+<!-- Auth Card -->
+<div class="w-full max-w-[480px] bg-surface-main border border-border-low rounded-lg p-xl md:p-xl shadow-sm">
+<!-- Header Section -->
+<div class="mb-xl">
+<h1 class="font-headline-lg text-headline-lg text-text-primary mb-xs">Create an account</h1>
+<p class="font-body-md text-text-secondary">Join Apna Rooms to find premium PGs managed with professional care.</p>
+</div>
+<!-- Form -->
+<form action="#" class="space-y-md" method="POST">
+<!-- Full Name -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="full_name">Full Name</label>
+<div class="relative">
+<input class="w-full h-10 px-md border border-border-low rounded bg-surface-main font-body-md placeholder:text-outline-variant transition-all focus:ring-0" id="full_name" name="full_name" placeholder="John Doe" required="" type="text"/>
+</div>
+</div>
+<!-- Email & Phone Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="email">Email</label>
+<input class="w-full h-10 px-md border border-border-low rounded bg-surface-main font-body-md placeholder:text-outline-variant transition-all focus:ring-0" id="email" name="email" placeholder="john@example.com" required="" type="email"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="phone">Phone Number</label>
+<input class="w-full h-10 px-md border border-border-low rounded bg-surface-main font-body-md placeholder:text-outline-variant transition-all focus:ring-0" id="phone" name="phone" placeholder="+91 98765 43210" required="" type="tel"/>
+</div>
+</div>
+<!-- Password -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="password">Password</label>
+<div class="relative">
+<input class="w-full h-10 px-md border border-border-low rounded bg-surface-main font-body-md placeholder:text-outline-variant transition-all focus:ring-0" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<!-- Confirm Password -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="confirm_password">Confirm Password</label>
+<input class="w-full h-10 px-md border border-border-low rounded bg-surface-main font-body-md placeholder:text-outline-variant transition-all focus:ring-0" id="confirm_password" name="confirm_password" placeholder="••••••••" required="" type="password"/>
+</div>
+<!-- Terms -->
+<div class="flex items-start gap-sm pt-xs">
+<div class="flex items-center h-5">
+<input class="w-4 h-4 border-border-low rounded text-primary focus:ring-primary-container bg-surface-main" id="terms" name="terms" required="" type="checkbox"/>
+</div>
+<label class="font-body-sm text-text-secondary leading-tight" for="terms">
+                        I agree to the <a class="text-primary hover:underline transition-all" href="#">Terms of Service</a> and <a class="text-primary hover:underline transition-all" href="#">Privacy Policy</a>.
+                    </label>
+</div>
+<!-- CTA -->
+<div class="pt-md">
+<button class="w-full h-10 bg-primary text-on-primary font-headline-sm rounded hover:bg-primary-container active:opacity-80 transition-all duration-200" type="submit">
+                        Create Account
+                    </button>
+</div>
+</form>
+<!-- Footer Section -->
+<div class="mt-xl pt-lg border-t border-border-low text-center">
+<p class="font-body-md text-text-secondary">
+                    Already have an account? 
+                    <a class="text-primary font-bold hover:underline" href="#">Login</a>
+</p>
+</div>
+</div>
+</main>
+<!-- Footer Component -->
+<footer class="w-full mt-xl bg-surface-subtle border-t border-border-low">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter max-w-max-width mx-auto px-margin-desktop py-xl">
+<div class="md:col-span-4 space-y-md">
+<span class="text-headline-sm font-headline-sm font-bold text-primary">Apna Rooms</span>
+<p class="font-body-sm text-on-surface-variant max-w-[280px]">© 2024 Apna Rooms. Professional PG Rentals. Built for modern professionals and students seeking hassle-free accommodation.</p>
+</div>
+<div class="md:col-span-2 space-y-sm">
+<h4 class="font-label-md text-label-md text-text-primary uppercase tracking-wider">Product</h4>
+<ul class="space-y-xs">
+<li><a class="font-body-sm text-text-secondary hover:text-primary transition-colors" href="#">Find PGs</a></li>
+<li><a class="font-body-sm text-text-secondary hover:text-primary transition-colors" href="#">How it Works</a></li>
+<li><a class="font-body-sm text-text-secondary hover:text-primary transition-colors" href="#">Careers</a></li>
+</ul>
+</div>
+<div class="md:col-span-2 space-y-sm">
+<h4 class="font-label-md text-label-md text-text-primary uppercase tracking-wider">Company</h4>
+<ul class="space-y-xs">
+<li><a class="font-body-sm text-text-secondary hover:text-primary transition-colors" href="#">About Us</a></li>
+<li><a class="font-body-sm text-text-secondary hover:text-primary transition-colors" href="#">Contact</a></li>
+</ul>
+</div>
+<div class="md:col-span-4 space-y-sm">
+<h4 class="font-label-md text-label-md text-text-primary uppercase tracking-wider">Legal</h4>
+<ul class="space-y-xs">
+<li><a class="font-body-sm text-text-secondary hover:text-primary transition-colors" href="#">Terms</a></li>
+<li><a class="font-body-sm text-text-secondary hover:text-primary transition-colors" href="#">Privacy</a></li>
+<li><a class="font-body-sm text-text-secondary hover:text-primary transition-colors" href="#">Help</a></li>
+</ul>
+</div>
+</div>
+</footer>
+<script>
+        // Toggle password visibility interaction
+        document.querySelectorAll('button span[data-icon="visibility"]').forEach(btn => {
+            btn.parentElement.addEventListener('click', function() {
+                const input = this.previousElementSibling;
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    this.querySelector('span').textContent = 'visibility_off';
+                } else {
+                    input.type = 'password';
+                    this.querySelector('span').textContent = 'visibility';
+                }
+            });
+        });
+
+        // Form submission micro-interaction
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = this.querySelector('button[type="submit"]');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin" data-icon="progress_activity">progress_activity</span>';
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                alert('Account creation simulation successful. Welcome to Apna Rooms!');
+            }, 1500);
+        });
+    </script>
+</body></html>

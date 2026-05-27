@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Service Portal - Assigned Jobs</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "surface": "#0b1326",
+                "surface-container-lowest": "#060e20",
+                "secondary-fixed-dim": "#89ceff",
+                "error-container": "#93000a",
+                "on-tertiary-fixed-variant": "#703700",
+                "error": "#ffb4ab",
+                "primary": "#c0c1ff",
+                "surface-container-low": "#131b2e",
+                "surface-tint": "#c0c1ff",
+                "primary-fixed": "#e1e0ff",
+                "on-error": "#690005",
+                "on-error-container": "#ffdad6",
+                "surface-container-high": "#222a3d",
+                "on-secondary-fixed-variant": "#004c6e",
+                "on-surface": "#dae2fd",
+                "tertiary-fixed-dim": "#ffb783",
+                "on-secondary": "#00344d",
+                "secondary": "#89ceff",
+                "on-tertiary-container": "#452000",
+                "on-secondary-fixed": "#001e2f",
+                "surface-container": "#171f33",
+                "secondary-container": "#00a2e6",
+                "surface-container-highest": "#2d3449",
+                "on-primary-fixed-variant": "#2f2ebe",
+                "primary-fixed-dim": "#c0c1ff",
+                "outline": "#908fa0",
+                "on-tertiary-fixed": "#301400",
+                "on-primary": "#1000a9",
+                "on-background": "#dae2fd",
+                "surface-bright": "#31394d",
+                "secondary-fixed": "#c9e6ff",
+                "outline-variant": "#464554",
+                "inverse-primary": "#494bd6",
+                "on-tertiary": "#4f2500",
+                "tertiary": "#ffb783",
+                "surface-variant": "#2d3449",
+                "on-secondary-container": "#00344e",
+                "on-primary-fixed": "#07006c",
+                "primary-container": "#8083ff",
+                "on-surface-variant": "#c7c4d7",
+                "background": "#0b1326",
+                "inverse-on-surface": "#283044",
+                "surface-dim": "#0b1326",
+                "inverse-surface": "#dae2fd",
+                "tertiary-container": "#d97721",
+                "on-primary-container": "#0d0096",
+                "tertiary-fixed": "#ffdcc5"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "unit": "8px",
+                "margin-mobile": "20px",
+                "container-max": "1280px",
+                "margin-desktop": "64px",
+                "gutter": "24px"
+            },
+            "fontFamily": {
+                "headline-lg-mobile": ["Hanken Grotesk"],
+                "body-sm": ["Inter"],
+                "headline-lg": ["Hanken Grotesk"],
+                "body-md": ["Inter"],
+                "label-caps": ["JetBrains Mono"],
+                "headline-xl": ["Hanken Grotesk"]
+            },
+            "fontSize": {
+                "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "label-caps": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scale-98:hover { transform: scale(0.98); }
+        .active-job-card { border-left-width: 4px; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0b1326; }
+        ::-webkit-scrollbar-thumb { background: #2d3449; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-background font-body-md text-on-background antialiased">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar - Worker Profile -->
+<aside class="flex flex-col h-full p-unit gap-unit border-r bg-surface-container-lowest border-outline-variant w-64">
+<div class="mb-unit px-unit py-unit">
+<div class="flex flex-col gap-unit">
+<img alt="Apna Rooms Logo" class="w-32 h-auto object-contain mb-unit" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtzkTUTcGFrBn5vvY0g0uGIFVMZsBuQMjTIWhS5bjcPdbuU9Xh6WCH5oQJusvPo872At1nIq9WDWThbQKVOYzT6Y0C7Im2htZ1Sp0nqLYJEwHzVFx42u25UonDMk2_wJaj39cF1Oy_pnOIMrFS1Hw767vGeZp7a5OqtMbgO61ac2whqDW0vKsYnOs9lbmrpgaWKn-TQGa_Uey6pHC-xaa9kGETrmmpoG-ex5zX0F8Kt_UsgA2vKW-i9AVUW2QH_TSK3On9DFj6Df9d"/>
+<div class="flex items-center gap-unit">
+<img alt="Worker Avatar" class="w-10 h-10 rounded-full border border-outline-variant object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmzUw6ue2_cd9orLEwtANT8w2-Wnz6qOvnXzj_lZ3cLso1WTpj-IfCof3b_x-iYa73LGIZZU3ua-Lj2OZZ981wfenRdVY26435IAm84t4H974_2utb3__thd_pJLkcQ65-iFCZ0d9iyxQM7_MZAOds-vhWlBnKA4WBsZ4KH-KcJuw75ni39kQXpi1VT7-5JF2KtYVL_2yEFgSm19bm8U-eqlIsWAoF0WJcVHLPRGDRyJArJeau20tOydhH0PqJKntNbMq-FBIUQehT"/>
+<div class="flex flex-col">
+<span class="font-headline-lg-mobile text-primary">Service Portal</span>
+<span class="font-label-caps text-on-surface-variant">Maintenance Crew</span>
+</div>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-unit p-unit bg-primary-container text-on-primary-container font-semibold rounded-xl transition-all duration-200 cursor-pointer" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_late">assignment_late</span>
+<span class="font-label-caps">Assigned Jobs</span>
+</a>
+<a class="flex items-center gap-unit p-unit text-on-surface hover:bg-surface-container-high transition-all duration-200 cursor-pointer rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_turned_in">assignment_turned_in</span>
+<span class="font-label-caps">Completed</span>
+</a>
+<a class="flex items-center gap-unit p-unit text-on-surface hover:bg-surface-container-high transition-all duration-200 cursor-pointer rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-caps">Settings</span>
+</a>
+</nav>
+<div class="mt-auto space-y-unit">
+<button class="w-full py-unit px-unit bg-error-container text-on-error-container font-bold rounded-xl hover:opacity-90 transition-opacity">
+                Go Offline
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto bg-background">
+<!-- Top Bar -->
+<header class="sticky top-0 z-50 flex justify-between items-center px-gutter py-unit w-full bg-surface-container border-b border-outline-variant">
+<div class="flex items-center gap-gutter">
+<h1 class="font-headline-lg text-on-surface">Assigned Jobs</h1>
+<span class="bg-secondary-container text-on-secondary-container px-unit py-1 rounded-full font-label-caps">4 Pending</span>
+</div>
+<div class="flex items-center gap-unit">
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-xl transition-colors" data-icon="dark_mode" id="theme-toggle" onclick="toggleTheme()">dark_mode</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-xl transition-colors" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-xl transition-colors" data-icon="help_outline">help_outline</button>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="p-gutter max-w-screen-xl mx-auto space-y-gutter">
+<!-- Quick Stats -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-unit">
+<div class="bg-surface-container-low p-unit border border-outline-variant rounded-xl flex flex-col gap-1">
+<span class="font-label-caps text-on-surface-variant uppercase text-[10px]">Average TAT</span>
+<span class="font-headline-lg text-on-surface">42 mins</span>
+</div>
+<div class="bg-surface-container-low p-unit border border-outline-variant rounded-xl flex flex-col gap-1">
+<span class="font-label-caps text-on-surface-variant uppercase text-[10px]">Jobs Today</span>
+<span class="font-headline-lg text-on-surface">12</span>
+</div>
+<div class="bg-surface-container-low p-unit border border-outline-variant rounded-xl flex flex-col gap-1">
+<span class="font-label-caps text-on-surface-variant uppercase text-[10px]">Status</span>
+<span class="font-headline-lg text-secondary">Online</span>
+</div>
+<div class="bg-surface-container-low p-unit border border-outline-variant rounded-xl flex flex-col gap-1">
+<span class="font-label-caps text-on-surface-variant uppercase text-[10px]">Efficiency</span>
+<span class="font-headline-lg text-on-surface">94%</span>
+</div>
+</div>
+<!-- Job List Table / Board -->
+<section class="space-y-unit">
+<h2 class="font-headline-lg-mobile text-on-surface">Active Work Queue</h2>
+<div class="grid grid-cols-1 gap-unit">
+<!-- Job Card 1 -->
+<div class="bg-surface-container border border-outline-variant active-job-card border-l-error rounded-xl p-gutter flex flex-col md:flex-row items-start md:items-center gap-gutter hover:border-outline transition-all shadow-lg">
+<div class="flex-1 space-y-1">
+<div class="flex items-center gap-unit">
+<span class="bg-error-container text-on-error-container font-label-caps px-unit py-0.5 rounded">URGENT</span>
+<span class="font-label-caps text-on-surface-variant">#JOB-2241</span>
+</div>
+<h3 class="font-headline-lg-mobile text-on-surface">Water Leakage in Kitchen</h3>
+<p class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="location_on">location_on</span>
+                                Room 402, Block B
+                            </p>
+</div>
+<div class="grid grid-cols-2 md:flex items-center gap-gutter border-t md:border-t-0 md:border-l border-outline-variant pt-unit md:pt-0 md:pl-gutter w-full md:w-auto">
+<div class="flex flex-col">
+<span class="font-label-caps text-on-surface-variant uppercase text-[10px]">Assigned</span>
+<span class="font-label-caps text-on-surface">10:15 AM</span>
+</div>
+<div class="flex gap-unit">
+<button class="bg-primary text-on-primary px-gutter py-2 font-label-caps rounded-xl hover:opacity-90 transition-opacity" onclick="toggleStatus(this)">
+                                    Start Job
+                                </button>
+<button class="border border-outline-variant text-on-surface px-gutter py-2 font-label-caps rounded-xl hover:bg-surface-container-high transition-colors">
+                                    Details
+                                </button>
+</div>
+</div>
+</div>
+<!-- Job Card 2 -->
+<div class="bg-surface-container border border-outline-variant active-job-card border-l-tertiary rounded-xl p-gutter flex flex-col md:flex-row items-start md:items-center gap-gutter hover:border-outline transition-all shadow-lg">
+<div class="flex-1 space-y-1">
+<div class="flex items-center gap-unit">
+<span class="bg-tertiary-container text-on-tertiary-container font-label-caps px-unit py-0.5 rounded">MEDIUM</span>
+<span class="font-label-caps text-on-surface-variant">#JOB-2245</span>
+</div>
+<h3 class="font-headline-lg-mobile text-on-surface">Wifi Connectivity Issue</h3>
+<p class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="location_on">location_on</span>
+                                Room 108, Block A
+                            </p>
+</div>
+<div class="grid grid-cols-2 md:flex items-center gap-gutter border-t md:border-t-0 md:border-l border-outline-variant pt-unit md:pt-0 md:pl-gutter w-full md:w-auto">
+<div class="flex flex-col">
+<span class="font-label-caps text-on-surface-variant uppercase text-[10px]">Assigned</span>
+<span class="font-label-caps text-on-surface">10:45 AM</span>
+</div>
+<div class="flex gap-unit">
+<button class="bg-secondary-container text-on-secondary-container px-gutter py-2 font-label-caps rounded-xl hover:opacity-90 transition-opacity">
+                                    In Progress
+                                </button>
+<button class="bg-secondary text-on-secondary px-gutter py-2 font-label-caps rounded-xl hover:opacity-90 transition-opacity" onclick="markComplete(this)">
+                                    Complete
+                                </button>
+</div>
+</div>
+</div>
+<!-- Job Card 3 -->
+<div class="bg-surface-container border border-outline-variant active-job-card border-l-outline-variant rounded-xl p-gutter flex flex-col md:flex-row items-start md:items-center gap-gutter hover:border-outline transition-all shadow-lg">
+<div class="flex-1 space-y-1">
+<div class="flex items-center gap-unit">
+<span class="bg-surface-container-highest text-on-surface-variant font-label-caps px-unit py-0.5 rounded">LOW</span>
+<span class="font-label-caps text-on-surface-variant">#JOB-2248</span>
+</div>
+<h3 class="font-headline-lg-mobile text-on-surface">Light Bulb Replacement</h3>
+<p class="text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="location_on">location_on</span>
+                                Common Lobby, 3rd Floor
+                            </p>
+</div>
+<div class="grid grid-cols-2 md:flex items-center gap-gutter border-t md:border-t-0 md:border-l border-outline-variant pt-unit md:pt-0 md:pl-gutter w-full md:w-auto">
+<div class="flex flex-col">
+<span class="font-label-caps text-on-surface-variant uppercase text-[10px]">Assigned</span>
+<span class="font-label-caps text-on-surface">11:10 AM</span>
+</div>
+<div class="flex gap-unit">
+<button class="bg-primary text-on-primary px-gutter py-2 font-label-caps rounded-xl hover:opacity-90 transition-opacity">
+                                    Start Job
+                                </button>
+<button class="border border-outline-variant text-on-surface px-gutter py-2 font-label-caps rounded-xl hover:bg-surface-container-high transition-colors">
+                                    Details
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Activity & Progress -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<div class="md:col-span-2 bg-surface-container-low border border-outline-variant rounded-xl p-unit">
+<div class="flex justify-between items-center mb-unit px-unit">
+<h3 class="font-headline-lg-mobile text-on-surface">Recent Activity</h3>
+<button class="text-primary font-label-caps">View All</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-surface-container-highest border-y border-outline-variant">
+<tr>
+<th class="px-gutter py-unit font-label-caps text-on-surface-variant uppercase text-[10px]">Task</th>
+<th class="px-gutter py-unit font-label-caps text-on-surface-variant uppercase text-[10px]">Status</th>
+<th class="px-gutter py-unit font-label-caps text-on-surface-variant uppercase text-[10px]">Time</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr>
+<td class="px-gutter py-unit font-body-md text-on-surface">AC Filter Cleaning - R204</td>
+<td class="px-gutter py-unit"><span class="text-secondary flex items-center gap-1 font-label-caps"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">check_circle</span> Completed</span></td>
+<td class="px-gutter py-unit font-label-caps text-on-surface-variant">09:15 AM</td>
+</tr>
+<tr>
+<td class="px-gutter py-unit font-body-md text-on-surface">Grip Rail Install - Hall 2</td>
+<td class="px-gutter py-unit"><span class="text-secondary flex items-center gap-1 font-label-caps"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">check_circle</span> Completed</span></td>
+<td class="px-gutter py-unit font-label-caps text-on-surface-variant">08:40 AM</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="bg-surface-container-low border border-outline-variant rounded-xl p-unit flex flex-col justify-between">
+<div>
+<h3 class="font-headline-lg-mobile text-on-surface mb-unit">Today's Progress</h3>
+<div class="relative h-3 bg-surface-container-highest rounded-full overflow-hidden mb-gutter">
+<div class="absolute left-0 top-0 h-full bg-secondary w-[75%] transition-all duration-1000"></div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between font-label-caps">
+<span class="text-on-surface-variant">Completed</span>
+<span class="text-on-surface">9/12</span>
+</div>
+<div class="flex justify-between font-label-caps">
+<span class="text-on-surface-variant">Remaining</span>
+<span class="text-on-surface">3</span>
+</div>
+</div>
+</div>
+<div class="mt-gutter">
+<img alt="Technical Blueprint" class="w-full h-32 object-cover rounded-xl grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpQCGbV7arjpehPh4jCNhZ-nHRE3jmPukhpuij5UpTdyKNRQyTVPASjQVx0rrDkQBkv_OgzVbrcZmu3RkmZ6jOKJKd9mIjGp1fmvFJX8mzc7V2ghC2PD0PoUqMM2K5xk-IR7R0INtNkpQ4FiNGkAIUfipi0dVR3wHjkPzm2lBYAXPURy3v_D0rGBk4VLkcH95GeqSlET9SoMh-nMYyP3zmnkbgE49kpPEzxmb9CslSIvP_Te4oV3rmhDQmMi0o9PSTrbkcXt4E5inE"/>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+    function toggleTheme() {
+        const html = document.documentElement;
+        const icon = document.getElementById('theme-toggle');
+        if (html.classList.contains('dark')) {
+            html.classList.remove('dark');
+            html.classList.add('light');
+            icon.innerText = 'light_mode';
+        } else {
+            html.classList.remove('light');
+            html.classList.add('dark');
+            icon.innerText = 'dark_mode';
+        }
+    }
+
+    function toggleStatus(btn) {
+        if (btn.innerText.trim() === 'Start Job') {
+            btn.innerText = 'In Progress';
+            btn.classList.remove('bg-primary', 'text-on-primary');
+            btn.classList.add('bg-secondary-container', 'text-on-secondary-container');
+            
+            if (!btn.nextElementSibling || btn.nextElementSibling.innerText.trim() !== 'Complete') {
+                const completeBtn = document.createElement('button');
+                completeBtn.className = 'bg-secondary text-on-secondary px-gutter py-2 font-label-caps rounded-xl hover:opacity-90 transition-opacity ml-unit';
+                completeBtn.innerText = 'Complete';
+                completeBtn.onclick = function() { markComplete(this); };
+                btn.parentNode.appendChild(completeBtn);
+            }
+        }
+    }
+
+    function markComplete(btn) {
+        const card = btn.closest('.active-job-card');
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(-10px)';
+        card.style.transition = 'all 0.4s ease';
+        setTimeout(() => {
+            card.remove();
+        }, 400);
+    }
+</script>
+</body></html>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../config/supabase';
-import { Search, MapPin, IndianRupee, Filter, CheckCircle, Wifi, Coffee, Wind, Globe } from 'lucide-react';
+import { Search, MapPin, Filter, CheckCircle, Wifi, Coffee, Wind, Globe, Shield } from 'lucide-react';
+import { slugifyPG } from '../utils/slugify';
 
 const PGList = () => {
   const [pgs, setPgs] = useState([]);
@@ -63,16 +64,19 @@ const PGList = () => {
       const pgsWithPrice = (pgData || []).map((pg) => {
         const roomsForPg = activeRoomStatuses.filter((room) => room.pg_id === pg.id);
         const availableRooms = roomsForPg.filter(isRoomAvailable);
-        const prices = availableRooms.map((room) => Number(room.price_per_seat)) || [];
+        
+        // Use available rooms first; fallback to all rooms to compute starting price if fully booked
+        const roomsToUse = availableRooms.length > 0 ? availableRooms : roomsForPg;
+        const prices = roomsToUse.map((room) => Number(room.price_per_seat)) || [];
         const startingPrice = prices.length > 0 ? Math.min(...prices) : 0;
 
         return {
           ...pg,
-          rooms: availableRooms,
+          rooms: roomsForPg, // Keep all rooms for reference
           starting_price: startingPrice,
           available_room_count: availableRooms.length
         };
-      }).filter((pg) => pg.available_room_count > 0);
+      });
 
       setPgs(pgsWithPrice);
     } catch (error) {
@@ -92,10 +96,22 @@ const PGList = () => {
   };
 
   const filteredPGs = pgs.filter(pg => {
-    const matchesSearch = pg.city.toLowerCase().includes(searchTerm.toLowerCase()) || pg.address.toLowerCase().includes(searchTerm.toLowerCase()) || pg.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = pg.city.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          pg.address.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          pg.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPrice = pg.starting_price <= priceRange;
-    // Simple mock amenities filter - assume all PGs have selected if array is empty
-    const matchesAmenities = selectedAmenities.length === 0 || selectedAmenities.some(a => pg.amenities?.includes(a));
+    
+    // Robust, case-insensitive, synonym-based key amenities matching for backward compatibility
+    const matchesAmenities = selectedAmenities.length === 0 || selectedAmenities.every(filterAmenity => {
+      const normalizedFilter = filterAmenity.toLowerCase();
+      return pg.amenities?.some(pgAmenity => {
+        const norm = pgAmenity.toLowerCase();
+        if (normalizedFilter.includes('wifi') && norm.includes('wifi')) return true;
+        if (normalizedFilter.includes('meals') && (norm.includes('meals') || norm.includes('food') || norm.includes('mess'))) return true;
+        if (normalizedFilter.includes('conditioning') && (norm.includes('ac') || norm.includes('air conditioning') || norm.includes('cooling'))) return true;
+        return norm === normalizedFilter;
+      });
+    });
     
     // Accommodation Type Filter
     const matchesType = accommodationType === 'All' || 
@@ -106,223 +122,210 @@ const PGList = () => {
   });
 
   return (
-    <div className="min-h-screen bg-secondary text-primary relative overflow-hidden pt-32 pb-16 px-4 md:px-8">
-      {/* Abstract Backgrounds */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-[#4a4bd7]/10 to-[#842cd3]/10 rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/4 -z-10"></div>
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#34b5fa]/10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3 -z-10"></div>
-
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-10">
+    <div className="min-h-screen bg-background text-on-background py-10 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Sidebar Fillters */}
-        <div className="lg:w-1/4 flex flex-col gap-6">
-          <div className="glass-morphism p-8 rounded-[2.5rem] sticky top-32 border border-white/40">
-            <h2 className="text-2xl font-black mb-6 flex items-center">
-              <Filter className="w-5 h-5 mr-3 text-accent" />
-              Filters
-            </h2>
-
-            <div className="mb-8">
-              <label className="text-sm font-bold text-[#615985] uppercase tracking-wider mb-3 block">Location</label>
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#a099b4]" />
-                <input 
-                  type="text" 
-                  placeholder="City or PG Name..."
-                  className="w-full bg-[#f7f1ff] border-none rounded-[1.5rem] py-4 pl-12 pr-4 text-[#342d55] placeholder:text-[#a099b4] focus:ring-0 shadow-inner"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="mb-8 border-t border-[#e6deff] pt-6 relative">
-               <label className="text-sm font-bold text-[#615985] uppercase tracking-wider mb-4 flex justify-between">
-                <span>Max Rent</span>
-                <span className="text-[#4a4bd7]">₹{priceRange.toLocaleString()}</span>
-              </label>
-              <input 
-                type="range" 
-                min="5000" 
-                max="50000" 
-                step="1000"
-                value={priceRange}
-                onChange={(e) => setPriceRange(Number(e.target.value))}
-                className="w-full h-2 bg-[#ece4ff] rounded-lg appearance-none cursor-pointer accent-[#4a4bd7]"
-              />
-            </div>
-
-            <div className="mb-8 border-t border-white/20 pt-6">
-              <label className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4 block">Student Category</label>
-              <div className="grid grid-cols-2 gap-2">
-                {['All', 'Indian', 'International'].map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => setAccommodationType(type)}
-                    className={`px-3 py-2.5 rounded-xl text-xs font-black transition-all ${
-                      accommodationType === type 
-                        ? 'bg-accent text-white shadow-lg shadow-purple-200' 
-                        : 'bg-white/50 text-gray-600 hover:bg-white border border-transparent hover:border-gray-100 shadow-sm'
-                    }`}
-                  >
-                    {type === 'All' ? 'Everyone' : type}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="border-t border-[#e6deff] pt-6">
-              <label className="text-sm font-bold text-[#615985] uppercase tracking-wider mb-4 block">Key Amenities</label>
-              <div className="space-y-3">
-                {AMENITIES_LIST.map((amenity) => {
-                  const isSelected = selectedAmenities.includes(amenity.name);
-                  return (
-                    <button 
-                      key={amenity.id}
-                      onClick={() => toggleAmenity(amenity.name)}
-                      className={`w-full flex items-center justify-between p-4 rounded-[1.5rem] transition-all ${
-                        isSelected ? 'bg-[#babbff]/20 border border-[#babbff]' : 'bg-[#fdf8ff] hover:bg-[#f7f1ff] border border-transparent'
-                      }`}
-                    >
-                      <div className="flex items-center text-[#342d55] font-semibold text-sm">
-                        <amenity.icon className={`w-4 h-4 mr-3 ${isSelected ? 'text-[#4a4bd7]' : 'text-[#a099b4]'}`} />
-                        {amenity.name}
-                      </div>
-                      {isSelected && <CheckCircle className="w-4 h-4 text-[#4a4bd7]" />}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            <button 
-              onClick={() => { setSearchTerm(''); setPriceRange(50000); setSelectedAmenities([]); setAccommodationType('All'); }}
-              className="w-full mt-8 py-4 bg-[#f1ebff] text-[#4a4bd7] rounded-[1.5rem] font-bold text-sm hover:bg-[#ece4ff] transition-colors"
-            >
-              Reset Filters
-            </button>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-extrabold text-text-primary tracking-tight">Available Accommodations</h1>
+          <p className="text-text-secondary text-sm lg:text-base mt-1">Showing {filteredPGs.length} curated verified stays</p>
         </div>
 
-        {/* Main Grid */}
-        <div className="lg:w-3/4">
-          <div className="mb-10 flex justify-between items-end">
-            <div>
-              <h1 className="text-4xl font-['Plus_Jakarta_Sans'] font-extrabold tracking-tight text-[#0f0b20] mb-2">Available Properties</h1>
-              <p className="text-[#615985] font-medium text-lg">Showing {filteredPGs.length} curated stays</p>
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* Sidebar Filters */}
+          <div className="w-full lg:w-1/4 shrink-0">
+            <div className="bg-surface-main border border-border-low rounded-xl p-5 space-y-6">
+              
+              <div className="flex items-center justify-between pb-4 border-b border-border-low">
+                <h2 className="font-bold text-base text-text-primary flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-primary" />
+                  <span>Filters</span>
+                </h2>
+                <button 
+                  onClick={() => { setSearchTerm(''); setPriceRange(25000); setSelectedAmenities([]); setAccommodationType('All'); }}
+                  className="text-xs font-bold text-primary hover:underline uppercase tracking-wider"
+                >
+                  Clear All
+                </button>
+              </div>
+
+              {/* Location Input */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Location Search</label>
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Search city, area or PG name"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-surface-container-low border border-border-low rounded-lg py-2.5 px-3 text-text-primary placeholder:text-text-secondary/50 focus:border-primary focus:bg-surface-container-high focus:outline-none transition-colors text-sm font-semibold"
+                  />
+                </div>
+              </div>
+
+              {/* Max Price Range */}
+              <div className="space-y-3">
+                <div className="flex justify-between text-[10px] font-bold text-text-secondary uppercase tracking-wider">
+                  <span>Max Monthly Rent</span>
+                  <span className="text-primary font-mono">₹{priceRange.toLocaleString()}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="5000" 
+                  max="40000" 
+                  step="1000"
+                  value={priceRange}
+                  onChange={(e) => setPriceRange(Number(e.target.value))}
+                  className="w-full h-1.5 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+              </div>
+
+              {/* Student Category Classification */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Student Classification</label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {['All', 'Indian', 'International'].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setAccommodationType(type)}
+                      className={`py-2 px-1 text-center rounded-lg text-xs font-bold transition-all ${
+                        accommodationType === type 
+                          ? 'bg-primary text-on-primary shadow-sm' 
+                          : 'bg-surface-container-low text-text-secondary hover:bg-surface-container border border-border-low'
+                      }`}
+                    >
+                      {type === 'All' ? 'Both' : type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Key Amenities */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Key Amenities</label>
+                <div className="space-y-2">
+                  {AMENITIES_LIST.map((amenity) => {
+                    const isSelected = selectedAmenities.includes(amenity.name);
+                    return (
+                      <button 
+                        key={amenity.id}
+                        onClick={() => toggleAmenity(amenity.name)}
+                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left ${
+                          isSelected 
+                            ? 'border-primary bg-primary/5 text-text-primary' 
+                            : 'border-border-low bg-surface-container-low hover:bg-surface-container text-text-secondary'
+                        }`}
+                      >
+                        <span className="flex items-center text-xs font-semibold gap-2">
+                          <amenity.icon className={`w-4 h-4 ${isSelected ? 'text-primary' : 'text-outline'}`} />
+                          <span>{amenity.name}</span>
+                        </span>
+                        {isSelected && <CheckCircle className="w-4 h-4 text-primary shrink-0" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
             </div>
           </div>
 
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-96 bg-[#f1ebff] rounded-[2rem] animate-pulse"></div>
-              ))}
-            </div>
-          ) : filteredPGs.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {filteredPGs.map((pg) => (
-                <div key={pg.id} className="group relative bg-white/60 backdrop-blur-2xl rounded-[3rem] overflow-hidden shadow-2xl shadow-purple-900/5 border border-white transition-all duration-500 hover:shadow-purple-900/10 hover:-translate-y-2 flex flex-col">
-                  {/* Image Area */}
-                  <div className="p-4 relative">
-                    <div className="h-64 rounded-[2.2rem] overflow-hidden relative">
-                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent z-10"></div>
+          {/* Listings Area */}
+          <div className="flex-1">
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1, 2, 4].map(idx => (
+                  <div key={idx} className="h-80 bg-surface-container animate-pulse rounded-xl border border-border-low"></div>
+                ))}
+              </div>
+            ) : filteredPGs.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredPGs.map((pg) => (
+                  <div 
+                    key={pg.id} 
+                    className="bg-surface-main border border-border-low rounded-xl overflow-hidden hover:border-outline transition-all duration-300 flex flex-col group"
+                  >
+                    <div className="h-48 relative overflow-hidden bg-surface-container">
                       <img 
                         src={pg.main_image || MOCKUP_IMAGE} 
-                        alt={pg.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                        alt={pg.name} 
+                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
                       />
-                      <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-2">
-                        <span className="bg-[#ffffff]/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold text-[#006592] flex items-center shadow-sm whitespace-nowrap">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Verified
-                        </span>
+                      <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-20">
+                        {pg.available_room_count > 0 ? (
+                          <span className="bg-success/15 text-success text-[10px] font-bold tracking-wider rounded border border-success/35 px-2 py-0.5">
+                            AVAILABLE ({pg.available_room_count} ROOMS)
+                          </span>
+                        ) : (
+                          <span className="bg-error/15 text-error text-[10px] font-bold tracking-wider rounded border border-error/35 px-2 py-0.5 animate-pulse">
+                            SOLD OUT
+                          </span>
+                        )}
                         {pg.accommodation_type && (
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold flex items-center shadow-sm whitespace-nowrap ${
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border border-primary/20 ${
                             pg.accommodation_type === 'International' 
-                              ? 'bg-[#34b5fa] text-white' 
+                              ? 'bg-primary/20 text-primary' 
                               : pg.accommodation_type === 'Indian'
-                              ? 'bg-[#4a4bd7] text-white'
-                              : 'bg-gradient-to-r from-[#4a4bd7] to-[#34b5fa] text-white'
+                              ? 'bg-primary/10 text-primary'
+                              : 'bg-primary/15 text-primary'
                           }`}>
-                            <Globe className="w-3 h-3 mr-1" />
-                            {pg.accommodation_type === 'Both' ? 'Indian & Int' : pg.accommodation_type}
+                            <Globe className="w-3 h-3 shrink-0" />
+                            <span>{pg.accommodation_type === 'Both' ? 'Indian & Int' : pg.accommodation_type}</span>
                           </span>
                         )}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Content Area */}
-                  <div className="p-8 pt-4 flex-grow flex flex-col">
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="p-5 flex-grow flex flex-col justify-between space-y-4">
                       <div>
-                        <h3 className="text-2xl font-bold font-['Plus_Jakarta_Sans'] text-[#0f0b20] mb-1">{pg.name}</h3>
-                        <p className="text-[#615985] flex items-center font-medium">
-                          <MapPin className="w-4 h-4 mr-1 text-[#a099b4]" />
-                          {pg.address}, {pg.city}
+                        <h3 className="font-bold text-lg text-text-primary group-hover:text-primary transition-colors">{pg.name}</h3>
+                        <p className="text-text-secondary text-xs flex items-center gap-1 mt-1 font-medium">
+                          <MapPin className="w-3.5 h-3.5 text-outline" />
+                          <span>{pg.address}, {pg.city}</span>
                         </p>
-                        {pg.google_map_url && (
-                          <a
-                            href={pg.google_map_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center mt-2 text-[10px] font-black uppercase tracking-widest text-[#4a4bd7] hover:text-[#34b5fa]"
-                          >
-                            <MapPin className="w-3 h-3 mr-1" />
-                            Open in Maps
-                          </a>
-                        )}
                       </div>
-                      <div className="bg-[#f0dbff] text-[#7614c4] px-4 py-2 rounded-2xl flex flex-col items-end shadow-sm">
-                        <span className="text-[10px] uppercase tracking-wider font-bold opacity-80">Starting at</span>
-                        <div className="font-extrabold flex items-center text-lg">
-                          <IndianRupee className="w-4 h-4 mr-0.5" />
-                          {pg.starting_price > 0 ? pg.starting_price : 'N/A'}
+
+                      <div className="flex flex-wrap gap-1.5">
+                        {pg.amenities?.slice(0, 3).map((amenity, idx) => (
+                          <span key={idx} className="bg-surface-container-low text-text-secondary text-[10px] px-2 py-1 rounded border border-border-low uppercase font-mono tracking-wider">
+                            {amenity}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="grid grid-cols-3 border-t border-border-low pt-4 text-center items-center">
+                        <div className="data-grid-divider">
+                          <span className="block text-[9px] font-semibold text-text-secondary uppercase tracking-wider font-mono">Rent starting</span>
+                          <span className="block font-bold text-text-primary mt-1 text-sm">₹{pg.starting_price.toLocaleString()}</span>
+                        </div>
+                        <div className="data-grid-divider">
+                          <span className="block text-[9px] font-semibold text-text-secondary uppercase tracking-wider font-mono">Deposit</span>
+                          <span className="block font-bold text-text-primary mt-1 text-sm">2 MO</span>
+                        </div>
+                        <div>
+                          <Link 
+                            to={`/pg/${slugifyPG(pg.name, pg.address, pg.city)}--${pg.id}`}
+                            className="inline-block px-3 py-2 bg-primary text-on-primary font-bold text-xs rounded-lg hover:opacity-90 active:scale-95 transition-all text-center w-full"
+                          >
+                            Details
+                          </Link>
                         </div>
                       </div>
                     </div>
-
-                    <div className="flex flex-wrap gap-2 mb-8 mt-2">
-                      {pg.amenities?.slice(0, 3).map((amenity, idx) => (
-                        <span key={idx} className="bg-[#f7f1ff] text-[#4a4bd7] text-[11px] px-3 py-1.5 rounded-full font-bold uppercase tracking-wider border border-[#ece4ff]">
-                          {amenity}
-                        </span>
-                      ))}
-                      {pg.amenities?.length > 3 && (
-                        <span className="text-[#a099b4] text-xs font-bold px-2 py-1.5 align-middle">
-                          +{pg.amenities.length - 3} more
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mt-auto pt-4 relative">
-                      <Link 
-                        to={`/pg/${pg.id}`}
-                        className="w-full relative z-20 overflow-hidden flex items-center justify-center p-4.5 bg-gradient-to-r from-accent to-accent-light text-white rounded-full font-black text-sm shadow-xl shadow-purple-100 hover:shadow-purple-200 transition-all active:scale-95"
-                      >
-                        <span className="relative z-10 w-full text-center">View Details</span>
-                      </Link>
-                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-[#ffffff]/80 backdrop-blur-xl rounded-[3rem] p-16 text-center border border-[#ffffff] shadow-[0_20px_40px_rgba(52,45,85,0.03)]">
-              <div className="w-24 h-24 bg-[#f1ebff] rounded-full flex items-center justify-center mx-auto mb-6">
-                <Search className="w-10 h-10 text-[#4a4bd7]" />
+                ))}
               </div>
-              <h3 className="text-2xl font-bold font-['Plus_Jakarta_Sans'] text-[#0f0b20] mb-2">No matches found</h3>
-              <p className="text-[#615985] text-lg">Try adjusting your filters or searching for a different location.</p>
-              <button 
-                onClick={() => { setSearchTerm(''); setPriceRange(50000); setSelectedAmenities([]); setAccommodationType('All'); }}
-                className="mt-8 px-8 py-3 bg-[#fdf8ff] border border-[#e6deff] text-[#4a4bd7] rounded-full font-bold hover:bg-[#f1ebff] transition-colors"
-              >
-                Clear all filters
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className="bg-surface-main border border-border-low rounded-xl p-16 text-center shadow-sm">
+                <Search className="w-10 h-10 text-outline mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-text-primary mb-1">No stay fits the search criteria</h3>
+                <p className="text-text-secondary text-sm">Try relaxing your sidebar filter tags or searching a broader city area.</p>
+              </div>
+            )}
+          </div>
+
         </div>
+
       </div>
     </div>
   );

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Apna Rooms - Premium PG Listings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#e5efff",
+                        "tertiary": "#00533d",
+                        "on-secondary-container": "#5c647a",
+                        "surface-dim": "#ccdbf2",
+                        "primary-container": "#4f46e5",
+                        "surface-variant": "#d4e4fa",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "on-primary-fixed": "#0f0069",
+                        "surface-container-low": "#eef4ff",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-subtle": "#F8FAFC",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "on-primary-container": "#dad7ff",
+                        "success": "#45C89C",
+                        "outline-variant": "#c7c4d8",
+                        "primary": "#3525cd",
+                        "on-tertiary-container": "#74f2c3",
+                        "tertiary-fixed-dim": "#5cdcaf",
+                        "on-tertiary-fixed-variant": "#00513b",
+                        "on-tertiary-fixed": "#002116",
+                        "surface-bright": "#f8f9ff",
+                        "on-secondary": "#ffffff",
+                        "border-low": "#E2E8F0",
+                        "background": "#f8f9ff",
+                        "secondary": "#565e74",
+                        "secondary-fixed": "#dae2fd",
+                        "surface": "#f8f9ff",
+                        "inverse-surface": "#233143",
+                        "error": "#EF4444",
+                        "outline": "#777587",
+                        "on-background": "#0d1c2d",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#006e51",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#464555",
+                        "on-secondary-fixed": "#131b2e",
+                        "primary-fixed": "#e2dfff",
+                        "text-primary": "#0F172A",
+                        "on-surface": "#0d1c2d",
+                        "text-secondary": "#475569",
+                        "surface-tint": "#4d44e3",
+                        "surface-main": "#FFFFFF",
+                        "surface-container-highest": "#d4e4fa",
+                        "inverse-on-surface": "#e9f1ff",
+                        "surface-container-high": "#dbe9ff",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#7bf9ca",
+                        "inverse-primary": "#c3c0ff",
+                        "secondary-container": "#dae2fd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-desktop": "48px",
+                        "lg": "24px",
+                        "max-width": "1280px",
+                        "unit": "4px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["JetBrains Mono"],
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-sm": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "label-sm": ["10px", {"lineHeight": "12px", "fontWeight": "500"}],
+                        "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg": ["30px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .custom-shadow { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+    </style>
+</head>
+<body class="bg-surface-subtle text-on-surface font-body-md">
+<!-- TopAppBar -->
+<header class="bg-surface-main sticky top-0 w-full z-50 border-b border-border-low">
+<div class="flex justify-between items-center max-w-max-width mx-auto px-margin-desktop h-16">
+<div class="flex items-center gap-xl">
+<span class="text-headline-md font-headline-md font-bold text-primary">Apna Rooms</span>
+<nav class="hidden md:flex items-center gap-lg">
+<a class="text-primary border-b-2 border-primary pb-1 font-body-md" href="#">Find PGs</a>
+<a class="text-text-secondary font-body-md hover:text-primary transition-colors" href="#">How it Works</a>
+<a class="text-text-secondary font-body-md hover:text-primary transition-colors" href="#">About Us</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="pl-xl pr-md py-xs bg-surface-subtle border border-border-low rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-container text-body-md w-64" placeholder="Search by area or PG name" type="text"/>
+</div>
+<button class="bg-primary text-on-primary px-md py-xs rounded-lg font-body-md active:opacity-80 transition-opacity">Login/Signup</button>
+</div>
+</div>
+</header>
+<!-- Main Content Layout -->
+<main class="max-w-max-width mx-auto px-margin-desktop py-xl">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-xl">
+<!-- Filters Sidebar -->
+<aside class="md:col-span-3 space-y-xl">
+<div class="bg-surface-main border border-border-low rounded-lg p-md">
+<div class="flex items-center justify-between mb-md">
+<h2 class="text-headline-sm font-headline-sm">Filters</h2>
+<button class="text-primary font-label-md hover:underline">Reset All</button>
+</div>
+<!-- Price Range -->
+<div class="mb-xl">
+<label class="block text-label-md font-label-md mb-sm text-text-secondary">PRICE RANGE (₹)</label>
+<div class="space-y-sm">
+<input class="w-full accent-primary" max="50000" min="5000" step="1000" type="range"/>
+<div class="flex justify-between text-label-sm font-label-sm text-text-secondary">
+<span>₹5,000</span>
+<span>₹50,000</span>
+</div>
+</div>
+</div>
+<!-- Occupancy Type -->
+<div class="mb-xl">
+<label class="block text-label-md font-label-md mb-sm text-text-secondary">OCCUPANCY</label>
+<div class="grid grid-cols-2 gap-sm">
+<button class="border border-primary bg-primary-fixed text-primary px-sm py-xs rounded-lg font-label-md">Single</button>
+<button class="border border-border-low hover:border-outline text-text-secondary px-sm py-xs rounded-lg font-label-md">Double</button>
+<button class="border border-border-low hover:border-outline text-text-secondary px-sm py-xs rounded-lg font-label-md">Triple</button>
+<button class="border border-border-low hover:border-outline text-text-secondary px-sm py-xs rounded-lg font-label-md">Shared</button>
+</div>
+</div>
+<!-- Amenities -->
+<div class="mb-xl">
+<label class="block text-label-md font-label-md mb-sm text-text-secondary">AMENITIES</label>
+<div class="space-y-sm">
+<label class="flex items-center gap-sm cursor-pointer">
+<input checked="" class="rounded border-border-low text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-body-md">High-speed WiFi</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="rounded border-border-low text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-body-md">Full Board Food</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input checked="" class="rounded border-border-low text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-body-md">Air Conditioning</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="rounded border-border-low text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-body-md">Laundry Service</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="rounded border-border-low text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-body-md">Attached Bathroom</span>
+</label>
+</div>
+</div>
+<!-- Gender Preference -->
+<div>
+<label class="block text-label-md font-label-md mb-sm text-text-secondary">GENDER</label>
+<div class="flex gap-sm">
+<button class="flex-1 py-xs border border-border-low rounded-lg font-label-md hover:bg-surface-subtle">Male</button>
+<button class="flex-1 py-xs border border-border-low rounded-lg font-label-md hover:bg-surface-subtle">Female</button>
+<button class="flex-1 py-xs border border-primary bg-primary-fixed text-primary rounded-lg font-label-md">Unisex</button>
+</div>
+</div>
+</div>
+<!-- Quick Stats for Admin/Context -->
+<div class="bg-surface-container-low border border-border-low rounded-lg p-md">
+<h3 class="text-label-md font-label-md text-text-secondary mb-sm uppercase">Quick Stats</h3>
+<div class="grid grid-cols-1 gap-sm">
+<div class="bg-surface-main p-sm border border-border-low rounded flex justify-between items-center">
+<span class="text-body-sm">Avg. Rent</span>
+<span class="font-label-md font-bold">₹12,400</span>
+</div>
+<div class="bg-surface-main p-sm border border-border-low rounded flex justify-between items-center">
+<span class="text-body-sm">Occupancy</span>
+<span class="text-success font-label-md font-bold">94% Full</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Results Grid -->
+<section class="md:col-span-9">
+<div class="flex items-center justify-between mb-lg">
+<div>
+<h1 class="text-headline-md font-headline-md">PGs in Indiranagar, Phagwara</h1>
+<p class="text-body-sm text-text-secondary">Showing 24 properties matching your criteria</p>
+</div>
+<div class="flex items-center gap-sm">
+<span class="text-label-md text-text-secondary">SORT BY:</span>
+<select class="bg-transparent border-none font-label-md text-primary focus:ring-0 cursor-pointer">
+<option>Price: Low to High</option>
+<option>Price: High to Low</option>
+<option>Top Rated</option>
+<option>Newly Listed</option>
+</select>
+</div>
+</div>
+<!-- PG Cards Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-lg">
+<!-- Card 1 -->
+<article class="bg-surface-main border border-border-low rounded-xl overflow-hidden hover:border-outline transition-all group">
+<div class="relative h-48">
+<img alt="Premium Modern Room" class="w-full h-full object-cover" data-alt="A clean, modern PG room featuring a single bed with crisp white linens and a navy blue throw. The room is brightly lit by natural afternoon light streaming through a large window. Minimalist wooden furniture and a small study desk are visible. The aesthetic is professional and functional with a high-end corporate feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7P0FoKBgKCMmjGVvoZY0YyPj8cSv_5g_eLIjsRu0sJkoztCZ21RXClGQJFzFpi3SkZwZBNnFQR6isV6IuylvcGvl2IE0j0MNb16cILFatZvLD2sLGsTvocFXP1F24TG8AQ3aIc9uMAchuvn5hJ65K01KD1-Ahg516o9u_vRZ2qWwPs5LNWE30rgAjsuGVnLt8IJx_3uIxqExn6ivUv7uLZHVqIPmfY029Zqho37zsT5Y6S0I_BzdvtJ5t0s6L7NCPKzEkvXZVRcxl"/>
+<div class="absolute top-sm right-sm bg-inverse-surface/80 backdrop-blur text-surface-main px-sm py-xs rounded font-label-sm">
+<span class="material-symbols-outlined text-[14px] mr-1">verified</span>VERIFIED
+                            </div>
+<div class="absolute bottom-sm left-sm bg-success text-on-tertiary px-sm py-xs rounded font-label-sm">
+                                IMMEDIATE MOVE-IN
+                            </div>
+</div>
+<div class="p-md">
+<div class="flex justify-between items-start mb-xs">
+<h3 class="text-headline-sm font-headline-sm group-hover:text-primary transition-colors">Royal Stay Executive PG</h3>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-amber-500" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-md">4.8</span>
+</div>
+</div>
+<p class="text-body-sm text-text-secondary flex items-center mb-md">
+<span class="material-symbols-outlined text-[16px] mr-xs">location_on</span>
+                                12th Main, Indiranagar, Phagwara
+                            </p>
+<!-- Data Grid -->
+<div class="grid grid-cols-3 border-y border-border-low py-sm mb-md divide-x divide-border-low text-center">
+<div>
+<p class="text-label-sm text-text-secondary uppercase">Rent</p>
+<p class="font-label-md font-bold text-primary">₹18,500<span class="text-[10px] font-normal">/mo</span></p>
+</div>
+<div>
+<p class="text-label-sm text-text-secondary uppercase">Deposit</p>
+<p class="font-label-md font-bold">2 Months</p>
+</div>
+<div>
+<p class="text-label-sm text-text-secondary uppercase">Type</p>
+<p class="font-label-md font-bold">Single</p>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex gap-sm">
+<span class="material-symbols-outlined text-text-secondary" title="WiFi">wifi</span>
+<span class="material-symbols-outlined text-text-secondary" title="AC">ac_unit</span>
+<span class="material-symbols-outlined text-text-secondary" title="Food">restaurant</span>
+</div>
+<button class="bg-primary text-on-primary px-lg py-xs rounded font-label-md hover:opacity-90 transition-opacity">Book Now</button>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-surface-main border border-border-low rounded-xl overflow-hidden hover:border-outline transition-all group">
+<div class="relative h-48">
+<img alt="Shared Luxury Room" class="w-full h-full object-cover" data-alt="A spacious shared room in a high-end PG facility with two twin beds separated by a stylish divider. Large glass doors lead to a balcony with city views. The lighting is warm and inviting. The room features professional-grade finishes, light grey walls, and integrated storage units. The atmosphere is quiet and developer-friendly." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrT8IQkr_JkOUdBBaHMhuRj1wis8Q-jnMyD8etj02DfcJIyA8ghQJJaycSxeMq5VqGqL0lUVCc0ZDDoNvdsV5-pZAMD4YfbDyv6a3U6Rw5J8H5-zyaSVrh0dWr_gT4csp9lwC95T6MLr7ufTBYcXajLL_35fYVrKrw-gO8kmqQDW1V906vJ4KtDZBeiZ1-qIOl7T_VCP0bfe2erI6InZt_r004emYyEzTDxUzTTSkoSxhEhiLiKiFK9TAyDN8RLqUQBbZigXj2rTx3"/>
+<div class="absolute top-sm right-sm bg-inverse-surface/80 backdrop-blur text-surface-main px-sm py-xs rounded font-label-sm">
+<span class="material-symbols-outlined text-[14px] mr-1">new_releases</span>NEW LISTING
+                            </div>
+</div>
+<div class="p-md">
+<div class="flex justify-between items-start mb-xs">
+<h3 class="text-headline-sm font-headline-sm group-hover:text-primary transition-colors">Zolo Scholar House</h3>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-amber-500" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-md">4.5</span>
+</div>
+</div>
+<p class="text-body-sm text-text-secondary flex items-center mb-md">
+<span class="material-symbols-outlined text-[16px] mr-xs">location_on</span>
+                                Double Road, Indiranagar
+                            </p>
+<div class="grid grid-cols-3 border-y border-border-low py-sm mb-md divide-x divide-border-low text-center">
+<div>
+<p class="text-label-sm text-text-secondary uppercase">Rent</p>
+<p class="font-label-md font-bold text-primary">₹12,000<span class="text-[10px] font-normal">/mo</span></p>
+</div>
+<div>
+<p class="text-label-sm text-text-secondary uppercase">Deposit</p>
+<p class="font-label-md font-bold">1 Month</p>
+</div>
+<div>
+<p class="text-label-sm text-text-secondary uppercase">Type</p>
+<p class="font-label-md font-bold">Double</p>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex gap-sm">
+<span class="material-symbols-outlined text-text-secondary" title="WiFi">wifi</span>
+<span class="material-symbols-outlined text-text-secondary" title="Laundry">local_laundry_service</span>
+<span class="material-symbols-outlined text-text-secondary" title="Parking">local_parking</span>
+</div>
+<button class="bg-primary text-on-primary px-lg py-xs rounded font-label-md hover:opacity-90 transition-opacity">Book Now</button>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-surface-main border border-border-low rounded-xl overflow-hidden hover:border-outline transition-all group">
+<div class="relative h-48">
+<img alt="Executive Studio" class="w-full h-full object-cover" data-alt="A luxury executive studio PG room designed for single occupancy. It includes a plush bed, an ergonomic work chair, and a high-definition monitor setup. The lighting is sophisticated, using recessed ceiling spots and a designer desk lamp. The color scheme is a mix of charcoal grey and warm oak wood. The vibe is productive and premium." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmiPAXzwWU6JwS6Fw5tVGBS7LzWhcPDiDlBfa9jL3RiHDyw5fskiRqKNSa1KtV_6NUeA8DiLWfDiw8jV8SnUyS0m9LWoSEBBrkpIX9HilKBV-KgW3eqa816rtc-EzMlYBMMJ5AjWCtd-s5vvlPp9yEfRIvj81X222zlMgKK1lt1JcSI-t_Cln_sJlKGPF4Pm3q43T1Cx90t_Dcmw95qKgiljtTVpm3pzBr4is-ZDi8IoOknQ8Mk_BBO9zALUOUfpg1y-0_k65SnJ36"/>
+<div class="absolute bottom-sm left-sm bg-error text-on-error px-sm py-xs rounded font-label-sm">
+                                ONLY 2 ROOMS LEFT
+                            </div>
+</div>
+<div class="p-md">
+<div class="flex justify-between items-start mb-xs">
+<h3 class="text-headline-sm font-headline-sm group-hover:text-primary transition-colors">Stanza Living Barcelona</h3>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-amber-500" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-md">4.9</span>
+</div>
+</div>
+<p class="text-body-sm text-text-secondary flex items-center mb-md">
+<span class="material-symbols-outlined text-[16px] mr-xs">location_on</span>
+                                Defence Colony, Indiranagar
+                            </p>
+<div class="grid grid-cols-3 border-y border-border-low py-sm mb-md divide-x divide-border-low text-center">
+<div>
+<p class="text-label-sm text-text-secondary uppercase">Rent</p>
+<p class="font-label-md font-bold text-primary">₹22,000<span class="text-[10px] font-normal">/mo</span></p>
+</div>
+<div>
+<p class="text-label-sm text-text-secondary uppercase">Deposit</p>
+<p class="font-label-md font-bold">₹50k Flat</p>
+</div>
+<div>
+<p class="text-label-sm text-text-secondary uppercase">Type</p>
+<p class="font-label-md font-bold">Studio</p>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex gap-sm">
+<span class="material-symbols-outlined text-text-secondary" title="WiFi">wifi</span>
+<span class="material-symbols-outlined text-text-secondary" title="Gym">fitness_center</span>
+<span class="material-symbols-outlined text-text-secondary" title="Food">restaurant</span>
+</div>
+<button class="bg-primary text-on-primary px-lg py-xs rounded font-label-md hover:opacity-90 transition-opacity">Book Now</button>
+</div>
+</div>
+</article>
+<!-- Card 4 -->
+<article class="bg-surface-main border border-border-low rounded-xl overflow-hidden hover:border-outline transition-all group">
+<div class="relative h-48">
+<img alt="Economy Sharing" class="w-full h-full object-cover" data-alt="A clean, bright economy PG room with four bunk beds, each with individual charging ports and reading lights. The floor is polished concrete and the walls are a vibrant teal. The space is extremely organized and maximizes efficiency. Large windows provide plenty of ventilation. The aesthetic is youthful, energetic, and urban." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC69WujQ5a2YoVN2RgYOl6vBSiJ9zyuOYx7PE51ScscpytmqbU-CH7ICFDIL65QQeixsWURAd-5Aav5DI6ptOKqOO8Nk8RCS_H9OfJo8fMrVTWtl0pfVEJwyL1CJu0Ve2y2XhlpuUuyppImOg-NV0nV7pEGlBxOkhtpJIWxWG0U45hfzUfHkxL22BbOfM9Ak0-qriuvlWL38xLSJwZoA4R2fDvlM0xPDDyk-UPX85sJCH1Cyc3JCqVzda5deecpzLVLI71cnkNwt0fb"/>
+</div>
+<div class="p-md">
+<div class="flex justify-between items-start mb-xs">
+<h3 class="text-headline-sm font-headline-sm group-hover:text-primary transition-colors">Co-Live Prime Homes</h3>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-amber-500" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-md">4.2</span>
+</div>
+</div>
+<p class="text-body-sm text-text-secondary flex items-center mb-md">
+<span class="material-symbols-outlined text-[16px] mr-xs">location_on</span>
+                                Kodihalli, Indiranagar
+                            </p>
+<div class="grid grid-cols-3 border-y border-border-low py-sm mb-md divide-x divide-border-low text-center">
+<div>
+<p class="text-label-sm text-text-secondary uppercase">Rent</p>
+<p class="font-label-md font-bold text-primary">₹8,500<span class="text-[10px] font-normal">/mo</span></p>
+</div>
+<div>
+<p class="text-label-sm text-text-secondary uppercase">Deposit</p>
+<p class="font-label-md font-bold">1 Month</p>
+</div>
+<div>
+<p class="text-label-sm text-text-secondary uppercase">Type</p>
+<p class="font-label-md font-bold">4-Sharing</p>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex gap-sm">
+<span class="material-symbols-outlined text-text-secondary" title="WiFi">wifi</span>
+<span class="material-symbols-outlined text-text-secondary" title="Security">security</span>
+<span class="material-symbols-outlined text-text-secondary" title="Cleaning">cleaning_services</span>
+</div>
+<button class="bg-primary text-on-primary px-lg py-xs rounded font-label-md hover:opacity-90 transition-opacity">Book Now</button>
+</div>
+</div>
+</article>
+</div>
+<!-- Pagination -->
+<div class="mt-xl flex items-center justify-center gap-sm">
+<button class="p-xs rounded border border-border-low hover:bg-surface-dim transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded bg-primary text-on-primary font-label-md">1</button>
+<button class="w-8 h-8 rounded border border-border-low font-label-md hover:bg-surface-dim">2</button>
+<button class="w-8 h-8 rounded border border-border-low font-label-md hover:bg-surface-dim">3</button>
+<span class="px-xs">...</span>
+<button class="w-8 h-8 rounded border border-border-low font-label-md hover:bg-surface-dim">12</button>
+<button class="p-xs rounded border border-border-low hover:bg-surface-dim transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</section>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-subtle border-t border-border-low w-full mt-xl">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter max-w-max-width mx-auto px-margin-desktop py-xl">
+<div class="md:col-span-4">
+<span class="text-headline-sm font-headline-sm font-bold text-primary">Apna Rooms</span>
+<p class="text-body-sm text-text-secondary mt-md max-w-xs">Connecting professionals and students with high-quality, verified PG accommodations across India.</p>
+<div class="flex gap-md mt-lg">
+<span class="material-symbols-outlined text-text-secondary cursor-pointer hover:text-primary">social_leaderboard</span>
+<span class="material-symbols-outlined text-text-secondary cursor-pointer hover:text-primary">language</span>
+<span class="material-symbols-outlined text-text-secondary cursor-pointer hover:text-primary">mail</span>
+</div>
+</div>
+<div class="md:col-span-2">
+<h4 class="font-label-md font-bold mb-md uppercase">Company</h4>
+<ul class="space-y-sm">
+<li><a class="text-body-sm text-text-secondary hover:text-primary transition-colors" href="#">About Us</a></li>
+<li><a class="text-body-sm text-text-secondary hover:text-primary transition-colors" href="#">Careers</a></li>
+<li><a class="text-body-sm text-text-secondary hover:text-primary transition-colors" href="#">Blogs</a></li>
+</ul>
+</div>
+<div class="md:col-span-2">
+<h4 class="font-label-md font-bold mb-md uppercase">Support</h4>
+<ul class="space-y-sm">
+<li><a class="text-body-sm text-text-secondary hover:text-primary transition-colors" href="#">Help Center</a></li>
+<li><a class="text-body-sm text-text-secondary hover:text-primary transition-colors" href="#">Terms of Service</a></li>
+<li><a class="text-body-sm text-text-secondary hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
+</ul>
+</div>
+<div class="md:col-span-4">
+<h4 class="font-label-md font-bold mb-md uppercase">Newsletter</h4>
+<p class="text-body-sm text-text-secondary mb-md">Get the latest listing updates in your inbox.</p>
+<div class="flex gap-xs">
+<input class="flex-1 px-md py-xs bg-surface-main border border-border-low rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-container text-body-sm" placeholder="Email address" type="email"/>
+<button class="bg-primary text-on-primary px-md py-xs rounded-lg font-body-sm">Join</button>
+</div>
+</div>
+</div>
+<div class="border-t border-border-low py-md">
+<div class="max-w-max-width mx-auto px-margin-desktop text-center">
+<p class="text-body-sm text-text-secondary">© 2024 Apna Rooms. Professional PG Rentals.</p>
+</div>
+</div>
+</footer>
+<script>
+        // Simple range value update or any micro-interactions
+        const range = document.querySelector('input[type="range"]');
+        if (range) {
+            range.addEventListener('input', (e) => {
+                // Potential for dynamic filtering logic
+            });
+        }
+    </script>
+</body></html>

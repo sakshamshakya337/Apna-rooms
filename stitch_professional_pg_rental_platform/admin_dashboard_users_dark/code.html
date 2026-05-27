@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ProRent Manager - Users &amp; Tenants</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;family=Hanken+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#0b1326",
+                        "surface-container-lowest": "#060e20",
+                        "secondary-fixed-dim": "#89ceff",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "error": "#ffb4ab",
+                        "primary": "#c0c1ff",
+                        "surface-container-low": "#131b2e",
+                        "surface-tint": "#c0c1ff",
+                        "primary-fixed": "#e1e0ff",
+                        "on-error": "#690005",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-high": "#222a3d",
+                        "on-secondary-fixed-variant": "#004c6e",
+                        "on-surface": "#dae2fd",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "on-secondary": "#00344d",
+                        "secondary": "#89ceff",
+                        "on-tertiary-container": "#452000",
+                        "on-secondary-fixed": "#001e2f",
+                        "surface-container": "#171f33",
+                        "secondary-container": "#00a2e6",
+                        "surface-container-highest": "#2d3449",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "outline": "#908fa0",
+                        "on-tertiary-fixed": "#301400",
+                        "on-primary": "#1000a9",
+                        "on-background": "#dae2fd",
+                        "surface-bright": "#31394d",
+                        "secondary-fixed": "#c9e6ff",
+                        "outline-variant": "#464554",
+                        "inverse-primary": "#494bd6",
+                        "on-tertiary": "#4f2500",
+                        "tertiary": "#ffb783",
+                        "surface-variant": "#2d3449",
+                        "on-secondary-container": "#00344e",
+                        "on-primary-fixed": "#07006c",
+                        "primary-container": "#8083ff",
+                        "on-surface-variant": "#c7c4d7",
+                        "background": "#0b1326",
+                        "inverse-on-surface": "#283044",
+                        "surface-dim": "#0b1326",
+                        "inverse-surface": "#dae2fd",
+                        "tertiary-container": "#d97721",
+                        "on-primary-container": "#0d0096",
+                        "tertiary-fixed": "#ffdcc5",
+                        "success": "#45C89C"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "margin-mobile": "20px",
+                        "container-max": "1280px",
+                        "margin-desktop": "64px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-sm": ["Inter"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-xl": ["Hanken Grotesk"],
+                        "headline-sm": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .scale-98:hover { transform: scale(0.98); }
+        .active-95:active { transform: scale(0.95); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0b1326; }
+        ::-webkit-scrollbar-thumb { background: #2d3449; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background font-body-md text-on-background min-h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full p-4 gap-2 border-r border-outline-variant bg-surface-container-lowest w-64 shrink-0 z-40 fixed md:static">
+<div class="mb-8 px-2">
+<img alt="Apna Rooms Logo" class="h-10 w-auto mb-2 object-contain filter brightness-125" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtzkTUTcGFrBn5vvY0g0uGIFVMZsBuQMjTIWhS5bjcPdbuU9Xh6WCH5oQJusvPo872At1nIq9WDWThbQKVOYzT6Y0C7Im2htZ1Sp0nqLYJEwHzVFx42u25UonDMk2_wJaj39cF1Oy_pnOIMrFS1Hw767vGeZp7a5OqtMbgO61ac2whqDW0vKsYnOs9lbmrpgaWKn-TQGa_Uey6pHC-xaa9kGETrmmpoG-ex5zX0F8Kt_UsgA2vKW-i9AVUW2QH_TSK3On9DFj6Df9d"/>
+<p class="font-label-caps text-[10px] text-outline uppercase tracking-widest">Portfolio Overview</p>
+</div>
+<nav class="flex-1 space-y-1 overflow-y-auto">
+<!-- Active Navigation: Users -->
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container font-semibold rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-body-sm">Users</span>
+</a>
+<!-- Inactive Navigations -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">domain</span>
+<span class="font-body-sm">PGs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-body-sm">Bills</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">report_problem</span>
+<span class="font-body-sm">Complaints</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+<span class="font-body-sm">Queries</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">engineering</span>
+<span class="font-body-sm">Workers</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="font-body-sm">Team</span>
+</a>
+</nav>
+<div class="mt-auto pt-4 border-t border-outline-variant space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-sm">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-sm">Logout</span>
+</a>
+<div class="flex items-center gap-3 p-2 mt-4 bg-surface-container-high rounded-xl">
+<img alt="Admin Avatar" class="w-10 h-10 rounded-full object-cover border border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBehfXdU9_c-lGe8ydhvGsJl_y9Axhn27wgcUFZk9YiSpcKuqPK6QYNcSvKwrbxRtU2YPC8-OxNfJCGRYA5UMbVCvVM-MoDJKt2XSWWg9L-Xj5BwYkl0KJNYUToxobyrTWc_grkFiQXt9pk9O1syG7JccGxbgJFk4gnUpmYmQcBUFc-e1o9PYMbeM8SAPdtIhyRloGpsuRaXBkV8PHqlD7H86kE8EkYov9lDf52rlt5oFLN61cpYjkNbgdvKiJIS73i_K9yJuHYbPQB"/>
+<div class="overflow-hidden">
+<p class="font-body-sm font-bold truncate text-on-surface">Alex Sterling</p>
+<p class="text-[11px] text-outline truncate uppercase">Portfolio Lead</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-50 flex justify-between items-center px-6 py-3 w-full bg-surface-container-lowest border-b border-outline-variant">
+<div class="flex items-center gap-6">
+<img alt="Apna Rooms" class="h-8 md:hidden filter brightness-125" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtzkTUTcGFrBn5vvY0g0uGIFVMZsBuQMjTIWhS5bjcPdbuU9Xh6WCH5oQJusvPo872At1nIq9WDWThbQKVOYzT6Y0C7Im2htZ1Sp0nqLYJEwHzVFx42u25UonDMk2_wJaj39cF1Oy_pnOIMrFS1Hw767vGeZp7a5OqtMbgO61ac2whqDW0vKsYnOs9lbmrpgaWKn-TQGa_Uey6pHC-xaa9kGETrmmpoG-ex5zX0F8Kt_UsgA2vKW-i9AVUW2QH_TSK3On9DFj6Df9d"/>
+<span class="hidden md:block font-headline-sm text-primary">ProRent Manager</span>
+<div class="hidden md:flex gap-6 ml-8 h-full">
+<a class="text-primary font-bold border-b-2 border-primary h-full flex items-center px-2 text-sm" href="#">Dashboard</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors px-2 text-sm flex items-center" href="#">Properties</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors px-2 text-sm flex items-center" href="#">Finance</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<input class="w-64 pl-10 pr-4 py-2 bg-surface-container-high border border-outline-variant rounded-lg text-sm text-on-surface placeholder-outline focus:outline-none focus:border-primary transition-all" placeholder="Search tenants..." type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+</div>
+<div class="flex items-center gap-1 border-r border-outline-variant pr-4 mr-2">
+<button class="material-symbols-outlined p-2 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors" id="themeToggle" title="Toggle Theme">dark_mode</button>
+<button class="material-symbols-outlined p-2 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors">notifications</button>
+<button class="material-symbols-outlined p-2 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors">help_outline</button>
+</div>
+<img alt="User profile" class="w-8 h-8 rounded-full border border-outline-variant hover:ring-2 ring-primary transition-all cursor-pointer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoRZNRH5a3OjUdWJs36kQkvmw-47Py6OVu4Bh6R5Vdcu-wOQMf-CcSPgpFdY28eNqqLu6vCnhzut4EXR-qTVw6X4OSJ21FLydmyy4hPunsk6YFNUtMCYgNBuPBk0Ezg94yFXL5bDzhqXOMK1G6GydzJxr_5tlth5djVVIhSPc7lCEgHA_AdM_pVbq_RuwPNMBvaEdENp882e52nvwMjx2p14RvYaWCkVXMivn8XgZIs4XQHyjrmqHNL4oYOg4oyCn1Rr23AIts0HwD"/>
+</div>
+</header>
+<!-- Content Area -->
+<div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
+<!-- Quick Stats Row -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-surface-container-low p-4 border border-outline-variant rounded-xl shadow-sm">
+<p class="font-label-caps text-[11px] text-outline uppercase">Total Tenants</p>
+<p class="text-2xl font-bold text-on-surface mt-1">1,248</p>
+<div class="mt-2 flex items-center text-success gap-1">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span class="text-xs">4.2% inc.</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 border border-outline-variant rounded-xl shadow-sm">
+<p class="font-label-caps text-[11px] text-outline uppercase">Occupancy Rate</p>
+<p class="text-2xl font-bold text-on-surface mt-1">94.8%</p>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mt-3">
+<div class="bg-primary h-full rounded-full w-[94.8%]"></div>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 border border-outline-variant rounded-xl shadow-sm">
+<p class="font-label-caps text-[11px] text-outline uppercase">Pending Dues</p>
+<p class="text-2xl font-bold text-on-surface mt-1">$12,450</p>
+<div class="mt-2 flex items-center text-error gap-1">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="text-xs">18 Overdue</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 border border-outline-variant rounded-xl shadow-sm">
+<p class="font-label-caps text-[11px] text-outline uppercase">Active Disputes</p>
+<p class="text-2xl font-bold text-on-surface mt-1">06</p>
+<div class="mt-2 flex items-center text-outline gap-1">
+<span class="material-symbols-outlined text-[16px]">info</span>
+<span class="text-xs">3 Resolved today</span>
+</div>
+</div>
+</div>
+<!-- Management Section -->
+<section class="bg-surface-container-low border border-outline-variant rounded-2xl overflow-hidden flex flex-col shadow-lg">
+<div class="p-6 border-b border-outline-variant flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface-container-low">
+<div>
+<h2 class="text-xl font-bold text-on-surface">User Directory</h2>
+<p class="text-sm text-on-surface-variant mt-1">Manage and monitor all active property tenants across your portfolio.</p>
+</div>
+<div class="flex gap-3 w-full sm:w-auto">
+<button class="bg-surface-container-high border border-outline-variant text-on-surface px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-surface-container-highest transition-all active:scale-95">
+<span class="material-symbols-outlined text-[18px]">filter_list</span> Filter
+                    </button>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 shadow-md shadow-primary/20">
+<span class="material-symbols-outlined text-[18px]">person_add</span> Add New Tenant
+                    </button>
+</div>
+</div>
+<!-- High Density Data Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-high/50 border-b border-outline-variant">
+<tr>
+<th class="px-6 py-4 font-label-caps text-[11px] text-outline uppercase tracking-wider">Name</th>
+<th class="px-6 py-4 font-label-caps text-[11px] text-outline uppercase tracking-wider">PG Assigned</th>
+<th class="px-6 py-4 font-label-caps text-[11px] text-outline uppercase tracking-wider">Room</th>
+<th class="px-6 py-4 font-label-caps text-[11px] text-outline uppercase tracking-wider">Status</th>
+<th class="px-6 py-4 font-label-caps text-[11px] text-outline uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Table Row 1 -->
+<tr class="hover:bg-surface-container-highest transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold text-xs">JD</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Johnathan Doe</p>
+<p class="text-xs text-on-surface-variant">john.doe@example.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-on-surface">Blue Horizon Suites</p>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-on-surface-variant font-mono">B-402</p>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-success/10 text-success text-[10px] font-bold uppercase tracking-wider border border-success/20">
+<span class="w-1.5 h-1.5 rounded-full bg-success mr-1.5"></span> Paid
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg active:scale-90" title="View Profile">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg active:scale-90" title="Send Reminder">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Table Row 2 -->
+<tr class="hover:bg-surface-container-highest transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold text-xs">SA</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Sarah Alvez</p>
+<p class="text-xs text-on-surface-variant">sarah.a@proton.me</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-on-surface">Oakwood Residency</p>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-on-surface-variant font-mono">A-110</p>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-error/10 text-error text-[10px] font-bold uppercase tracking-wider border border-error/20">
+<span class="w-1.5 h-1.5 rounded-full bg-error mr-1.5"></span> Unpaid
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg active:scale-90" title="View Profile">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+</button>
+<button class="p-2 text-error hover:text-red-300 transition-colors hover:bg-error-container/20 rounded-lg active:scale-90" title="Send Urgent Reminder">
+<span class="material-symbols-outlined text-[20px]">notifications_active</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Table Row 3 -->
+<tr class="hover:bg-surface-container-highest transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container font-bold text-xs">MK</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Michael Kovic</p>
+<p class="text-xs text-on-surface-variant">mkovic88@gmail.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-on-surface">Blue Horizon Suites</p>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-on-surface-variant font-mono">C-201</p>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-tertiary/10 text-tertiary text-[10px] font-bold uppercase tracking-wider border border-tertiary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary mr-1.5"></span> Pending
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg active:scale-90" title="View Profile">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg active:scale-90" title="Send Reminder">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Table Row 4 -->
+<tr class="hover:bg-surface-container-highest transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-primary-fixed-dim flex items-center justify-center text-on-primary-fixed font-bold text-xs">EL</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Elena Lundberg</p>
+<p class="text-xs text-on-surface-variant">elena.l@outlook.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-on-surface">Pine View Estates</p>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-on-surface-variant font-mono">B-004</p>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-success/10 text-success text-[10px] font-bold uppercase tracking-wider border border-success/20">
+<span class="w-1.5 h-1.5 rounded-full bg-success mr-1.5"></span> Paid
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg active:scale-90" title="View Profile">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-highest rounded-lg active:scale-90" title="Send Reminder">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer/Pagination -->
+<div class="p-4 border-t border-outline-variant flex items-center justify-between bg-surface-container-low">
+<p class="text-xs text-on-surface-variant font-medium">Showing 1 to 4 of 1,248 results</p>
+<div class="flex items-center gap-1">
+<button class="p-1 border border-outline-variant rounded hover:bg-surface-container-high disabled:opacity-30 transition-colors" disabled="">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center bg-primary text-on-primary font-bold rounded text-xs">1</button>
+<button class="w-8 h-8 flex items-center justify-center border border-outline-variant text-on-surface-variant hover:bg-surface-container-high rounded text-xs transition-colors">2</button>
+<button class="w-8 h-8 flex items-center justify-center border border-outline-variant text-on-surface-variant hover:bg-surface-container-high rounded text-xs transition-colors">3</button>
+<span class="px-1 text-outline">...</span>
+<button class="w-8 h-8 flex items-center justify-center border border-outline-variant text-on-surface-variant hover:bg-surface-container-high rounded text-xs transition-colors">312</button>
+<button class="p-1 border border-outline-variant rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Bento Area -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 pb-6">
+<div class="md:col-span-2 bg-surface-container-low border border-outline-variant rounded-2xl p-6 flex flex-col justify-between shadow-lg">
+<div>
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-label-caps text-xs font-bold uppercase tracking-widest text-outline">Recent Onboarding</h3>
+<a class="text-xs font-bold text-primary hover:underline" href="#">View All</a>
+</div>
+<div class="space-y-3">
+<div class="flex items-center gap-4 p-3 bg-surface-container-high border border-outline-variant rounded-xl">
+<img alt="New tenant" class="w-12 h-12 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBM-JCeDzV0CdCu8SKYF_Cx_aRi6M0F_upt--J7JXfSzo6y8JSDM40DyHmLr57tOTk0VAt5t5joanTG1oKfBOel0m7mO9MCcrTrwfhCoP7Hzg8EluAZLa_456wv0bFABltdW_s77GC2sxC96Ne26hP-1HTukLGKrGSfSbbybVdXEZMJSSYYYMeFv4Czy7aHYTvgSz3xcODQ6FHogmz4s7tSFwFgSBIA3bu2xoAl0cYMdC02WC6j8xomMbfkCG5e2Ke0LUh6Iudp1CU9"/>
+<div class="flex-1">
+<p class="text-sm font-bold text-on-surface">Sophia Martinez</p>
+<p class="text-xs text-on-surface-variant">Onboarded: Today, 10:45 AM</p>
+</div>
+<div class="text-right">
+<p class="text-xs font-bold text-success">Verified</p>
+<p class="text-[10px] text-outline font-mono">#TN-9402</p>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-xl">info</span>
+<p class="text-xs text-primary font-medium">4 more tenants are waiting for background verification.</p>
+</div>
+</div>
+<div class="bg-primary-container text-on-primary-container rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden shadow-lg shadow-primary/10">
+<div class="z-10 relative">
+<h3 class="text-xl font-bold mb-2">Quick Support</h3>
+<p class="text-sm opacity-80 mb-6 font-medium leading-relaxed">Need help with tenant management or billing issues? Our team is available 24/7 to assist with your portfolio.</p>
+<button class="bg-surface-container-lowest text-primary px-6 py-2.5 rounded-lg text-sm font-bold active:scale-95 transition-transform shadow-sm hover:bg-white">Contact Portfolio Manager</button>
+</div>
+<span class="material-symbols-outlined absolute -right-6 -bottom-6 text-[140px] opacity-10 rotate-12">support_agent</span>
+</div>
+</div>
+</div>
+</main>
+<script>
+    // Theme toggle logic
+    const themeToggle = document.getElementById('themeToggle');
+    const htmlElement = document.documentElement;
+    
+    themeToggle.addEventListener('click', () => {
+        if (htmlElement.classList.contains('dark')) {
+            htmlElement.classList.remove('dark');
+            htmlElement.classList.add('light');
+            themeToggle.innerText = 'light_mode';
+        } else {
+            htmlElement.classList.remove('light');
+            htmlElement.classList.add('dark');
+            themeToggle.innerText = 'dark_mode';
+        }
+    });
+
+    // Simple micro-interaction for active states
+    document.querySelectorAll('a, button').forEach(el => {
+        el.addEventListener('click', (e) => {
+            if (el.getAttribute('href') === '#') e.preventDefault();
+        });
+    });
+</script>
+</body></html>

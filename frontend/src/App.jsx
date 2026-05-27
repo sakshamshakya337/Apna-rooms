@@ -34,12 +34,12 @@ const App = () => {
           <Route path="/login" element={!currentUser ? <Login /> : <Navigate to="/dashboard" />} />
           <Route path="/signup" element={!currentUser ? <Signup /> : <Navigate to="/dashboard" />} />
           <Route path="/pgs" element={<PGList />} />
-          <Route path="/pg/:id" element={<PGDetail />} />
+          <Route path="/pg/:slugAndId" element={<PGDetail />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-conditions" element={<TermsAndConditions />} />
           <Route path="/refund-cancellation" element={<RefundCancellation />} />
-          <Route path="/shipping-delivery" element={<ShippingDelivery />} />
+        
           <Route path="/contact" element={<Contact />} />
           <Route path="/booking-confirmation/:id" element={currentUser ? <BookingConfirmation /> : <Navigate to="/login" />} />
           

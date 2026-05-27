@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, MapPin, Shield, Star, Zap, IndianRupee, ChevronRight, CheckCircle, ArrowRight } from 'lucide-react';
 import { supabase } from '../config/supabase';
+import { MapPin, Search, Shield, Star, DollarSign, Users, Award, Zap, CheckCircle } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { slugifyPG } from '../utils/slugify';
 
 const Home = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const { theme } = useTheme();
+  const navigate = useNavigate();
+  
+  // Search Form State
+  const [location, setLocation] = useState('');
+  const [budgetRange, setBudgetRange] = useState('All');
+  const [pgType, setPgType] = useState('All');
+
+  // PG listings state
   const [featuredPgs, setFeaturedPgs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchFeaturedPgs();
@@ -18,7 +27,7 @@ const Home = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('pgs')
-        .select('*, rooms (price_per_seat)')
+        .select('*, rooms (price_per_seat, total_seats)')
         .eq('is_active', true)
         .limit(3);
         
@@ -37,210 +46,279 @@ const Home = () => {
     }
   };
 
-  const handleSearch = (e) => {
+  const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/pgs?search=${encodeURIComponent(searchQuery)}`);
-    } else {
-        navigate('/pgs');
-    }
+    let queryParams = [];
+    if (location.trim()) queryParams.push(`search=${encodeURIComponent(location.trim())}`);
+    if (budgetRange !== 'All') queryParams.push(`budget=${encodeURIComponent(budgetRange)}`);
+    if (pgType !== 'All') queryParams.push(`type=${encodeURIComponent(pgType)}`);
+
+    const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+    navigate(`/pgs${queryString}`);
   };
 
   const MOCKUP_IMAGE = "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80";
 
   return (
-    <div className="bg-secondary min-h-screen text-primary overflow-hidden">
+    <div className="bg-background text-on-background min-h-screen transition-colors duration-300">
+      
       {/* Hero Section */}
-      <section className="relative px-6 pt-32 pb-24 md:pt-48 md:pb-32 flex flex-col items-center justify-center min-h-[90vh]">
-        {/* Abstract Background Ethereal Blobs */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-[#4a4bd7]/20 to-[#842cd3]/20 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/3"></div>
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#34b5fa]/20 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3"></div>
-        
-        <div className="relative z-10 max-w-5xl mx-auto text-center space-y-8">
-          <div className="inline-flex items-center space-x-2 px-6 py-2.5 bg-white/60 backdrop-blur-2xl rounded-full border border-white/40 shadow-xl text-sm font-bold text-accent mb-4">
-            <span className="flex w-2.5 h-2.5 rounded-full bg-accent animate-pulse"></span>
-            <span className="tracking-wide">Experience Premium Student Living</span>
-          </div>
-          
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <img 
-              src="/apna_light.jpg" 
-              alt="Apna Rooms Logo" 
-              className="h-20 w-20 object-contain rounded-[2rem] shadow-2xl border border-white/20 animate-float"
-            />
-            <h1 className="text-5xl md:text-8xl font-black tracking-tight leading-[0.95] text-primary">
-              Stay in <br className="hidden md:block"/>
-              <span className="text-gradient">Apna Rooms</span>
-            </h1>
-          </div>
-          
-          <p className="text-lg md:text-xl text-[#615985] max-w-2xl mx-auto font-medium leading-relaxed">
-            Experience premium living spaces built for students. Secure, verified, and beautifully curated to elevate your academic journey.
-          </p>
-
-          <form onSubmit={handleSearch} className="w-full max-w-3xl mx-auto mt-16 relative group">
-            <div className="absolute -inset-1.5 bg-gradient-to-r from-accent to-accent-light rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-            <div className="relative flex items-center bg-white p-2.5 rounded-[2.5rem] shadow-2xl border border-white/50">
-              <div className="p-4 bg-accent/10 rounded-[1.8rem] text-accent">
-                <MapPin className="w-6 h-6" />
+      <section className="bg-surface-main py-12 lg:py-20 border-b border-border-low">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            
+            {/* Left Content */}
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-xs font-semibold tracking-wider">
+                <span className="flex w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                <span>SYSTEMATIC COLIVING PLATFORM</span>
               </div>
-              <input 
-                type="text" 
-                placeholder="Search by city, university, or PG name..." 
-                className="flex-1 bg-transparent border-none text-lg px-6 text-[#342d55] placeholder:text-[#a099b4] focus:outline-none focus:ring-0 font-medium"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+              
+              <h1 className="text-4xl lg:text-6xl font-extrabold text-text-primary tracking-tight leading-tight">
+                Professional PG Rentals for Modern Professionals.
+              </h1>
+              
+              <p className="text-text-secondary text-base lg:text-lg max-w-xl leading-relaxed">
+                Streamlined living spaces curated for efficiency. High-density urban locations with verified amenities and transparent billing.
+              </p>
+
+              {/* High-Density Responsive Search Deck */}
+              <form onSubmit={handleSearchSubmit} className="bg-surface-container-low border border-border-low p-4 rounded-2xl shadow-xl space-y-3 max-w-xl">
+                {/* Location Search Row */}
+                <div className="flex items-center px-4 bg-surface-main border border-border-low rounded-xl focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+                  <MapPin className="w-5 h-5 text-primary mr-3 shrink-0" />
+                  <input 
+                    type="text" 
+                    placeholder="Search location (e.g. Noida, Sector 62)" 
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="w-full border-none focus:outline-none focus:ring-0 text-sm bg-transparent py-3.5 text-on-background placeholder:text-text-secondary/50 font-semibold"
+                  />
+                </div>
+                
+                {/* Filters & Action Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="flex items-center px-4 bg-surface-main border border-border-low rounded-xl focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+                    <span className="text-sm font-bold text-primary mr-2.5 font-mono">₹</span>
+                    <select 
+                      value={budgetRange}
+                      onChange={(e) => setBudgetRange(e.target.value)}
+                      className="w-full border-none focus:outline-none focus:ring-0 text-xs sm:text-sm bg-transparent py-3 text-on-background cursor-pointer font-semibold pr-8"
+                    >
+                      <option value="All" className="bg-surface-main">Budget Range</option>
+                      <option value="5000-10000" className="bg-surface-main">₹5,000 - ₹10,000</option>
+                      <option value="10000-20000" className="bg-surface-main">₹10,000 - ₹20,000</option>
+                      <option value="20000+" className="bg-surface-main">₹20,000+</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center px-4 bg-surface-main border border-border-low rounded-xl focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+                    <Users className="w-4.5 h-4.5 text-primary mr-2.5 shrink-0" />
+                    <select 
+                      value={pgType}
+                      onChange={(e) => setPgType(e.target.value)}
+                      className="w-full border-none focus:outline-none focus:ring-0 text-xs sm:text-sm bg-transparent py-3 text-on-background cursor-pointer font-semibold pr-8"
+                    >
+                      <option value="All" className="bg-surface-main">Room Type</option>
+                      <option value="Single" className="bg-surface-main">Single Room</option>
+                      <option value="Double" className="bg-surface-main">Double Sharing</option>
+                      <option value="Triple" className="bg-surface-main">Triple Sharing</option>
+                    </select>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    className="bg-primary text-on-primary py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-98 transition-all cursor-pointer shadow-md shadow-primary/10 text-sm"
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>Search Rooms</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Right Interactive Image Mockup */}
+            <div className="hidden lg:block relative aspect-video overflow-hidden rounded-xl border border-border-low shadow-xl">
+              <img 
+                src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80"
+                alt="Professional Apna Rooms Interior Mockup" 
+                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
               />
-              <button type="submit" className="hidden md:flex px-10 py-5 bg-gradient-to-r from-accent to-accent-light text-white rounded-[1.8rem] font-black text-lg hover:shadow-2xl hover:shadow-purple-400/30 transition-all hover:-translate-y-1">
-                Explore Rooms
-              </button>
-              <button type="submit" className="md:hidden p-5 bg-accent text-white rounded-[1.8rem]">
-                <Search className="w-6 h-6" />
-              </button>
+              <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent pointer-events-none"></div>
             </div>
-          </form>
-          
-          <div className="flex items-center justify-center space-x-6 pt-8 text-sm font-bold text-[#7d75a2]">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="w-5 h-5 text-[#006592]" />
-              <span>Verified Properties</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Shield className="w-5 h-5 text-[#006592]" />
-              <span>Zero Brokerage</span>
-            </div>
+
           </div>
         </div>
       </section>
 
-      {/* Features Section - Glassmorphism */}
-      <section className="relative py-24 px-6 z-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-['Plus_Jakarta_Sans'] font-extrabold mb-6 tracking-tight">The New Standard of Living</h2>
-            <p className="text-[#615985] text-lg max-w-2xl mx-auto">Everything you need to focus on your studies, wrapped in a seamless digital experience.</p>
+      {/* Quick Stats Grid */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-5 border border-border-low bg-surface-main rounded-xl">
+            <span className="block text-xs font-semibold text-text-secondary uppercase tracking-wider font-mono">Market Occupancy</span>
+            <span className="block text-2xl lg:text-3xl font-bold text-primary mt-1">94.2%</span>
           </div>
-          
+          <div className="p-5 border border-border-low bg-surface-main rounded-xl">
+            <span className="block text-xs font-semibold text-text-secondary uppercase tracking-wider font-mono">Verified Listings</span>
+            <span className="block text-2xl lg:text-3xl font-bold text-primary mt-1">1,240+</span>
+          </div>
+          <div className="p-5 border border-border-low bg-surface-main rounded-xl">
+            <span className="block text-xs font-semibold text-text-secondary uppercase tracking-wider font-mono">Active Users</span>
+            <span className="block text-2xl lg:text-3xl font-bold text-primary mt-1">12.5k</span>
+          </div>
+          <div className="p-5 border border-border-low bg-surface-main rounded-xl">
+            <span className="block text-xs font-semibold text-text-secondary uppercase tracking-wider font-mono">Avg. Guest Rating</span>
+            <span className="block text-2xl lg:text-3xl font-bold text-success mt-1">4.8/5.0</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured PGs Grid */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="flex justify-between items-end mb-10">
+          <div>
+            <h2 className="text-2xl lg:text-3xl font-bold text-text-primary">Featured PGs</h2>
+            <p className="text-text-secondary text-sm lg:text-base mt-1">Highly-rated student accommodations near top major colleges and tech hubs.</p>
+          </div>
+          <Link 
+            to="/pgs" 
+            className="text-primary font-semibold text-sm hover:underline flex items-center gap-1 shrink-0"
+          >
+            <span>View all listings</span>
+            <span className="font-mono">→</span>
+          </Link>
+        </div>
+
+        {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="glass-morphism p-10 rounded-[2.5rem] relative overflow-hidden group hover:-translate-y-2 transition-all duration-500">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-5 transition-transform group-hover:scale-110"></div>
-              <div className="w-16 h-16 bg-accent/10 rounded-3xl flex items-center justify-center mb-8 rotate-3 shadow-lg shadow-purple-200">
-                <Shield className="w-8 h-8 text-accent" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Secure & Verified</h3>
-              <p className="text-gray-500 leading-relaxed text-sm">Complete peace of mind. Every property undergoes rigorous background checks and quality assurance before listing.</p>
-            </div>
-            
-            <div className="glass-morphism p-10 rounded-[2.5rem] relative overflow-hidden group hover:-translate-y-2 transition-all duration-500">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-5 transition-transform group-hover:scale-110"></div>
-              <div className="w-16 h-16 bg-accent/10 rounded-3xl flex items-center justify-center mb-8 -rotate-3 shadow-lg shadow-purple-200">
-                <Star className="w-8 h-8 text-accent" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Premium Living</h3>
-              <p className="text-gray-500 leading-relaxed text-sm">From blazing-fast WiFi to nutritious curated meals and professional housekeeping, we handle everything.</p>
-            </div>
-            
-            <div className="glass-morphism p-10 rounded-[2.5rem] relative overflow-hidden group hover:-translate-y-2 transition-all duration-500">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-5 transition-transform group-hover:scale-110"></div>
-              <div className="w-16 h-16 bg-accent/10 rounded-3xl flex items-center justify-center mb-8 rotate-3 shadow-lg shadow-purple-200">
-                <Zap className="w-8 h-8 text-accent" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Seamless Tech</h3>
-              <p className="text-gray-500 leading-relaxed text-sm">Book a room, pay rent securely, and raise service requests entirely through our digital ecosystem.</p>
-            </div>
+            {[1, 2, 3].map((idx) => (
+              <div key={idx} className="h-80 bg-surface-container animate-pulse rounded-xl border border-border-low"></div>
+            ))}
           </div>
-        </div>
-      </section>
-
-      {/* Featured PGs Section */}
-      <section className="py-24 px-6 relative">
-        <div className="absolute inset-0 bg-[#ffffff] h-1/2 skew-y-3 origin-bottom-left -z-10"></div>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-['Plus_Jakarta_Sans'] font-extrabold mb-4 tracking-tight">Featured Stays</h2>
-              <p className="text-[#615985] text-lg">Handpicked premium accommodations ready for you to move in.</p>
-            </div>
-            <Link to="/pgs" className="inline-flex items-center px-8 py-3.5 bg-accent/10 text-accent rounded-full font-black text-sm hover:bg-accent hover:text-white transition-all group">
-              View All Properties
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-96 bg-[#f1ebff] rounded-[2rem] animate-pulse"></div>
-              ))}
-            </div>
-          ) : featuredPgs.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredPgs.map((pg) => (
+        ) : featuredPgs.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {featuredPgs.map((pg) => {
+              const roomsForPg = pg.rooms || [];
+              const hasSingle = roomsForPg.some(r => Number(r.total_seats) === 1);
+              const roomTypeStr = hasSingle ? 'SINGLE' : roomsForPg.length > 0 ? 'SHARING' : 'STUDIO';
+              
+              return (
                 <Link 
                   key={pg.id} 
-                  to={`/pg/${pg.id}`}
-                  className="group bg-white rounded-[2.5rem] overflow-hidden shadow-2xl shadow-purple-900/5 hover:shadow-purple-900/10 transition-all duration-500 border border-white flex flex-col hover:-translate-y-2 relative"
+                  to={`/pg/${slugifyPG(pg.name, pg.address, pg.city)}--${pg.id}`}
+                  className="bg-surface-main border border-border-low rounded-xl overflow-hidden hover:border-outline transition-all duration-300 flex flex-col group"
                 >
-                  <div className="h-72 relative overflow-hidden m-4 rounded-[2rem]">
-                    <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors z-10"></div>
+                  <div className="h-48 relative overflow-hidden bg-surface-container">
                     <img 
                       src={pg.main_image || MOCKUP_IMAGE} 
-                      alt={pg.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                      alt={pg.name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute top-4 right-4 z-20 bg-[#ffffff]/90 backdrop-blur-md px-4 py-2 rounded-full text-sm font-extrabold text-[#342d55] shadow-lg flex items-center">
-                      <IndianRupee className="w-4 h-4 mr-1 text-[#4a4bd7]" />
-                      {pg.starting_price > 0 ? `${pg.starting_price}/mo` : 'Price on request'}
+                    <div className="absolute top-3 left-3 px-2 py-1 bg-success/15 text-success text-[10px] font-bold tracking-wider rounded border border-success/35">
+                      AVAILABLE
                     </div>
                   </div>
                   
-                  <div className="p-8 pt-4 flex-grow flex flex-col justify-between">
+                  <div className="p-5 flex-grow flex flex-col justify-between">
                     <div>
-                      <h3 className="text-2xl font-bold font-['Plus_Jakarta_Sans'] text-[#0f0b20] mb-3 group-hover:text-[#4a4bd7] transition-colors">{pg.name}</h3>
-                      <div className="flex items-center text-[#a099b4] mb-6">
-                        <MapPin className="w-5 h-5 mr-2 flex-shrink-0" />
-                        <span className="font-medium">{pg.address}, {pg.city}</span>
-                      </div>
+                      <h3 className="font-bold text-lg text-text-primary group-hover:text-primary transition-colors">{pg.name}</h3>
+                      <p className="text-text-secondary text-xs flex items-center gap-1 mt-1 font-medium">
+                        <MapPin className="w-3.5 h-3.5 text-outline" />
+                        <span>{pg.address}, {pg.city}</span>
+                      </p>
                     </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                       {pg.amenities?.slice(0, 3).map((amenity, idx) => (
-                        <span key={idx} className="bg-[#fdf8ff] border border-[#e6deff] text-[#615985] text-xs px-3 py-1.5 rounded-full font-bold uppercase tracking-wider">
-                          {amenity}
-                        </span>
-                      ))}
-                      {pg.amenities?.length > 3 && (
-                        <span className="bg-[#fdf8ff] text-[#a099b4] text-xs px-3 py-1.5 rounded-full font-bold">+{pg.amenities.length - 3}</span>
-                      )}
+
+                    <div className="grid grid-cols-3 border-t border-border-low mt-5 pt-4 text-center">
+                      <div className="data-grid-divider">
+                        <span className="block text-[10px] font-semibold text-text-secondary uppercase tracking-wider font-mono">Rent</span>
+                        <span className="block font-bold text-text-primary mt-1 text-sm">₹{pg.starting_price.toLocaleString()}</span>
+                      </div>
+                      <div className="data-grid-divider">
+                        <span className="block text-[10px] font-semibold text-text-secondary uppercase tracking-wider font-mono">Deposit</span>
+                        <span className="block font-bold text-text-primary mt-1 text-sm">2 MO</span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-semibold text-text-secondary uppercase tracking-wider font-mono">Type</span>
+                        <span className="block font-bold text-text-primary mt-1 text-sm font-mono">{roomTypeStr}</span>
+                      </div>
                     </div>
                   </div>
                 </Link>
-              ))}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-16 bg-surface-main border border-border-low rounded-xl">
+            <span className="text-text-secondary font-semibold">More verified stay listings coming up shortly!</span>
+          </div>
+        )}
+      </section>
+
+      {/* Systematic Living Experience Section */}
+      <section className="bg-surface-subtle py-16 border-y border-border-low">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl lg:text-3xl font-bold text-text-primary">Systematic Living Experience</h2>
+            <p className="text-text-secondary text-sm lg:text-base mt-2">Our platform is engineered for clarity, safety, and reliability.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-surface-main p-6 border border-border-low rounded-xl flex flex-col justify-between">
+              <div>
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 text-primary">
+                  <CheckCircle className="w-6 h-6" />
+                </div>
+                <h3 className="font-bold text-lg text-text-primary mb-2">Verified Listings</h3>
+                <p className="text-text-secondary text-sm leading-relaxed">
+                  Every single room is physically verified by our audit team to guarantee the absolute highest standards of listing data integrity.
+                </p>
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-20 bg-[#ffffff] rounded-[3rem] border border-[#f1ebff] shadow-sm">
-              <p className="text-[#a099b4] text-lg font-bold">More spectacular properties coming soon!</p>
+            
+            <div className="bg-surface-main p-6 border border-border-low rounded-xl flex flex-col justify-between">
+              <div>
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 text-primary">
+                  <Award className="w-6 h-6" />
+                </div>
+                <h3 className="font-bold text-lg text-text-primary mb-2">Transparent Billing</h3>
+                <p className="text-text-secondary text-sm leading-relaxed">
+                  Zero hidden charges. Effortlessly manage your monthly rent, security deposits, and real-time electricity bills in one place.
+                </p>
+              </div>
             </div>
-          )}
+            
+            <div className="bg-surface-main p-6 border border-border-low rounded-xl flex flex-col justify-between">
+              <div>
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 text-primary">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <h3 className="font-bold text-lg text-text-primary mb-2">24/7 SLA Management</h3>
+                <p className="text-text-secondary text-sm leading-relaxed">
+                  Dedicated property facility managers available to resolve maintenance, HVAC, electrical, or plumbing requests within a 4-hour SLA.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
+
       {/* CTA Section */}
-      <section className="py-24 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#4a4bd7] to-[#842cd3]"></div>
-        <div className="absolute top-0 left-0 w-full h-full opacity-30 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-[#ffffff] opacity-10 rounded-full blur-3xl"></div>
-        
-        <div className="max-w-4xl mx-auto text-center relative z-10 text-white">
-          <h2 className="text-4xl md:text-6xl font-['Plus_Jakarta_Sans'] font-extrabold mb-8 tracking-tight text-shadow-sm">Ready to elevate your stay?</h2>
-          <p className="text-[#f0dbff] text-xl mb-12 font-medium max-w-2xl mx-auto leading-relaxed">
-            Join thousands of students who have already upgraded their living experience with Apna Rooms.
+      <section className="bg-gradient-to-br from-primary to-primary-container text-on-primary py-16 text-center">
+        <div className="max-w-4xl mx-auto px-4 space-y-6">
+          <h2 className="text-3xl lg:text-5xl font-extrabold tracking-tight">Ready to Elevate Your Living Experience?</h2>
+          <p className="text-primary-fixed-dim/95 text-base lg:text-lg max-w-xl mx-auto">
+            Join thousands of modern students and working professionals who have already upgraded their coliving journey with Apna Rooms.
           </p>
-          <Link to="/pgs" className="inline-flex py-5 px-10 bg-[#ffffff] text-[#4a4bd7] rounded-full font-extrabold text-xl hover:shadow-[0_20px_40px_rgba(255,255,255,0.2)] hover:-translate-y-1 transition-all">
+          <Link 
+            to="/pgs" 
+            className="inline-block py-4.5 px-8 bg-surface-main text-primary rounded-lg font-bold text-lg hover:shadow-lg transition-all active:scale-95 duration-200 cursor-pointer"
+          >
             Find Your Room Now
           </Link>
         </div>
       </section>
+
     </div>
   );
 };
