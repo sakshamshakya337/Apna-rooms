@@ -10,7 +10,7 @@ import { Turnstile } from '@marsidev/react-turnstile';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loginWithGoogle, forgotPassword } = useAuth();
+  const { login, loginWithGoogle, forgotPassword, currentUser, loading: authLoading } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
