@@ -15,6 +15,29 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin");
+
+    // 1. Let Cloudflare handle its own internal paths (Turnstile, etc.)
+    if (url.pathname.startsWith('/cdn-cgi/')) {
+      return fetch(request);
+    }
+
+    // 2. Bypass proxy for Firebase auth callback
+    if (url.pathname.startsWith('/__/auth/')) {
+      return fetch(request);
+    }
+
+    // 3. Bypass proxy for Google/Firebase OAuth hosts
+    const bypassHosts = [
+      'accounts.google.com',
+      'oauth2.googleapis.com',
+      'securetoken.googleapis.com',
+      'identitytoolkit.googleapis.com',
+      'firebaseapp.com',
+    ];
+    if (bypassHosts.some(h => url.hostname.includes(h))) {
+      return fetch(request);
+    }
+
     
     // 1. Strict Origin Validation (CORS)
     const isAllowedOrigin = !origin || ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.vercel.app');
