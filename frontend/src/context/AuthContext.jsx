@@ -166,27 +166,17 @@ export const AuthProvider = ({ children }) => {
       ensureGoogleConfigured();
       setLoading(true);
 
-      const result = await signInWithPopup(auth, googleProvider);
+      // Use redirect instead of popup to prevent browser popup blockers
+      // especially when triggered after async operations like Turnstile
+      await signInWithRedirect(auth, googleProvider);
       
-      if (!result || !result.user) {
-        throw new Error('Google login did not return user info');
-      }
-
-      const user = await syncGoogleUser(result.user, { showToast: true });
-      return user;
+      // The page will navigate away, so execution stops here.
+      // The result is handled in initializeAuth -> getRedirectResult.
     } catch (error) {
       console.error('Google Login Error:', error);
-      
-      const code = error.code;
-      if (code === 'auth/popup-closed-by-user') {
-        toast.error('Google login was closed before it finished. Please allow popups if blocked.');
-      } else {
-        toast.error(error.response?.data?.error || error.message || 'Google login failed');
-      }
-      
-      throw error;
-    } finally {
+      toast.error(error.message || 'Google login failed');
       setLoading(false);
+      throw error;
     }
   };
 
