@@ -105,6 +105,9 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (error) {
         console.error('Auth bootstrap error:', error);
+        if (error.message && !error.message.includes('auth/')) {
+          toast.error(error.response?.data?.error || 'Authentication sync failed. Please try logging in again.');
+        }
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -161,33 +164,29 @@ export const AuthProvider = ({ children }) => {
   const loginWithGoogle = async () => {
     try {
       ensureGoogleConfigured();
+      setLoading(true);
 
       const result = await signInWithPopup(auth, googleProvider);
+      
       if (!result || !result.user) {
-        throw new Error('Google sign in failed - no user returned');
+        throw new Error('Google login did not return user info');
       }
 
-      return await syncGoogleUser(result.user);
+      const user = await syncGoogleUser(result.user, { showToast: true });
+      return user;
     } catch (error) {
-      const code = error?.code || '';
-      const shouldFallbackToRedirect = [
-        'auth/popup-blocked',
-        'auth/cancelled-popup-request',
-        'auth/operation-not-supported-in-this-environment'
-      ].includes(code);
-
-      if (shouldFallbackToRedirect) {
-        await signInWithRedirect(auth, googleProvider);
-        return null;
-      }
-
       console.error('Google Login Error:', error);
+      
+      const code = error.code;
       if (code === 'auth/popup-closed-by-user') {
-        toast.error('Google login was closed before it finished.');
+        toast.error('Google login was closed before it finished. Please allow popups if blocked.');
       } else {
         toast.error(error.response?.data?.error || error.message || 'Google login failed');
       }
+      
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
