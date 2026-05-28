@@ -127,14 +127,23 @@ export const AuthProvider = ({ children }) => {
 
     handleRedirectResult();
 
-    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
-      // Used to guarantee Firebase auth state has been fully resolved before removing loading screen
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser && !currentUser && !localStorage.getItem('apna_rooms_token')) {
+        console.log('Firebase user authenticated, syncing with backend...');
+        try {
+          await syncGoogleUser(firebaseUser, { showToast: true });
+          console.log('Backend sync successful');
+        } catch (err) {
+          console.error('Backend sync failed:', err.response?.status, err.response?.data || err.message);
+          toast.error(err.response?.data?.error || 'Authentication sync failed. Please try logging in again.');
+        }
+      }
       authStateResolved = true;
       checkDone();
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser]);
 
   const signup = async (email, password, fullName, role = 'user', studentCategory = 'National') => {
     try {

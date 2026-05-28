@@ -75,6 +75,7 @@ const App = () => {
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-conditions" element={<TermsAndConditions />} />
             <Route path="/refund-cancellation" element={<RefundCancellation />} />
+            <Route path="/shipping-delivery" element={<ShippingDelivery />} />
           
             <Route path="/contact" element={<Contact />} />
             <Route path="/booking-confirmation/:id" element={currentUser ? <BookingConfirmation /> : <Navigate to="/login" />} />
