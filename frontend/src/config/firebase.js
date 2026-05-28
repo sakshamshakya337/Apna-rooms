@@ -22,6 +22,10 @@ const firebaseConfig = {
 // Initialize Firebase only once
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+
+// Set persistence at init time, before any signInWithRedirect call
+setPersistence(auth, browserLocalPersistence);
+
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 const storage = getStorage(app);

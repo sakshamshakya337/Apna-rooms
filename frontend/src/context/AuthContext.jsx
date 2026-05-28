@@ -76,19 +76,23 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    let isMounted = true;
+    let authStateResolved = false;
+    let redirectResolved = false;
 
-    const initializeAuth = async () => {
+    const checkDone = () => {
+      if (authStateResolved && redirectResolved) {
+        setLoading(false);
+      }
+    };
+
+    const handleRedirectResult = async () => {
       try {
-        await setPersistence(auth, browserLocalPersistence);
-
         const savedToken = localStorage.getItem('apna_rooms_token');
         const savedUser = localStorage.getItem('apna_rooms_user');
 
         if (savedToken && savedUser) {
           try {
             const parsedUser = JSON.parse(savedUser);
-            if (!isMounted) return;
             setCurrentUser({ uid: parsedUser.id, ...parsedUser });
             setUserData(parsedUser);
             axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
@@ -101,25 +105,35 @@ export const AuthProvider = ({ children }) => {
 
         const redirectResult = await getRedirectResult(auth);
         if (redirectResult?.user) {
-          await syncGoogleUser(redirectResult.user, { showToast: true });
+          console.log('Got redirect result, syncing with backend...');
+          try {
+            await syncGoogleUser(redirectResult.user, { showToast: true });
+            console.log('Backend sync successful');
+          } catch (err) {
+            console.error('Backend sync failed:', err.response?.status, err.response?.data || err.message);
+            toast.error(err.response?.data?.error || 'Authentication sync failed. Please try logging in again.');
+          }
         }
       } catch (error) {
         console.error('Auth bootstrap error:', error);
         if (error.message && !error.message.includes('auth/')) {
-          toast.error(error.response?.data?.error || 'Authentication sync failed. Please try logging in again.');
+          toast.error(error.response?.data?.error || 'Authentication setup failed. Please reload the page.');
         }
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        redirectResolved = true;
+        checkDone();
       }
     };
 
-    initializeAuth();
+    handleRedirectResult();
 
-    return () => {
-      isMounted = false;
-    };
+    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+      // Used to guarantee Firebase auth state has been fully resolved before removing loading screen
+      authStateResolved = true;
+      checkDone();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const signup = async (email, password, fullName, role = 'user', studentCategory = 'National') => {

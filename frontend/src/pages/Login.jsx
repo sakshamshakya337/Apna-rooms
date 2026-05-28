@@ -20,6 +20,13 @@ const Login = () => {
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
+  
+  // Issue 1 Fix: Explicitly redirect away from login if already authenticated
+  useEffect(() => {
+    if (!authLoading && currentUser) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [currentUser, authLoading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
