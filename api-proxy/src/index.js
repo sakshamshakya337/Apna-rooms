@@ -17,7 +17,7 @@ export default {
     const origin = request.headers.get("Origin");
     
     // 1. Strict Origin Validation (CORS)
-    const isAllowedOrigin = !origin || ALLOWED_ORIGINS.includes(origin);
+    const isAllowedOrigin = !origin || ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.vercel.app');
     if (!isAllowedOrigin) {
       return new Response("Forbidden: Invalid Origin", { status: 403 });
     }
